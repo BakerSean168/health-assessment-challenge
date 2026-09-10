@@ -6,7 +6,7 @@ The project is intentionally scoped as a three-day engineering challenge. The go
 
 ## Status
 
-**Phase:** T09 calculation policy v1 frozen; T10 calculation RED/GREEN implementation is next
+**Phase:** T10 calculation domain complete; T11 submit + result snapshot is next
 
 The repository is public from the start so the implementation history, test-first workflow, design decisions, and trade-offs remain reviewable.
 

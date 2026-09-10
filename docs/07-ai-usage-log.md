@@ -268,6 +268,20 @@ A separate `demo-v1` calculation policy was frozen first. Recognizable external 
 
 `10-calculation-policy.md` now contains exact formulas, rounding/date semantics, external references, and required RED vectors. T10 can therefore write tests from the policy rather than from production code.
 
+### 2026-09-10 — T10 calculations implemented from policy, not vice versa
+
+**Context**
+
+The exact `demo-v1` calculation policy had already been frozen in T09, including test vectors and rounding/date semantics.
+
+**TDD evidence**
+
+A 22-case unit suite was written before `calculation.ts` existed and failed on module resolution. The suite covers BMI threshold boundaries, the deliberate raw-before-rounding classification rule, all Mifflin gender branches including the documented `OTHER` midpoint, all activity multipliers, all goal adjustments, the 1000 kcal lower guard, target-date lose/gain/maintain cases, partial-week ceiling, and UTC normalization.
+
+**Outcome**
+
+The resulting production functions are pure and have no framework, database, environment, cookie, or wall-clock dependency. Test expectations came from the prior policy document, avoiding the anti-pattern of writing implementation first and tests that simply reproduce it afterward.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title

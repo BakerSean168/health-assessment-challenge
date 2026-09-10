@@ -327,6 +327,8 @@ Frozen in `10-calculation-policy.md` as `demo-v1`:
 
 ### T10 Calculation unit tests
 
+**Status:** done — 2026-09-10
+
 RED-first for:
 
 - BMI;
@@ -336,6 +338,15 @@ RED-first for:
 - target date;
 - already-at-target case;
 - deterministic reference date.
+
+Implemented pure domain functions:
+
+- `calculateBmi()` computes metric BMI, stores/displays one decimal, and classifies from the unrounded value;
+- `calculateRecommendedDailyCalories()` implements the frozen Mifflin/activity/goal/guard/nearest-10 `demo-v1` policy;
+- `estimateTargetDate()` normalizes the injected reference time to a UTC calendar date and applies the static projection;
+- no function imports Prisma/Next.js/environment/cookies or reads the wall clock.
+
+T10 TDD evidence: `calculation.test.ts` was written first from the already-frozen policy and failed because `calculation.ts` did not exist (RED). The production module was then added until all 22 table-driven and edge cases passed (GREEN), including raw-vs-rounded BMI threshold behavior, all gender/activity/goal branches, the lower calorie guard, partial-week rounding, and UTC date normalization.
 
 ### T11 Submit + result snapshot
 
