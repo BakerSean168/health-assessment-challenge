@@ -6,7 +6,7 @@ The project is intentionally scoped as a three-day engineering challenge. The go
 
 ## Status
 
-**Phase:** T15 shadcn/Base UI assessment shell complete; T16 persisted funnel wiring is next
+**Phase:** T16 persisted seven-step funnel wiring complete; T17 derived feedback/result/paywall UI is next
 
 The repository is public from the start so the implementation history, test-first workflow, design decisions, and trade-offs remain reviewable.
 

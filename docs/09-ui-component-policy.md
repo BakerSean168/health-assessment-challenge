@@ -120,3 +120,12 @@ Before merging a new UI component, ask:
 As of T15, the repository contains the shadcn/Base UI-backed `Button`, `Progress`, `RadioGroup`, `Input`, `Card`, `Alert`, `Skeleton`, `Separator`, `Dialog`, and `Label` primitives. They were selected because the next three product slices directly need assessment inputs, progress, feedback/loading, and paywall/result surfaces; this is still a focused subset rather than a registry-wide install.
 
 `AssessmentShell` is the first product composition and imports shared primitives from `components/ui` rather than implementing equivalent keyboard/focus/progress behavior itself.
+
+## 10. T16 product compositions
+
+The persisted funnel adds two assessment-specific compositions rather than new generic primitives:
+
+- `AssessmentOptionGroup` uses the shadcn/Base UI `RadioGroup` and `RadioGroupItem` for single-choice semantics, keyboard/focus behavior, and checked state;
+- `NumericAnswer` uses shadcn `Input` and `Label`, adding only assessment-specific range/unit copy.
+
+`AssessmentFunnel` composes these with the existing shared `Button`, `Alert`, `Card`, and `Skeleton`. Numeric input limits are imported from the same domain constant used by server validation so presentation hints cannot silently diverge from the runtime contract.

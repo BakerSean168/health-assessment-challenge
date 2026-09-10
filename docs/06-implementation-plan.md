@@ -469,12 +469,29 @@ T15 TDD evidence: `assessment-shell.test.tsx` was written before the product com
 
 ### T16 Wire persisted steps
 
+**Status:** done — 2026-09-11
+
 Acceptance:
 
 - each continue action saves before navigation;
 - server errors are represented correctly;
 - refresh restores the page and value;
 - stale-conflict behavior provides a safe recovery path.
+
+Implemented behavior:
+
+- `/assessment` now mounts a client funnel that bootstraps the anonymous session and restores authoritative assessment state from `GET /api/assessment`;
+- categorical questions compose shadcn/Base UI `RadioGroup`; numeric questions compose shadcn `Input` + `Label`; actions/errors/loading use the shared `Button`, `Alert`, `Card`, and `Skeleton` primitives;
+- all seven steps are driven by one semantic `STEP_ORDER`, while the actual forward destination always comes from the server's returned `nextRequiredStep`;
+- Continue awaits `PATCH` before navigation and carries the current optimistic `revision`;
+- final-step save uses the newly returned revision for `POST /submit`, avoiding a stale final submit;
+- back navigation restores persisted values without creating a second generic form-control system;
+- refresh/revisit starts at the server-derived unresolved step; completed assessments redirect to result;
+- server save failures leave the current question visible and surface the API message in an accessible alert;
+- client numeric hints reuse the same exported domain input-limit constants as server Zod validation rather than duplicating boundary numbers;
+- a shared conditional Testing Library cleanup hook was added so jsdom component tests remain isolated without affecting Node-domain tests.
+
+T16 TDD evidence: the funnel test was written before the browser API adapter/product components existed and failed on module resolution (RED). The first GREEN attempt exposed two UI-test/runtime issues: jsdom renders were accumulating across tests and Base UI warned about the RadioGroup switching from uncontrolled to controlled. A conditional global cleanup hook and a consistently controlled `value` fixed both. Lint then caught two unescaped JSX apostrophes, and the copy was corrected before acceptance. Four funnel behaviors now pass, followed by the complete unit/component, PostgreSQL integration, typecheck, lint, and production-build gates.
 
 ### T17 Derived feedback screens
 

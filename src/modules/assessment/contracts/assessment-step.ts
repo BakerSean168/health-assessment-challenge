@@ -6,13 +6,9 @@ import type {
   Gender,
   Goal,
 } from "../domain/assessment";
+import { ASSESSMENT_INPUT_LIMITS } from "../domain/input-limits";
 
-export const ASSESSMENT_INPUT_LIMITS = {
-  age: { min: 18, max: 100 },
-  heightCm: { min: 120, max: 230 },
-  weightKg: { min: 25, max: 300 },
-  targetWeightKg: { min: 25, max: 300 },
-} as const;
+export { ASSESSMENT_INPUT_LIMITS } from "../domain/input-limits";
 
 const expectedRevisionSchema = z.number().int().nonnegative();
 const genderSchema = z.enum(["MALE", "FEMALE", "OTHER"]);

@@ -372,6 +372,28 @@ Common controls were added from shadcn's Base UI-backed registry instead of recr
 
 The repository now has a consistent accessible UI foundation ready for the persisted funnel, while the low-level primitives remain the shadcn-managed local source requested for this challenge.
 
+### 2026-09-11 — T16 persisted funnel and UI-library consistency
+
+**Context**
+
+The first end-user flow needed to connect the seven persisted backend steps to React without making client state authoritative or rebuilding common controls outside the chosen component system.
+
+**TDD evidence**
+
+`assessment-funnel.test.tsx` was written before the browser API adapter and funnel components existed. It specifies save-before-navigation, recovery/back with a persisted value, visible save failure without navigation, and final submit using the revision returned by the final PATCH.
+
+**Review corrections**
+
+The first implementation run showed two component-level defects that backend tests could not reveal: test DOM from earlier cases was not being cleaned up under the current Vitest configuration, and the Base UI RadioGroup changed from uncontrolled to controlled when the first value arrived. A conditional Testing Library cleanup hook and a stable controlled `value` resolved them. We also moved assessment scalar bounds into a shared domain constant so the UI range hints and Zod contracts cannot drift independently.
+
+**Component policy outcome**
+
+`AssessmentOptionGroup` composes shadcn/Base UI `RadioGroup`, `NumericAnswer` composes shadcn `Input`/`Label`, and the funnel uses existing `Button`, `Alert`, `Card`, and `Skeleton` components. No parallel generic input/button/radio library was introduced.
+
+**Outcome**
+
+The browser can restore, edit, incrementally persist, and complete all seven semantic steps while the server remains authoritative for progress and revision state.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title
