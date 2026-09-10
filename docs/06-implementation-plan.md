@@ -282,11 +282,22 @@ T07 TDD evidence: unit tests first failed because `validateStepWrite()` and cont
 
 ### T08 Optimistic concurrency
 
+**Status:** done — 2026-09-10
+
 Acceptance:
 
 - stale `expectedRevision` returns `409`, including same-value stale retries;
 - newer persisted value remains intact;
 - successful write increments exactly once.
+
+Verification result:
+
+- two requests using revision `0` were executed concurrently against the same PostgreSQL assessment;
+- exactly one returned `200`, exactly one returned `409 ASSESSMENT_VERSION_CONFLICT`;
+- persisted revision advanced exactly once to `1` and retained only the winning value;
+- replaying the same value with stale revision `0` is still rejected with `409`, preserving the explicit stale-client contract.
+
+T08 did not require new production logic: the acceptance tests passed immediately because the revision-conditioned Prisma update introduced in T04/T06 plus the application-level revision check from T07 already satisfied the behavior. We keep this as explicit executable verification rather than manufacturing an artificial RED state or rewriting working concurrency code merely to claim a RED/GREEN cycle.
 
 ## 6. Phase 4 — calculations and submission
 

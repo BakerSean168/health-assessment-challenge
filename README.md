@@ -6,7 +6,7 @@ The project is intentionally scoped as a three-day engineering challenge. The go
 
 ## Status
 
-**Phase:** T07 server-side step policy complete; T08 optimistic concurrency verification is next
+**Phase:** T08 optimistic concurrency verified; T09 calculation policy freeze is next
 
 The repository is public from the start so the implementation history, test-first workflow, design decisions, and trade-offs remain reviewable.
 

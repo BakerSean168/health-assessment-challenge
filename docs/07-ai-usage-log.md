@@ -232,6 +232,24 @@ The failing test was rejected as incorrectly specified. The fixture was changed 
 
 The final policy rejects unresolved skips, permits edits, and revalidates target weight contextually (`LOSE_WEIGHT`: target lower; `GAIN_WEIGHT`: target higher; `MAINTAIN`: target equal). The API returns stable `STEP_OUT_OF_ORDER` details and leaves revision unchanged on rejection.
 
+### 2026-09-10 — T08 acceptance test was already green
+
+**Context**
+
+The dedicated optimistic-concurrency slice needed to prove the architecture claim with real concurrent PostgreSQL writes, including the strict same-value stale retry rule.
+
+**Test result**
+
+The new acceptance test launched two gender writes concurrently with the same expected revision. It passed immediately: one writer won, the other received `409`, and the aggregate revision advanced once. A stale retry carrying the already-persisted value also returned `409` as designed.
+
+**Developer decision**
+
+No production change was made just to manufacture a TDD RED phase. The behavior had already been implemented incrementally by earlier slices. The test is retained as executable characterization/acceptance evidence. This is preferable to changing correct code for process theater.
+
+**Outcome**
+
+The concurrency contract is now directly tested against PostgreSQL rather than inferred from the presence of a `revision` field.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title
