@@ -1,0 +1,267 @@
+# API contract v0.1
+
+## 1. Conventions
+
+Base path: `/api`
+
+Authentication model: anonymous HttpOnly session cookie.
+
+Content type: `application/json` for request/response bodies unless no body is required.
+
+All mutating assessment requests use the current server session; callers do not select another session by sending an arbitrary identifier.
+
+## 2. Error envelope
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "The request is invalid.",
+    "details": {
+      "field": "weightKg"
+    }
+  }
+}
+```
+
+Initial stable error codes:
+
+- `VALIDATION_ERROR`
+- `ASSESSMENT_NOT_FOUND`
+- `STEP_OUT_OF_ORDER`
+- `ASSESSMENT_VERSION_CONFLICT`
+- `ASSESSMENT_INCOMPLETE`
+- `ASSESSMENT_ALREADY_COMPLETED`
+- `RESULT_NOT_FOUND`
+- `PAYMENT_INVALID`
+
+## 3. `POST /api/session`
+
+Create or reuse the anonymous browser session and ensure an active assessment exists.
+
+### Response `200` or `201`
+
+```json
+{
+  "subscriptionStatus": "FREE",
+  "assessment": {
+    "status": "IN_PROGRESS",
+    "currentStep": "GENDER",
+    "revision": 0
+  }
+}
+```
+
+The raw session identifier does not need to be exposed in the JSON body when it is already stored securely in the cookie.
+
+## 4. `GET /api/assessment`
+
+Restore current assessment state.
+
+### Response `200`
+
+```json
+{
+  "status": "IN_PROGRESS",
+  "currentStep": "WEIGHT",
+  "revision": 4,
+  "answers": {
+    "gender": "MALE",
+    "goal": "LOSE_WEIGHT",
+    "activityLevel": "MODERATE",
+    "heightCm": 175,
+    "weightKg": null,
+    "age": null,
+    "targetWeightKg": null
+  }
+}
+```
+
+The endpoint is the canonical recovery source after refresh/revisit.
+
+## 5. `PATCH /api/assessment/steps/:stepKey`
+
+Persist one assessment step.
+
+Example:
+
+```http
+PATCH /api/assessment/steps/weight
+```
+
+### Request
+
+```json
+{
+  "value": 72,
+  "expectedRevision": 4
+}
+```
+
+The Zod schema selected by `stepKey` validates the `value` type/range.
+
+### Response `200`
+
+```json
+{
+  "saved": true,
+  "revision": 5,
+  "currentStep": "AGE",
+  "nextStep": "AGE"
+}
+```
+
+### Conflict `409`
+
+```json
+{
+  "error": {
+    "code": "ASSESSMENT_VERSION_CONFLICT",
+    "message": "The assessment changed since this page loaded.",
+    "details": {}
+  }
+}
+```
+
+### Out-of-order `409`
+
+```json
+{
+  "error": {
+    "code": "STEP_OUT_OF_ORDER",
+    "message": "This assessment step cannot be submitted yet.",
+    "details": {
+      "currentStep": "HEIGHT"
+    }
+  }
+}
+```
+
+## 6. `POST /api/assessment/submit`
+
+Finalize the assessment and generate the immutable result snapshot.
+
+### Request
+
+No client calculation values are accepted.
+
+```json
+{}
+```
+
+### First successful response `200`
+
+```json
+{
+  "status": "COMPLETED",
+  "resultReady": true
+}
+```
+
+### Retry semantics
+
+If the same completed assessment already has a result snapshot, return the existing successful state rather than recomputing a different result.
+
+### Incomplete `409`
+
+```json
+{
+  "error": {
+    "code": "ASSESSMENT_INCOMPLETE",
+    "message": "Complete all required assessment steps before submitting.",
+    "details": {
+      "missingSteps": ["AGE", "TARGET_WEIGHT"]
+    }
+  }
+}
+```
+
+## 7. `GET /api/assessment/result`
+
+Return a subscription-aware server projection of the stored result.
+
+### Free response `200`
+
+```json
+{
+  "access": "FREE",
+  "bmi": {
+    "value": 23.5,
+    "category": "NORMAL"
+  },
+  "recommendedDailyCalories": {
+    "locked": true
+  },
+  "estimatedGoalDate": {
+    "locked": true
+  }
+}
+```
+
+Important: premium values are absent from the JSON. They are not returned and blurred by the UI.
+
+### Active response `200`
+
+```json
+{
+  "access": "ACTIVE",
+  "bmi": {
+    "value": 23.5,
+    "category": "NORMAL"
+  },
+  "recommendedDailyCalories": {
+    "locked": false,
+    "value": 2050
+  },
+  "estimatedGoalDate": {
+    "locked": false,
+    "value": "2026-12-04"
+  }
+}
+```
+
+The example values are illustrative contract examples, not frozen calculation expectations.
+
+## 8. `POST /api/pay`
+
+Simulate successful payment and activate the current session subscription.
+
+### Request
+
+```json
+{
+  "paymentId": "demo_01J_TEST"
+}
+```
+
+### Response `200`
+
+```json
+{
+  "status": "SUCCEEDED",
+  "subscriptionStatus": "ACTIVE",
+  "replayed": false
+}
+```
+
+A replay of the same `paymentId` returns the already-applied outcome:
+
+```json
+{
+  "status": "SUCCEEDED",
+  "subscriptionStatus": "ACTIVE",
+  "replayed": true
+}
+```
+
+## 9. Contract testing priorities
+
+API tests should assert stable behavior rather than incidental implementation details:
+
+- status code;
+- error code;
+- response shape;
+- omission of premium values;
+- revision progression;
+- persisted state after request;
+- idempotency after retries.
