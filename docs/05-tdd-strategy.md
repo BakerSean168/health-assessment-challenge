@@ -31,8 +31,8 @@ Use for pure logic with no database/network dependency:
 - BMI calculation and classification;
 - recommended-intake policy;
 - target-date policy;
-- next-step resolver;
-- required-step resolver;
+- next-required-step resolver derived from persisted answers;
+- cross-field validity after editing earlier answers;
 - result-access projection;
 - error/policy helpers when they contain meaningful behavior.
 
@@ -60,26 +60,28 @@ Keep browser tests intentionally small:
 
 ## 3. Behavior matrix
 
+Behavior IDs use the `Bxx` prefix so they cannot be confused with executable implementation tasks (`Txx`) in `06-implementation-plan.md`.
+
 | ID | Behavior | Layer | RED condition | Done when |
 |---|---|---|---|---|
-| T01 | create/reuse anonymous session | integration | no session implementation | same browser identity reuses session |
-| T02 | persist first answer | integration | assessment cannot save gender | DB contains answer + revision advances |
-| T03 | resume after refresh | integration | GET loses saved state | answers + semantic step restored |
-| T04 | reject skipped step | integration/unit | target step accepted too early | stable `STEP_OUT_OF_ORDER` |
-| T05 | edit earlier step | integration | prior step mutation rejected/advances incorrectly | edit succeeds without corrupting flow |
-| T06 | reject stale write | integration | two writers overwrite each other | stale revision returns `409` |
-| T07 | calculate BMI | unit | function absent | fixed examples + boundaries pass |
-| T08 | calculate intake | unit | policy absent | frozen policy cases pass |
-| T09 | estimate target date | unit | policy absent | deterministic reference-date cases pass |
-| T10 | reject incomplete submit | integration | partial assessment completes | missing-step error returned |
-| T11 | create result snapshot | integration | complete submit has no result | one persisted versioned result |
-| T12 | retry submit safely | integration | second submit duplicates/recalculates | existing result returned |
-| T13 | free result projection | unit/integration | premium values leak | values omitted from response |
-| T14 | activate subscription | integration | `/pay` has no effect | session becomes `ACTIVE` |
-| T15 | replay payment safely | integration | duplicate payment repeats effect | unique event + replay response |
-| T16 | active result projection | integration | active user still sees locked shape | full DTO returned |
-| T17 | complete free browser flow | e2e | UI not wired | assessment -> preview passes |
-| T18 | complete paid browser flow | e2e | pay/unlock not wired | preview -> pay -> full result passes |
+| B01 | create/reuse anonymous session | integration | no session implementation | same browser identity reuses session |
+| B02 | persist first answer | integration | assessment cannot save gender | DB contains answer + revision advances |
+| B03 | resume after refresh | integration/unit | GET loses saved state | answers restored + next required step derived |
+| B04 | reject skipped step | integration/unit | target step accepted too early | stable `STEP_OUT_OF_ORDER` |
+| B05 | edit earlier step | integration/unit | dependent answer stays falsely valid | resolver moves to first context-invalid step without unnecessary data loss |
+| B06 | reject stale write | integration | two writers overwrite/accept stale duplicate | stale revision returns `409`, even for same-value retry |
+| B07 | calculate BMI | unit | function absent | fixed examples + boundaries pass |
+| B08 | calculate intake | unit | policy absent | frozen policy cases pass |
+| B09 | estimate target date | unit | policy absent | deterministic reference-date cases pass |
+| B10 | reject incomplete/stale submit | integration | partial or stale assessment completes | missing-step or version-conflict error returned |
+| B11 | create result snapshot | integration | complete submit has no atomic result | one persisted versioned result + completed aggregate |
+| B12 | retry submit safely | integration | second submit duplicates/recalculates or fails only because revision advanced | existing result returned |
+| B13 | free result projection | unit/integration | premium values leak | values omitted from response |
+| B14 | activate subscription | integration | `/pay` has no effect | session becomes `ACTIVE` |
+| B15 | replay payment safely | integration | duplicate payment repeats effect | unique event + replay response |
+| B16 | active result projection | integration | active user still sees locked shape | full DTO returned |
+| B17 | complete free browser flow | e2e | UI not wired | assessment -> preview passes |
+| B18 | complete paid browser flow | e2e | pay/unlock not wired | preview -> pay -> full result passes |
 
 ## 4. Example RED-first slice
 

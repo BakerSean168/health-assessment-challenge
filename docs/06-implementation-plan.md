@@ -21,7 +21,7 @@ Acceptance:
 
 ### P0.2 Architecture baseline
 
-**Status:** in progress / initial version created
+**Status:** done — domain model v0.2 frozen before implementation
 
 Artifacts:
 
@@ -35,6 +35,24 @@ Artifacts:
 - implementation plan;
 - AI usage log;
 - decision log.
+
+## 2.1 Domain freeze gate
+
+**Status:** done — v0.2
+
+Before T01 starts, the implementation must honor these frozen constraints:
+
+- one `AnonymousSession` owns one v1 `Assessment`;
+- no persisted `currentStepKey`; progress is derived from answers;
+- `ANALYZING`/profile/projection/paywall are presentation states, not answer steps;
+- all seven answer groups, including target weight, are required in v1;
+- earlier edits revalidate dependent later answers;
+- stale answer writes are strict `409` conflicts, including same-value stale retries;
+- first-time submit uses aggregate revision control, while retry after successful completion returns the existing result;
+- simulated payment uses a session-scoped `idempotencyKey`;
+- physical measurements use `Float`, with domain-controlled rounding.
+
+Calculation-policy constants remain intentionally pending until T09, where ADR + RED tests freeze them before production calculation code.
 
 ## 3. Phase 1 — project bootstrap
 
@@ -95,7 +113,7 @@ Acceptance criterion:
 
 Implementation after RED:
 
-- `UserSession` model;
+- `AnonymousSession` model;
 - secure cookie helper;
 - `POST /api/session`;
 - session repository/use case.
@@ -123,7 +141,7 @@ Implementation after RED:
 
 - `GET /api/assessment`;
 - recovery DTO;
-- current-step progression logic.
+- derived `nextRequiredStep` resolver (no persisted current-step column).
 
 ### T06 Remaining answer contracts
 
@@ -147,16 +165,17 @@ Acceptance:
 
 Acceptance:
 
-- next legal step succeeds;
-- already-completed step can be edited;
+- next legal unresolved step succeeds;
+- already-answered earlier step can be edited while in progress;
+- dependent later answers are revalidated after earlier edits;
 - skipped unresolved step returns `STEP_OUT_OF_ORDER`;
-- current semantic step remains correct.
+- `nextRequiredStep` is derived correctly without persisting duplicate progress state.
 
 ### T08 Optimistic concurrency
 
 Acceptance:
 
-- stale `expectedRevision` returns `409`;
+- stale `expectedRevision` returns `409`, including same-value stale retries;
 - newer persisted value remains intact;
 - successful write increments exactly once.
 
@@ -188,11 +207,12 @@ RED-first for:
 
 Acceptance:
 
-- incomplete assessment rejected with missing steps;
-- complete assessment creates one result snapshot;
-- assessment becomes completed;
+- incomplete assessment rejected with missing/invalid steps;
+- stale first-time submit is rejected using `expectedRevision`;
+- complete assessment creates one result snapshot and completes the aggregate atomically;
+- aggregate revision increments on first successful submit;
 - calculation version persisted;
-- retry returns the existing result rather than a new calculation.
+- retry after successful completion returns the existing result even though the aggregate revision already advanced.
 
 ## 7. Phase 5 — result access and payment
 
@@ -210,7 +230,7 @@ Acceptance:
 
 - valid payment changes `FREE -> ACTIVE`;
 - payment event is persisted;
-- same `paymentId` can be replayed without repeating side effects.
+- same session-scoped `idempotencyKey` can be replayed without repeating side effects.
 
 ### T14 Active result policy
 

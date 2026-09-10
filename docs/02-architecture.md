@@ -103,7 +103,6 @@ sequenceDiagram
 - anonymous session identity;
 - subscription status;
 - assessment answers;
-- `currentStepKey`;
 - assessment lifecycle status;
 - optimistic concurrency revision;
 - result snapshot;
@@ -116,13 +115,14 @@ Only transient presentation state belongs solely in the browser, for example:
 - input focus;
 - temporary form text before submit;
 - animation/transition state;
-- local loading/error display state.
+- local loading/error display state;
+- `ANALYZING`, `WELLNESS_PROFILE`, `PROJECTION`, and paywall view transitions.
 
-The browser is never authoritative for subscription or completed assessment state.
+The browser is never authoritative for subscription or completed assessment state. Resumable answer progress is not stored as a second mutable server field either: it is derived from persisted answers plus domain validation.
 
-## 6. Assessment state machine
+## 6. Assessment answer progression
 
-Initial v1 transition graph:
+The persisted domain has seven answer steps. `ANALYZING`, wellness-profile, projection, result, and paywall screens are UI/result states and are not persisted assessment steps.
 
 ```mermaid
 stateDiagram-v2
@@ -133,27 +133,31 @@ stateDiagram-v2
     HEIGHT --> WEIGHT
     WEIGHT --> AGE
     AGE --> TARGET_WEIGHT
-    TARGET_WEIGHT --> ANALYSIS
-    ANALYSIS --> COMPLETED
+    TARGET_WEIGHT --> READY_TO_SUBMIT
+    READY_TO_SUBMIT --> COMPLETED: POST /submit
 ```
+
+`READY_TO_SUBMIT` is derived, not stored. The server computes `nextRequiredStep` by scanning the ordered step definitions and validating each persisted answer in its current context.
 
 Rules:
 
-- saving the next legal step advances progress;
-- editing an already completed step is allowed;
+- saving the next legal unresolved step is allowed;
+- editing an already answered earlier step is allowed while the assessment is in progress;
+- changing an earlier answer revalidates dependent later answers; for example, changing `goal` or `weightKg` can make an existing `targetWeightKg` invalid and therefore make `TARGET_WEIGHT` the next required step again;
+- later valid answers are retained rather than erased merely because the resolver moved backward;
 - skipping an unresolved prerequisite is rejected;
-- completed assessments reject mutating answer commands unless a future explicit "restart" use case is introduced;
-- transition resolution uses step keys, not UI array indexes.
+- completed assessments reject answer mutations unless a future explicit restart use case is introduced;
+- transition resolution uses semantic step keys, not UI array indexes or a persisted current-step pointer.
 
 ## 7. Concurrency model
 
-`Assessment.revision` implements optimistic concurrency control.
+`Assessment.revision` implements optimistic concurrency control for aggregate mutations.
 
-A client reads revision `N` and sends `expectedRevision: N` with a write. The update succeeds only if the persisted revision is still `N`, then increments it to `N + 1`.
+A client reads revision `N` and sends `expectedRevision: N` with an answer write (and with first-time submission). The mutation succeeds only if the persisted revision is still `N`, then increments it to `N + 1`.
 
-A stale write returns HTTP `409` with `ASSESSMENT_VERSION_CONFLICT`.
+A stale answer write returns HTTP `409` with `ASSESSMENT_VERSION_CONFLICT` even when the submitted value happens to equal the current value. Silent acceptance would hide a stale-client condition and weaken the concurrency contract.
 
-This prevents a delayed tab or duplicate UI from silently overwriting more recent server state.
+This prevents a delayed tab or duplicate UI from silently overwriting or acting on more recent server state.
 
 ## 8. Submission semantics
 
@@ -162,13 +166,14 @@ This prevents a delayed tab or duplicate UI from silently overwriting more recen
 On first valid submit:
 
 1. verify session ownership;
-2. verify required answers;
-3. run the selected calculation policy with an injected reference date;
-4. create a result snapshot;
-5. mark assessment completed;
-6. return the result identifier/projection.
+2. verify that `expectedRevision` still matches the in-progress aggregate;
+3. derive and verify that there is no remaining required/invalid step;
+4. run the selected calculation policy with an injected reference date;
+5. create a result snapshot and mark the assessment completed in one transaction;
+6. increment the aggregate revision;
+7. return the successful state.
 
-On retry after successful completion, the existing snapshot is returned rather than recomputing a new result.
+On retry after a successful completion, the existing snapshot is returned before applying stale-revision rejection. This preserves true retry safety after a lost response while keeping first-time submission concurrency-safe.
 
 ## 9. Result snapshot rationale
 
@@ -202,7 +207,7 @@ A free DTO does not contain premium values. CSS blur is presentation only and is
 
 The challenge uses a simulated payment endpoint rather than a provider integration.
 
-A unique client/demo payment identifier is stored in `PaymentEvent`. Replaying the same payment identifier returns the already-applied outcome and does not repeat subscription side effects.
+A client/demo `idempotencyKey` is stored in `PaymentEvent` with a uniqueness constraint scoped to the anonymous session. Replaying the same key returns the already-applied outcome and does not repeat subscription side effects. The name is intentional: this endpoint simulates payment behavior and does not pretend to receive a real payment-provider transaction ID.
 
 ## 12. Error model
 

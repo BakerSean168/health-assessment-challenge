@@ -52,6 +52,38 @@ Each non-trivial behavior will begin with an acceptance criterion and failing te
 
 This prevents AI-generated implementation from defining behavior implicitly and turns the challenge requirements into executable evidence throughout development rather than adding tests at the end.
 
+### 2026-09-10 — Domain model v0.2 freeze
+
+**Context**
+
+The first architecture draft was reviewed immediately before Prisma implementation. Several fields represented convenient implementation ideas rather than necessary domain facts.
+
+**AI proposal reviewed**
+
+The earlier draft persisted `currentStepKey`, included `ANALYSIS` in the assessment-step enum, left the session-to-assessment relationship as potentially one-to-many, used Prisma `Decimal` for physical measurements, and named the simulated payment key `paymentId`.
+
+**Developer review / correction**
+
+The model was tightened before code was allowed to depend on it:
+
+- removed persisted `currentStepKey`; `nextRequiredStep` is derived from answer validity;
+- removed `ANALYSIS` and other presentation screens from domain step identity;
+- froze one assessment per anonymous session for v1;
+- made target weight required rather than adding an unrequested branch;
+- defined cross-field revalidation after earlier edits;
+- kept stale PATCH behavior strict under optimistic concurrency;
+- required first-time submit to participate in revision control while preserving successful-submit retry semantics;
+- renamed simulated `paymentId` to session-scoped `idempotencyKey`;
+- changed physical measurements/results from Prisma `Decimal` to regular floating-point representation with explicit domain rounding.
+
+**Evidence**
+
+The deciding principle was to persist independent facts once and derive dependent state. The challenge needs reliable resume/concurrency/payment behavior, but it does not require assessment history, a real payment provider, or financial numeric precision.
+
+**Outcome**
+
+`scope`, reference audit, architecture, domain/data model, API contract, TDD strategy, implementation plan, decision log, and README were synchronized to domain model v0.2 before T01 bootstrap.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title

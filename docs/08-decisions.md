@@ -8,15 +8,19 @@ This is a lightweight ADR index for decisions that are important enough to expla
 | D002 | PostgreSQL + Prisma | accepted | explicit relational schema and testable persistence |
 | D003 | anonymous HttpOnly session | accepted | challenge does not need full account/auth implementation |
 | D004 | explicit assessment columns | accepted | small stable field set; clearer schema than JSON blob |
-| D005 | semantic step keys | accepted | resilient to branching/reordering |
-| D006 | optimistic `revision` | accepted | prevents stale writes and gives concrete concurrency behavior |
+| D005 | semantic answer-step keys, derived progress | accepted | persist facts once; avoid `currentStepKey` drift and keep branching/reordering possible |
+| D006 | optimistic aggregate `revision` | accepted | prevents stale writes and stale first-time submission |
 | D007 | result snapshot | accepted | historical reproducibility and retry-safe submit |
 | D008 | server-side free/full DTO projection | accepted | authorization must not depend on UI hiding |
-| D009 | unique payment ID + replay semantics | accepted | simulated payment should be idempotent |
+| D009 | session-scoped payment `idempotencyKey` | accepted | simulated payment should be replay-safe without pretending to have a provider payment ID |
 | D010 | outside-in TDD | accepted | requirements become executable before implementation |
-| D011 | real Postgres integration tests | planned | persistence/concurrency behavior is central to challenge |
-| D012 | intake calculation formula | pending | source brief requires output but does not prescribe formula |
-| D013 | target-date rate policy | pending | must be deterministic and explicitly scoped as demo logic |
+| D011 | real Postgres integration tests | accepted | persistence/concurrency behavior is central to challenge |
+| D012 | one assessment per anonymous session in v1 | accepted | history/restart is outside the challenge and should not enlarge the aggregate prematurely |
+| D013 | target weight required in v1 | accepted | source scope names target weight and projection depends on it; avoid speculative branching |
+| D014 | `Float` for physical measurements/result BMI | accepted | financial precision is not required; simpler TS/JSON boundary than Prisma `Decimal` |
+| D015 | strict stale PATCH semantics | accepted | a stale write returns conflict even if the value matches; idempotency is reserved for explicit submit/payment retry contracts |
+| D016 | intake calculation formula | pending | source brief requires output but does not prescribe formula |
+| D017 | target-date rate policy | pending | must be deterministic and explicitly scoped as demo logic |
 
 ## D001 — Next.js modular monolith
 
@@ -26,17 +30,43 @@ A split frontend/API deployment would add CORS, deployment, configuration, and i
 
 The assessment has a compact, known data set. Explicit columns improve schema readability, validation, migrations, and test assertions. A dynamic JSON answer model is intentionally deferred until there is a requirement for server-configurable questionnaires.
 
-## D006 — Optimistic concurrency
+## D005 — Persist answers, derive progress
 
-The challenge explicitly values state consistency and repeated/out-of-order behavior. A revision check is a small mechanism with a concrete test: two clients cannot silently overwrite one another when they started from the same stale version.
+The persisted facts are the answers themselves. Storing both answers and a mutable `currentStepKey` would represent progress twice and permit drift. `getNextRequiredStep(assessment)` instead scans semantic step definitions and returns the first missing or context-invalid answer.
+
+This also handles dependency changes safely: editing `goal` or current weight may make a previously entered target weight invalid, so the resolver can move the user back to `TARGET_WEIGHT` without deleting unrelated valid answers. `ANALYZING`, wellness profile, projection, result, and paywall are presentation/result states rather than answer steps.
+
+## D006 — Optimistic aggregate concurrency
+
+`revision` belongs to the assessment aggregate, not just individual fields. Answer writes require `expectedRevision`; the first successful submit does as well. A successful aggregate mutation increments revision.
+
+A stale answer PATCH is always a `409 ASSESSMENT_VERSION_CONFLICT`, including when the stale client sends the same value. Hiding that conflict would make the concurrency guarantee ambiguous.
+
+For submit retries, completed-result detection is checked first: if the first submit succeeded but its response was lost, retry returns the existing canonical result rather than failing solely because the completion mutation advanced revision.
 
 ## D007 — Result snapshot
 
-Completed assessment results should not change merely because the calculation implementation changes later. Submission therefore creates a versioned snapshot exactly once semantically.
+Completed assessment results should not change merely because the calculation implementation changes later. Submission therefore creates a versioned snapshot exactly once semantically. Result creation and aggregate completion must happen atomically.
 
 ## D008 — Server-side result projection
 
 Free clients should not receive premium values at all. Returning all data and using CSS blur would be a presentation technique, not access control.
+
+## D009 — Payment idempotency key
+
+The challenge uses a simulated payment endpoint. `PaymentEvent` therefore stores a caller-provided `idempotencyKey` unique within the current anonymous session instead of claiming that a demo token is a real payment-provider ID. Replaying the same key returns the existing outcome without repeating the subscription side effect.
+
+## D012 — One assessment per anonymous session
+
+The v1 relationship is `AnonymousSession 1:1 Assessment`, enforced with a unique `Assessment.sessionId`. Restart/history behavior is intentionally deferred because the challenge does not require it. This keeps recovery unambiguous and removes an unnecessary "which active assessment?" query.
+
+## D013 — Target weight is required
+
+All seven answer groups are required in v1. `targetWeightKg` is cross-validated against `goal` and `weightKg`; changing those earlier answers can make target weight the next required step again. We do not add a speculative branch that skips target weight for maintenance goals.
+
+## D014 — Float measurements
+
+Height, weight, target weight, and BMI use regular floating-point values at persistence/application boundaries. Domain functions own explicit rounding. Prisma `Decimal` would add conversion and serialization ceremony without a financial-precision requirement.
 
 ## D010 — Outside-in TDD
 

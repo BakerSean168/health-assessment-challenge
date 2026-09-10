@@ -6,7 +6,7 @@ The project is intentionally scoped as a three-day engineering challenge. The go
 
 ## Status
 
-**Phase:** architecture and implementation planning
+**Phase:** domain model frozen (v0.2); implementation bootstrap is next
 
 The repository is public from the start so the implementation history, test-first workflow, design decisions, and trade-offs remain reviewable.
 
@@ -34,14 +34,15 @@ The planned implementation keeps seven persisted assessment inputs while using f
 ## Engineering goals
 
 - Incrementally persist assessment answers on the server.
-- Restore the exact resumable state after refresh or revisit.
+- Restore the exact resumable state after refresh or revisit by deriving progress from persisted answers.
+- Revalidate dependent answers when an earlier answer changes.
 - Validate runtime input at the HTTP boundary.
 - Enforce funnel ordering on the server, not only in the UI.
 - Protect stale writes with optimistic concurrency control.
 - Generate deterministic result snapshots on submit.
 - Return different result DTOs for free and active subscriptions.
 - Never send locked premium values to free clients.
-- Make assessment submit and simulated payment safe to retry.
+- Make assessment submit and simulated payment safe to retry while keeping stale answer writes strict under optimistic concurrency.
 - Develop behavior-first using RED -> GREEN -> REFACTOR.
 - Keep CI as executable evidence of linting, typing, tests, and build health.
 
@@ -118,6 +119,7 @@ The calculation policy for calorie guidance and target-date estimation will be e
 2. Server state is authoritative.
 3. TypeScript types do not replace runtime validation.
 4. Authorization is not UI hiding.
-5. Retry safety is part of correctness.
-6. Prefer explicit, small abstractions over framework-heavy ceremony.
-7. Every non-obvious design choice should be explainable in an interview.
+5. Persist facts; derive presentation/progress state instead of duplicating it.
+6. Retry safety is part of correctness, but stale writes must not be silently accepted.
+7. Prefer explicit, small abstractions over framework-heavy ceremony.
+8. Every non-obvious design choice should be explainable in an interview.

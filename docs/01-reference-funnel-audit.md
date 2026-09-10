@@ -118,8 +118,8 @@ The UI is not the system of record. It is a projection of server-owned assessmen
 The reference funnel therefore informs the backend architecture in concrete ways:
 
 - answers are incremental server state;
-- `currentStepKey` is persisted;
-- transitions are validated server-side;
+- resumable progress is derived from those answers rather than duplicated as a persisted `currentStepKey`;
+- transitions and cross-field dependencies are validated server-side;
 - result generation happens after a complete assessment;
 - result data is snapshotted;
 - subscription access is projected on the server;

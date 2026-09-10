@@ -1,4 +1,4 @@
-# API contract v0.1
+# API contract v0.2
 
 ## 1. Conventions
 
@@ -37,7 +37,7 @@ Initial stable error codes:
 
 ## 3. `POST /api/session`
 
-Create or reuse the anonymous browser session and ensure an active assessment exists.
+Create or reuse the anonymous browser session and ensure its single v1 assessment exists.
 
 ### Response `200` or `201`
 
@@ -46,7 +46,7 @@ Create or reuse the anonymous browser session and ensure an active assessment ex
   "subscriptionStatus": "FREE",
   "assessment": {
     "status": "IN_PROGRESS",
-    "currentStep": "GENDER",
+    "nextRequiredStep": "GENDER",
     "revision": 0
   }
 }
@@ -63,7 +63,7 @@ Restore current assessment state.
 ```json
 {
   "status": "IN_PROGRESS",
-  "currentStep": "WEIGHT",
+  "nextRequiredStep": "WEIGHT",
   "revision": 4,
   "answers": {
     "gender": "MALE",
@@ -77,7 +77,7 @@ Restore current assessment state.
 }
 ```
 
-The endpoint is the canonical recovery source after refresh/revisit.
+The endpoint is the canonical recovery source after refresh/revisit. `nextRequiredStep` is a response projection derived from persisted answers; it is not a database column. If all required answers are valid, `nextRequiredStep` is `null` and the assessment is ready to submit.
 
 ## 5. `PATCH /api/assessment/steps/:stepKey`
 
@@ -106,10 +106,11 @@ The Zod schema selected by `stepKey` validates the `value` type/range.
 {
   "saved": true,
   "revision": 5,
-  "currentStep": "AGE",
-  "nextStep": "AGE"
+  "nextRequiredStep": "AGE"
 }
 ```
+
+If an earlier edit invalidates a dependent answer, `nextRequiredStep` can move backward to the first missing or context-invalid step. Existing later values are not automatically deleted.
 
 ### Conflict `409`
 
@@ -131,7 +132,7 @@ The Zod schema selected by `stepKey` validates the `value` type/range.
     "code": "STEP_OUT_OF_ORDER",
     "message": "This assessment step cannot be submitted yet.",
     "details": {
-      "currentStep": "HEIGHT"
+      "nextRequiredStep": "HEIGHT"
     }
   }
 }
@@ -143,10 +144,12 @@ Finalize the assessment and generate the immutable result snapshot.
 
 ### Request
 
-No client calculation values are accepted.
+No client calculation values are accepted. The client includes only the aggregate revision it most recently observed so first-time submission cannot race with a newer answer mutation.
 
 ```json
-{}
+{
+  "expectedRevision": 7
+}
 ```
 
 ### First successful response `200`
@@ -160,7 +163,9 @@ No client calculation values are accepted.
 
 ### Retry semantics
 
-If the same completed assessment already has a result snapshot, return the existing successful state rather than recomputing a different result.
+If the assessment is already completed and has its canonical result snapshot, return the existing successful state rather than recomputing a different result. This completed-result check takes precedence over a stale `expectedRevision`, allowing a network retry of the successful submit to remain idempotent.
+
+If the assessment is still in progress and `expectedRevision` is stale, return `409 ASSESSMENT_VERSION_CONFLICT`.
 
 ### Incomplete `409`
 
@@ -170,7 +175,7 @@ If the same completed assessment already has a result snapshot, return the exist
     "code": "ASSESSMENT_INCOMPLETE",
     "message": "Complete all required assessment steps before submitting.",
     "details": {
-      "missingSteps": ["AGE", "TARGET_WEIGHT"]
+      "requiredSteps": ["AGE", "TARGET_WEIGHT"]
     }
   }
 }
@@ -230,7 +235,7 @@ Simulate successful payment and activate the current session subscription.
 
 ```json
 {
-  "paymentId": "demo_01J_TEST"
+  "idempotencyKey": "demo_01J_TEST"
 }
 ```
 
@@ -244,7 +249,7 @@ Simulate successful payment and activate the current session subscription.
 }
 ```
 
-A replay of the same `paymentId` returns the already-applied outcome:
+A replay of the same session-scoped `idempotencyKey` returns the already-applied outcome:
 
 ```json
 {
@@ -264,4 +269,6 @@ API tests should assert stable behavior rather than incidental implementation de
 - omission of premium values;
 - revision progression;
 - persisted state after request;
-- idempotency after retries.
+- idempotency after retries;
+- derived `nextRequiredStep` after recovery and cross-field edits;
+- strict stale-write conflict behavior.

@@ -48,9 +48,9 @@ The initial product model contains seven persisted answer groups:
 | `HEIGHT` | `heightCm` | yes | validated numeric |
 | `WEIGHT` | `weightKg` | yes | validated numeric |
 | `AGE` | `age` | yes | validated integer |
-| `TARGET_WEIGHT` | `targetWeightKg` | yes | may become conditional by goal |
+| `TARGET_WEIGHT` | `targetWeightKg` | yes | required in v1; cross-validated against current weight and goal |
 
-`ANALYSIS`, `WELLNESS_PROFILE`, `PROJECTION`, and result/paywall views are presentation or derived-result states rather than additional answer columns.
+`ANALYSIS`, `WELLNESS_PROFILE`, `PROJECTION`, and result/paywall views are presentation or derived-result states rather than assessment steps. The server does not persist a `currentStepKey`; the next required answer step is derived from persisted answers and domain validation on every read.
 
 ## 5. Definition of done
 
@@ -58,7 +58,8 @@ The challenge is considered complete only when all of the following are true:
 
 - A fresh visitor can start an anonymous assessment.
 - Each answer is persisted server-side as the user progresses.
-- A returning browser session restores saved answers and the correct resumable step.
+- A returning browser session restores saved answers and derives the correct resumable step from server state.
+- Changing an earlier answer revalidates dependent answers and can move the resumable step backward without deleting valid data unnecessarily.
 - Invalid, skipped, and stale writes are rejected using stable error codes.
 - A complete assessment can be submitted exactly once semantically, while retrying the request remains safe.
 - Submission writes a versioned result snapshot.
