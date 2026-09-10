@@ -6,7 +6,7 @@ The project is intentionally scoped as a three-day engineering challenge. The go
 
 ## Status
 
-**Phase:** T01 project bootstrap complete; T02 PostgreSQL + Prisma foundation is next
+**Phase:** T02 PostgreSQL + Prisma integration foundation complete; T03 anonymous session behavior is next
 
 The repository is public from the start so the implementation history, test-first workflow, design decisions, and trade-offs remain reviewable.
 

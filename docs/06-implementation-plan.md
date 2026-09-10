@@ -105,6 +105,8 @@ T01 TDD evidence: the bootstrap test existed before Vitest was installed and `pn
 
 ### T02 PostgreSQL + Prisma test foundation
 
+**Status:** done — 2026-09-10
+
 RED:
 
 - integration smoke test requires persisted row round-trip.
@@ -121,6 +123,20 @@ Acceptance:
 - migration applies from empty DB;
 - integration test talks to a real DB;
 - no production credentials used in tests.
+
+Implemented baseline:
+
+- Prisma ORM `7.10.0` with the v7 `prisma-client` generator;
+- `@prisma/adapter-pg` + `pg` for PostgreSQL connections;
+- disposable PostgreSQL 17 test service in `compose.test.yaml` on local port `55432`;
+- initial `AnonymousSession` table and `SubscriptionStatus` enum migration;
+- `createPrismaClient(connectionString)` test/application factory plus lazy development singleton access;
+- generated Prisma client excluded from git and regenerated on a fresh `pnpm install` through `postinstall`;
+- integration tests separated from unit/bootstrap tests and run serially against the real database;
+- test runner applies committed migrations before integration execution;
+- pnpm build-script allowlist explicitly approves only Prisma/esbuild lifecycle scripts required by the toolchain.
+
+T02 TDD evidence: `database.test.ts` first failed because the persistence adapter did not exist (RED). After Prisma/PostgreSQL setup, the same test round-tripped an `AnonymousSession` through a real PostgreSQL instance (GREEN). The committed migration was then reapplied successfully after destroying and recreating the test database from empty state.
 
 ## 4. Phase 2 — session and progressive persistence
 

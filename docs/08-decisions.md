@@ -27,6 +27,13 @@ This is a lightweight ADR index for decisions that are important enough to expla
 
 A split frontend/API deployment would add CORS, deployment, configuration, and integration overhead without improving the behaviors being evaluated. Next.js Route Handlers provide a convenient transport adapter while domain/application code remains framework-independent.
 
+
+## D002 — Prisma 7 and PostgreSQL adapter
+
+The implementation uses Prisma ORM 7.10 with the `prisma-client` generator and `@prisma/adapter-pg`/`pg`. Integration tests use a disposable PostgreSQL 17 container, not a mocked Prisma client. The generated client is build output rather than reviewed source: it is ignored by git and regenerated during a fresh package install.
+
+The test database is intentionally separate from any production/hosted database and uses committed migrations as the source of truth.
+
 ## D004 — Explicit columns, not arbitrary JSON
 
 The assessment has a compact, known data set. Explicit columns improve schema readability, validation, migrations, and test assertions. A dynamic JSON answer model is intentionally deferred until there is a requirement for server-configurable questionnaires.

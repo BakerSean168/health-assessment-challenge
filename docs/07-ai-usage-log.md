@@ -124,6 +124,24 @@ The first dependency verification exposed an unmet Vitest peer requirement becau
 
 `pnpm test`, `pnpm typecheck`, `pnpm lint`, and `pnpm build` all pass. The shadcn project reports `base` as its component base and `base-nova` as its style preset.
 
+### 2026-09-10 — T02 real PostgreSQL integration foundation
+
+**Context**
+
+The next vertical slice needed executable proof that persistence and migrations work against PostgreSQL rather than a mocked ORM.
+
+**TDD evidence**
+
+An integration test importing the not-yet-existing database adapter was written first and failed with a module-resolution error (RED). The implementation then introduced Prisma 7, the PostgreSQL driver adapter, a disposable PostgreSQL 17 service, the first migration, and a Prisma client factory. The same test then persisted and reloaded an anonymous session (GREEN).
+
+**Review corrections**
+
+Two bootstrap issues were caught before acceptance: Vitest/Node type versions were aligned earlier, and the pnpm supply-chain gate required explicit approval of Prisma/esbuild lifecycle build scripts rather than bypassing script security globally. An attempted ESLint 10 upgrade was rejected because transitive Next.js ESLint plugins still declare ESLint 9 peer ranges; the generated ESLint 9 line was retained until that ecosystem constraint changes.
+
+**Outcome**
+
+The test database can be destroyed, recreated, migrated from zero, and exercised by the integration suite. A fresh dependency install regenerates the ignored Prisma client through `postinstall`, while production credentials remain outside the repository.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title
