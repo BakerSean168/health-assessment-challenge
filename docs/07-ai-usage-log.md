@@ -142,6 +142,26 @@ Two bootstrap issues were caught before acceptance: Vitest/Node type versions we
 
 The test database can be destroyed, recreated, migrated from zero, and exercised by the integration suite. A fresh dependency install regenerates the ignored Prisma client through `postinstall`, while production credentials remain outside the repository.
 
+### 2026-09-10 — T03 anonymous session vertical slice
+
+**Context**
+
+The first behavior-bearing backend slice needed to establish anonymous browser identity without introducing a full authentication system.
+
+**TDD evidence**
+
+A route-level integration test was written first for three observable behaviors: fresh session creation, cookie-based reuse, and rejection of a client-selected unknown session identifier. It initially failed because the session route did not exist.
+
+**Implementation/review choices**
+
+The slice uses a repository port, a Prisma adapter, and a small application use case rather than putting Prisma queries directly in the Route Handler. The cookie value is UUID-validated before lookup, the route does not serialize the raw session ID, and a minimal 1:1 `Assessment` shell is created with the session because the API contract promises that bootstrap ensures an assessment exists.
+
+The code follows the installed Next.js 16 documentation rather than older synchronous-cookie examples: Route Handlers use `NextRequest`/`NextResponse`, which also keeps this HTTP boundary directly testable without relying on global request context.
+
+**Outcome**
+
+The three integration cases pass against PostgreSQL, and the session/assessment ownership boundary now exists for T04 answer persistence.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title

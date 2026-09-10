@@ -34,6 +34,12 @@ The implementation uses Prisma ORM 7.10 with the `prisma-client` generator and `
 
 The test database is intentionally separate from any production/hosted database and uses committed migrations as the source of truth.
 
+## D003 — Anonymous HttpOnly session
+
+The challenge does not need account registration or password authentication. A random UUID stored in `health_assessment_session` acts as the anonymous bearer session identifier. It is issued only by the server in a 30-day HttpOnly cookie with `SameSite=Lax`, `Path=/`, and `Secure` in production.
+
+The client cannot authorize access by sending a `sessionId` field. Missing, malformed, or unknown cookie values result in a newly created server-owned session. Session creation also creates the single v1 assessment so later routes do not need to choose among multiple active assessments.
+
 ## D004 — Explicit columns, not arbitrary JSON
 
 The assessment has a compact, known data set. Explicit columns improve schema readability, validation, migrations, and test assertions. A dynamic JSON answer model is intentionally deferred until there is a requirement for server-configurable questionnaires.

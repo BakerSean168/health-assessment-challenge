@@ -142,16 +142,30 @@ T02 TDD evidence: `database.test.ts` first failed because the persistence adapte
 
 ### T03 Anonymous session bootstrap
 
+**Status:** done — 2026-09-10
+
 Acceptance criterion:
 
 > A fresh browser obtains one server-owned session and revisiting with the same cookie reuses it.
 
 Implementation after RED:
 
-- `AnonymousSession` model;
+- `AnonymousSession` model from T02 plus the minimal 1:1 `Assessment` shell required by the session contract;
 - secure cookie helper;
 - `POST /api/session`;
-- session repository/use case.
+- session repository port + Prisma adapter + application use case;
+- UUID validation for the client-provided cookie value before lookup.
+
+Implemented behavior:
+
+- fresh request creates one session and one `IN_PROGRESS` assessment atomically;
+- response is `201` for a new session and `200` when reusing an existing session;
+- same cookie reuses the same persisted identity and does not create duplicate assessments;
+- unknown/client-selected session IDs are not trusted and are replaced with a new server-created session;
+- the raw session ID is carried only in a 30-day HttpOnly, `SameSite=Lax`, path-scoped cookie; `Secure` is enabled in production;
+- response exposes only subscription/assessment state, not the raw session ID.
+
+T03 TDD evidence: the route-level integration test was written before `src/app/api/session/route.ts` existed and failed on module resolution (RED). After the session use case/repository/cookie adapter and `Assessment` shell migration were implemented, all three route behaviors passed against PostgreSQL (GREEN).
 
 ### T04 First assessment and first saved step
 

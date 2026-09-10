@@ -57,10 +57,15 @@ src/
 ├── components/
 │   └── assessment/
 ├── modules/
-│   └── assessment/
+│   ├── assessment/
+│   │   ├── application/
+│   │   ├── contracts/
+│   │   ├── domain/
+│   │   └── infrastructure/
+│   └── session/
 │       ├── application/
-│       ├── contracts/
 │       ├── domain/
+│       ├── http/
 │       └── infrastructure/
 ├── lib/
 └── test/

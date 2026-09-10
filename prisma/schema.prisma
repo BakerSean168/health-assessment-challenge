@@ -12,11 +12,29 @@ enum SubscriptionStatus {
   ACTIVE
 }
 
+enum AssessmentStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
 model AnonymousSession {
   id                 String             @id @default(uuid()) @db.Uuid
   subscriptionStatus SubscriptionStatus @default(FREE) @map("subscription_status")
   createdAt          DateTime           @default(now()) @map("created_at")
   updatedAt          DateTime           @updatedAt @map("updated_at")
+  assessment         Assessment?
 
   @@map("anonymous_sessions")
+}
+
+model Assessment {
+  id        String           @id @default(uuid()) @db.Uuid
+  sessionId String           @unique @map("session_id") @db.Uuid
+  status    AssessmentStatus @default(IN_PROGRESS)
+  revision  Int              @default(0)
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+  session   AnonymousSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("assessments")
 }

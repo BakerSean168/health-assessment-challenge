@@ -52,7 +52,7 @@ Create or reuse the anonymous browser session and ensure its single v1 assessmen
 }
 ```
 
-The raw session identifier does not need to be exposed in the JSON body when it is already stored securely in the cookie.
+The raw session identifier is not exposed in the JSON body. The route issues `health_assessment_session` as a 30-day HttpOnly cookie with `SameSite=Lax`, `Path=/`, and `Secure` enabled in production. A missing, malformed, or unknown cookie does not let the client select an identity; the server creates and issues a new session instead.
 
 ## 4. `GET /api/assessment`
 
