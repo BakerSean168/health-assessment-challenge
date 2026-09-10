@@ -400,11 +400,26 @@ T12 TDD evidence: the domain projection and route integration suites were create
 
 ### T13 Simulated payment
 
+**Status:** done — 2026-09-11
+
 Acceptance:
 
 - valid payment changes `FREE -> ACTIVE`;
 - payment event is persisted;
 - same session-scoped `idempotencyKey` can be replayed without repeating side effects.
+
+Implemented behavior:
+
+- `PaymentEvent` stores only a simulated `idempotencyKey`, session ownership, `SUCCEEDED` status, and timestamp;
+- PostgreSQL enforces composite uniqueness on `(sessionId, idempotencyKey)`, so the same key is intentionally reusable by different sessions;
+- `/api/pay` reads ownership only from the HttpOnly session cookie and accepts no client `sessionId` field;
+- strict payment contract bounds the key to 1–128 safe identifier characters;
+- one transaction uses `createMany(..., skipDuplicates: true)` plus subscription update so duplicate keys collapse without duplicate side effects;
+- repeated same-key requests return `replayed: true` while the first application returns `false`;
+- concurrent same-key requests were tested and produce exactly one event with one applied/one replay response;
+- invalid body returns `400 PAYMENT_INVALID`; missing identity returns `401 SESSION_REQUIRED`; unknown identity returns `404 SESSION_NOT_FOUND`.
+
+T13 TDD evidence: contract and route integration tests were written before the payment contract/route existed and failed on module resolution (RED). The final PostgreSQL integration suite includes sequential replay, concurrent replay, session-scoped uniqueness, activation, invalid input, and identity-boundary cases (GREEN).
 
 ### T14 Active result policy
 

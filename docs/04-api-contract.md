@@ -28,6 +28,7 @@ Initial stable error codes:
 
 - `VALIDATION_ERROR`
 - `SESSION_REQUIRED`
+- `SESSION_NOT_FOUND`
 - `ASSESSMENT_NOT_FOUND`
 - `STEP_OUT_OF_ORDER`
 - `ASSESSMENT_VERSION_CONFLICT`
@@ -277,6 +278,8 @@ Simulate successful payment and activate the current session subscription.
   "replayed": false
 }
 ```
+
+`idempotencyKey` is a caller-generated demo key of 1–128 characters using letters, digits, `.`, `_`, `:`, or `-`. It is unique only within the current anonymous session and is not presented as a real provider transaction identifier.
 
 A replay of the same session-scoped `idempotencyKey` returns the already-applied outcome:
 

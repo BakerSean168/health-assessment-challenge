@@ -44,12 +44,17 @@ enum BmiCategory {
   OBESE
 }
 
+enum PaymentStatus {
+  SUCCEEDED
+}
+
 model AnonymousSession {
   id                 String             @id @default(uuid()) @db.Uuid
   subscriptionStatus SubscriptionStatus @default(FREE) @map("subscription_status")
   createdAt          DateTime           @default(now()) @map("created_at")
   updatedAt          DateTime           @updatedAt @map("updated_at")
   assessment         Assessment?
+  paymentEvents      PaymentEvent[]
 
   @@map("anonymous_sessions")
 }
@@ -87,4 +92,16 @@ model AssessmentResult {
   assessment               Assessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 
   @@map("assessment_results")
+}
+
+model PaymentEvent {
+  id             String           @id @default(uuid()) @db.Uuid
+  sessionId      String           @map("session_id") @db.Uuid
+  idempotencyKey String           @map("idempotency_key") @db.VarChar(128)
+  status         PaymentStatus    @default(SUCCEEDED)
+  createdAt      DateTime         @default(now()) @map("created_at")
+  session        AnonymousSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, idempotencyKey])
+  @@map("payment_events")
 }

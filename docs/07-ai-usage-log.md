@@ -318,6 +318,24 @@ The domain creates a dedicated free projection rather than returning the persist
 
 The access boundary is executable: FREE receives public BMI plus locked markers, with premium values omitted before serialization.
 
+### 2026-09-11 — T13 idempotency at the database boundary
+
+**Context**
+
+The simulated `/pay` endpoint must make retry safety real rather than relying on the UI to avoid double clicks.
+
+**TDD evidence**
+
+Tests were written first for activation, sequential replay, two concurrent requests carrying the same key, the same key used by two different sessions, invalid input, and missing/unknown session identity.
+
+**Developer decision**
+
+The identifier is named `idempotencyKey`, not `paymentId`, because there is no external provider. Composite database uniqueness scopes it to a session. The repository uses a transaction and `createMany(..., skipDuplicates: true)` so the database decides which concurrent request owns the side effect rather than implementing a race-prone read-then-create check in application code.
+
+**Outcome**
+
+The concurrent test produces one persisted event and exactly one `replayed: false` / one `replayed: true` response. Subscription becomes `ACTIVE` once.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title
