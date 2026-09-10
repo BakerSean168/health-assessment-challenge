@@ -1,5 +1,5 @@
 import { getNextRequiredStep } from "../domain/assessment";
-import type { AssessmentRepository } from "./assessment-repository";
+import type { AssessmentRepository, AssessmentState } from "./assessment-repository";
 
 export type GetAssessmentResult =
   | {
@@ -8,15 +8,7 @@ export type GetAssessmentResult =
         status: "IN_PROGRESS" | "COMPLETED";
         nextRequiredStep: ReturnType<typeof getNextRequiredStep>;
         revision: number;
-        answers: {
-          gender: "MALE" | "FEMALE" | "OTHER" | null;
-          goal: null;
-          activityLevel: null;
-          heightCm: null;
-          weightKg: null;
-          age: null;
-          targetWeightKg: null;
-        };
+        answers: AssessmentState["answers"];
       };
     }
   | {
@@ -43,15 +35,7 @@ export async function getAssessment(
           ? null
           : getNextRequiredStep(assessment.answers),
       revision: assessment.revision,
-      answers: {
-        gender: assessment.answers.gender,
-        goal: null,
-        activityLevel: null,
-        heightCm: null,
-        weightKg: null,
-        age: null,
-        targetWeightKg: null,
-      },
+      answers: assessment.answers,
     },
   };
 }

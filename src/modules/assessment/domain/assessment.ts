@@ -26,12 +26,6 @@ export interface AssessmentAnswers {
   targetWeightKg?: number | null;
 }
 
-export interface AssessmentForStepWrite {
-  id: string;
-  gender: Gender | null;
-  revision: number;
-  status: "IN_PROGRESS" | "COMPLETED";
-}
 
 const requiredSteps: ReadonlyArray<{
   step: AssessmentStep;

@@ -99,7 +99,19 @@ PATCH /api/assessment/steps/weight
 }
 ```
 
-The Zod schema selected by `stepKey` validates the `value` type/range.
+The Zod schema selected by `stepKey` validates the `value` type/range. The v1 route keys and current scalar contracts are:
+
+| Route key | Accepted value |
+|---|---|
+| `gender` | `MALE`, `FEMALE`, `OTHER` |
+| `goal` | `LOSE_WEIGHT`, `MAINTAIN`, `GAIN_WEIGHT` |
+| `activity` | `SEDENTARY`, `LIGHT`, `MODERATE`, `ACTIVE`, `VERY_ACTIVE` |
+| `height` | number, 120–230 cm inclusive |
+| `weight` | number, 25–300 kg inclusive |
+| `age` | integer, 18–100 inclusive |
+| `target-weight` | number, 25–300 kg inclusive |
+
+These numeric bounds are implementation choices for the challenge and are not claimed to be supplied by the source brief. Cross-field target-weight validity is handled by the domain step policy rather than by the scalar request schema.
 
 ### Response `200`
 

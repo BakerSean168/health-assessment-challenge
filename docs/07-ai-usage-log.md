@@ -196,6 +196,24 @@ Both recovery and bootstrap now project progress through the domain `getNextRequ
 
 Saved gender, revision, and semantic progress survive a new request; invalid/unknown session identities remain bounded by stable 401/404 behavior.
 
+### 2026-09-10 — T06 generalize only after the second step set
+
+**Context**
+
+T04 deliberately implemented only gender instead of guessing a generic questionnaire framework. T06 introduced the remaining six answer types, making it possible to see what actually generalized.
+
+**TDD evidence**
+
+A runtime-contract test suite was written first for category values, inclusive boundaries, invalid numeric values, unknown step keys, and strict rejection of extra client fields. It failed because no shared parser existed. A separate PostgreSQL integration test attempted the seven-answer sequence and failed at `goal` because the route still supported only gender.
+
+**Developer/review decision**
+
+Only then was the first-step-specific path refactored into a typed `AssessmentStepCommand` union, a shared `saveAssessmentStep` use case, and an explicit Prisma mutation mapper. The Route Handler delegates parsing and business behavior rather than accumulating a giant switch. Scalar validation bounds (age 18–100 integer, height 120–230 cm, weight/target 25–300 kg) are recorded as challenge implementation choices; no claim is made that the source brief supplied them.
+
+**Outcome**
+
+All seven fields persist incrementally, each successful mutation advances revision exactly once, the complete answer state is recoverable, and the domain resolver reaches ready-to-submit (`nextRequiredStep: null`). Cross-field target-weight semantics remain for the dedicated state-policy slice rather than being smuggled into scalar validation.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title

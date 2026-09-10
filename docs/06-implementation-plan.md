@@ -225,6 +225,8 @@ T05 TDD evidence: the recovery suite was written before `GET /api/assessment` ex
 
 ### T06 Remaining answer contracts
 
+**Status:** done — 2026-09-10
+
 Add one step at a time, each with RED validation/persistence cases:
 
 - goal;
@@ -238,6 +240,19 @@ Acceptance:
 
 - each has valid/boundary/invalid cases;
 - all persisted via the same use-case pattern without a giant route switch containing business logic.
+
+Implemented behavior/design:
+
+- Prisma now persists `goal`, `activityLevel`, `heightCm`, `weightKg`, `age`, and `targetWeightKg` with enum-backed categorical fields;
+- all seven route keys parse through one isolated runtime-contract module and become typed domain commands;
+- scalar numeric bounds are frozen in executable tests: age 18–100 integer, height 120–230 cm, current/target weight 25–300 kg;
+- the HTTP Route Handler no longer contains a per-step business switch;
+- T04's first-step-specific application/repository path was refactored into the generic `saveAssessmentStep` use case and typed persistence command only after the second set of behaviors proved the abstraction;
+- one Prisma adapter maps typed step commands to explicit columns and increments the aggregate revision;
+- `getNextRequiredStep()` now works over the complete v1 answer shape and returns `null` after all seven answers exist;
+- recovery and repeated session bootstrap both read the complete persisted answer state.
+
+T06 TDD evidence: the runtime-contract suite first failed because the shared step parser did not exist; the integration suite simultaneously failed when `goal` hit the gender-only route (RED). After the generic contract/application/persistence path and remaining schema fields were introduced, boundary tests and the full seven-answer round-trip passed (GREEN). The scalar ranges are documented as project choices rather than source-provided medical rules.
 
 ## 5. Phase 3 — state consistency
 

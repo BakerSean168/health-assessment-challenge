@@ -1,9 +1,30 @@
-import type { PrismaClient } from "../../../generated/prisma/client";
+import type { Prisma, PrismaClient } from "../../../generated/prisma/client";
 import type {
   AssessmentRepository,
-  SaveGenderInput,
-  SaveGenderPersistenceResult,
+  SaveAssessmentStepInput,
+  SaveStepPersistenceResult,
 } from "../application/assessment-repository";
+
+function stepMutationData(
+  input: SaveAssessmentStepInput,
+): Prisma.AssessmentUpdateManyMutationInput {
+  switch (input.step) {
+    case "GENDER":
+      return { gender: input.value, revision: { increment: 1 } };
+    case "GOAL":
+      return { goal: input.value, revision: { increment: 1 } };
+    case "ACTIVITY":
+      return { activityLevel: input.value, revision: { increment: 1 } };
+    case "HEIGHT":
+      return { heightCm: input.value, revision: { increment: 1 } };
+    case "WEIGHT":
+      return { weightKg: input.value, revision: { increment: 1 } };
+    case "AGE":
+      return { age: input.value, revision: { increment: 1 } };
+    case "TARGET_WEIGHT":
+      return { targetWeightKg: input.value, revision: { increment: 1 } };
+  }
+}
 
 export class PrismaAssessmentRepository implements AssessmentRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -16,6 +37,12 @@ export class PrismaAssessmentRepository implements AssessmentRepository {
         status: true,
         revision: true,
         gender: true,
+        goal: true,
+        activityLevel: true,
+        heightCm: true,
+        weightKg: true,
+        age: true,
+        targetWeightKg: true,
       },
     });
 
@@ -23,48 +50,52 @@ export class PrismaAssessmentRepository implements AssessmentRepository {
       return null;
     }
 
+    const {
+      id,
+      status,
+      revision,
+      gender,
+      goal,
+      activityLevel,
+      heightCm,
+      weightKg,
+      age,
+      targetWeightKg,
+    } = assessment;
+
     return {
-      id: assessment.id,
-      status: assessment.status,
-      revision: assessment.revision,
+      id,
+      status,
+      revision,
       answers: {
-        gender: assessment.gender,
-        goal: null,
-        activityLevel: null,
-        heightCm: null,
-        weightKg: null,
-        age: null,
-        targetWeightKg: null,
+        gender,
+        goal,
+        activityLevel,
+        heightCm,
+        weightKg,
+        age,
+        targetWeightKg,
       },
     };
   }
 
-  async saveGender(
-    input: SaveGenderInput,
-  ): Promise<SaveGenderPersistenceResult> {
+  async saveStep(
+    input: SaveAssessmentStepInput,
+  ): Promise<SaveStepPersistenceResult> {
     const mutation = await this.prisma.assessment.updateMany({
       where: {
         sessionId: input.sessionId,
         status: "IN_PROGRESS",
         revision: input.expectedRevision,
       },
-      data: {
-        gender: input.gender,
-        revision: { increment: 1 },
-      },
+      data: stepMutationData(input),
     });
 
     if (mutation.count === 1) {
-      const assessment = await this.prisma.assessment.findUniqueOrThrow({
-        where: { sessionId: input.sessionId },
-        select: {
-          id: true,
-          gender: true,
-          revision: true,
-          status: true,
-        },
-      });
-
+      const assessment = await this.findBySessionId(input.sessionId);
+      if (!assessment) {
+        throw new Error("Assessment disappeared immediately after a successful update.");
+      }
       return { kind: "saved", assessment };
     }
 

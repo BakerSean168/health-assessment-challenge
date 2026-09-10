@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
         status: session.assessment.status,
         nextRequiredStep:
           session.assessment.status === "IN_PROGRESS"
-            ? getNextRequiredStep({ gender: session.assessment.gender })
+            ? getNextRequiredStep(session.assessment)
             : null,
         revision: session.assessment.revision,
       },

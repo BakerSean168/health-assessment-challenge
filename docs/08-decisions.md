@@ -22,6 +22,7 @@ This is a lightweight ADR index for decisions that are important enough to expla
 | D016 | shadcn/ui + Base UI, library-first component policy | accepted | use maintained accessible primitives as the shared baseline, then customize/compose locally to keep UI consistent and avoid duplicate primitives |
 | D017 | intake calculation formula | pending | source brief requires output but does not prescribe formula |
 | D018 | target-date rate policy | pending | must be deterministic and explicitly scoped as demo logic |
+| D019 | scalar assessment input bounds | accepted | freeze runtime-validation boundaries in tests while keeping them explicitly separate from source requirements and cross-field health logic |
 
 ## D001 — Next.js modular monolith
 
@@ -93,3 +94,9 @@ The frontend uses shadcn/ui initialized with the Base UI component base, the `ba
 Because shadcn installs component source into the repository, product styling and variants can be implemented directly on that shared baseline. Assessment-specific components should compose these primitives. A new low-level component is justified only when an existing shadcn/Base UI primitive does not fit the required semantics or interaction model.
 
 This is not a rule to maximize dependency/component count. Only components actually needed by a vertical slice are added. The purpose is consistency, accessibility, maintainability, and avoiding duplicated focus/keyboard/state behavior.
+
+## D019 — Scalar assessment input bounds
+
+The v1 request contracts accept age 18–100 (integer), height 120–230 cm, and current/target weight 25–300 kg, all inclusive. These are project-level validation choices used to make boundary behavior deterministic and testable; the challenge brief does not prescribe these exact limits.
+
+Scalar bounds only answer whether one field is structurally acceptable. They do not decide whether a target weight is semantically compatible with `goal` and current weight; that cross-field invariant is owned by the assessment step/domain policy.

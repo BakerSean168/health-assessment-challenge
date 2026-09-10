@@ -1,16 +1,12 @@
-import {
-  getNextRequiredStep,
-  type Gender,
-} from "../domain/assessment";
+import { getNextRequiredStep } from "../domain/assessment";
+import type { AssessmentStepCommand } from "../contracts/assessment-step";
 import type { AssessmentRepository } from "./assessment-repository";
 
-export interface SaveGenderStepInput {
+export type SaveAssessmentStepInput = AssessmentStepCommand & {
   sessionId: string;
-  value: Gender;
-  expectedRevision: number;
-}
+};
 
-export type SaveGenderStepResult =
+export type SaveAssessmentStepResult =
   | {
       ok: true;
       revision: number;
@@ -21,15 +17,11 @@ export type SaveGenderStepResult =
       code: "ASSESSMENT_NOT_FOUND" | "ASSESSMENT_VERSION_CONFLICT";
     };
 
-export async function saveGenderStep(
-  input: SaveGenderStepInput,
+export async function saveAssessmentStep(
+  input: SaveAssessmentStepInput,
   repository: AssessmentRepository,
-): Promise<SaveGenderStepResult> {
-  const persisted = await repository.saveGender({
-    sessionId: input.sessionId,
-    gender: input.value,
-    expectedRevision: input.expectedRevision,
-  });
+): Promise<SaveAssessmentStepResult> {
+  const persisted = await repository.saveStep(input);
 
   if (persisted.kind === "not_found") {
     return { ok: false, code: "ASSESSMENT_NOT_FOUND" };
@@ -42,8 +34,6 @@ export async function saveGenderStep(
   return {
     ok: true,
     revision: persisted.assessment.revision,
-    nextRequiredStep: getNextRequiredStep({
-      gender: persisted.assessment.gender,
-    }),
+    nextRequiredStep: getNextRequiredStep(persisted.assessment.answers),
   };
 }

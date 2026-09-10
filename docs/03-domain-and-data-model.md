@@ -153,7 +153,7 @@ Completed assessments reject answer mutations unless a future explicit restart u
 
 All seven answer groups, including `targetWeightKg`, are required in v1. We intentionally do not introduce a speculative branch that omits target weight for `MAINTAIN`.
 
-`targetWeightKg` is cross-validated with `goal` and `weightKg`. Exact tolerances/ranges are frozen with the calculation-policy ADR/tests before calculation implementation. The important domain rule is that a previously entered target can become invalid after an earlier answer changes.
+`targetWeightKg` is cross-validated with `goal` and `weightKg`. T06 freezes only the scalar input range (`25..300 kg`); the cross-field direction/tolerance rule is intentionally left for the step-policy slice so it is introduced with executable dependency-change tests. The important domain rule is that a previously entered target can become invalid after an earlier answer changes.
 
 ## 8. Optimistic concurrency
 
@@ -204,7 +204,16 @@ Reasoning:
 - JSON and TypeScript interoperability stays simple;
 - using `Decimal` would add conversion/serialization ceremony with little value for this scope.
 
-Accepted ranges remain runtime/domain validation concerns and will be frozen in tests.
+T06 freezes the following inclusive scalar input bounds as **implementation choices**, not values prescribed by the challenge brief:
+
+| Input | Inclusive range |
+|---|---:|
+| age | 18–100 years |
+| height | 120–230 cm |
+| current weight | 25–300 kg |
+| target weight | 25–300 kg |
+
+Age must be an integer. Numeric contracts reject out-of-range values before persistence, so invalid requests do not advance the aggregate revision. Cross-field target-weight validity is a separate domain-policy concern and is not implied by these scalar bounds.
 
 ## 11. Payment idempotency model
 

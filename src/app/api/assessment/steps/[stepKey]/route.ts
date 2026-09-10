@@ -3,8 +3,8 @@ import { z } from "zod";
 
 import { apiError } from "@/lib/api-error";
 import { getPrismaClient } from "@/lib/db";
-import { saveGenderStep } from "@/modules/assessment/application/save-gender-step";
-import { genderStepRequestSchema } from "@/modules/assessment/contracts/gender-step";
+import { saveAssessmentStep } from "@/modules/assessment/application/save-assessment-step";
+import { parseAssessmentStepRequest } from "@/modules/assessment/contracts/assessment-step";
 import { PrismaAssessmentRepository } from "@/modules/assessment/infrastructure/prisma-assessment-repository";
 import { SESSION_COOKIE_NAME } from "@/modules/session/http/session-cookie";
 
@@ -27,14 +27,6 @@ export async function PATCH(request: NextRequest, context: StepRouteContext) {
     );
   }
 
-  const { stepKey } = await context.params;
-
-  if (stepKey !== "gender") {
-    return apiError(400, "VALIDATION_ERROR", "Unsupported assessment step.", {
-      stepKey,
-    });
-  }
-
   let body: unknown;
   try {
     body = await request.json();
@@ -42,22 +34,19 @@ export async function PATCH(request: NextRequest, context: StepRouteContext) {
     return apiError(400, "VALIDATION_ERROR", "The request body must be JSON.");
   }
 
-  const parsed = genderStepRequestSchema.safeParse(body);
+  const { stepKey } = await context.params;
+  const parsed = parseAssessmentStepRequest(stepKey, body);
 
   if (!parsed.success) {
     return apiError(400, "VALIDATION_ERROR", "The request is invalid.", {
-      issues: parsed.error.issues.map((issue) => ({
-        path: issue.path.join("."),
-        message: issue.message,
-      })),
+      issues: parsed.issues,
     });
   }
 
-  const result = await saveGenderStep(
+  const result = await saveAssessmentStep(
     {
       sessionId: sessionId.data,
-      value: parsed.data.value,
-      expectedRevision: parsed.data.expectedRevision,
+      ...parsed.data,
     },
     new PrismaAssessmentRepository(getPrismaClient()),
   );

@@ -1,19 +1,33 @@
 import type {
+  ActivityLevel,
   AssessmentAnswers,
-  AssessmentForStepWrite,
   Gender,
+  Goal,
 } from "../domain/assessment";
 
-export interface SaveGenderInput {
-  sessionId: string;
-  gender: Gender;
-  expectedRevision: number;
-}
+export type SaveAssessmentStepInput =
+  | { sessionId: string; step: "GENDER"; value: Gender; expectedRevision: number }
+  | { sessionId: string; step: "GOAL"; value: Goal; expectedRevision: number }
+  | {
+      sessionId: string;
+      step: "ACTIVITY";
+      value: ActivityLevel;
+      expectedRevision: number;
+    }
+  | { sessionId: string; step: "HEIGHT"; value: number; expectedRevision: number }
+  | { sessionId: string; step: "WEIGHT"; value: number; expectedRevision: number }
+  | { sessionId: string; step: "AGE"; value: number; expectedRevision: number }
+  | {
+      sessionId: string;
+      step: "TARGET_WEIGHT";
+      value: number;
+      expectedRevision: number;
+    };
 
-export type SaveGenderPersistenceResult =
+export type SaveStepPersistenceResult =
   | {
       kind: "saved";
-      assessment: AssessmentForStepWrite;
+      assessment: AssessmentState;
     }
   | {
       kind: "not_found";
@@ -31,5 +45,5 @@ export interface AssessmentState {
 
 export interface AssessmentRepository {
   findBySessionId(sessionId: string): Promise<AssessmentState | null>;
-  saveGender(input: SaveGenderInput): Promise<SaveGenderPersistenceResult>;
+  saveStep(input: SaveAssessmentStepInput): Promise<SaveStepPersistenceResult>;
 }

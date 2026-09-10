@@ -25,6 +25,12 @@ function toDomainSession(
           status: session.assessment.status,
           revision: session.assessment.revision,
           gender: session.assessment.gender,
+          goal: session.assessment.goal,
+          activityLevel: session.assessment.activityLevel,
+          heightCm: session.assessment.heightCm,
+          weightKg: session.assessment.weightKg,
+          age: session.assessment.age,
+          targetWeightKg: session.assessment.targetWeightKg,
         }
       : null,
   };
