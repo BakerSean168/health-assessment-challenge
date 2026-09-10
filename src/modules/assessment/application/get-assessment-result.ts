@@ -1,10 +1,10 @@
-import { projectFreeResult } from "../domain/result-projection";
+import { projectResult } from "../domain/result-projection";
 import type { AssessmentResultRepository } from "./result-repository";
 
 export type GetAssessmentResultResult =
   | {
       ok: true;
-      result: ReturnType<typeof projectFreeResult>;
+      result: ReturnType<typeof projectResult>;
     }
   | {
       ok: false;
@@ -23,6 +23,6 @@ export async function getAssessmentResult(
 
   return {
     ok: true,
-    result: projectFreeResult(readModel.result),
+    result: projectResult(readModel.result, readModel.subscriptionStatus),
   };
 }

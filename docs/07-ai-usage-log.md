@@ -336,6 +336,24 @@ The identifier is named `idempotencyKey`, not `paymentId`, because there is no e
 
 The concurrent test produces one persisted event and exactly one `replayed: false` / one `replayed: true` response. Subscription becomes `ACTIVE` once.
 
+### 2026-09-11 — T14 unlock access without recalculation
+
+**Context**
+
+After simulated payment, the product must reveal the already-generated result rather than run a second hidden calculation.
+
+**TDD evidence**
+
+The ACTIVE integration fixture deliberately stores `recommendedDailyCalories=1990` and `estimatedGoalDate=2030-01-02`, values that do not match the fixture's assessment inputs under `demo-v1`. Before implementation the endpoint still returned the FREE shape. After payment, the final test requires those exact stored values, the same result row ID, and the same creation timestamp.
+
+**Developer decision**
+
+Access projection is a pure domain concern over `(snapshot, subscriptionStatus)`. Payment mutates only subscription state. `GET /result` reads the canonical snapshot and selects FREE or ACTIVE serialization; it never calls calculation code.
+
+**Outcome**
+
+The complete backend loop now works: progressive draft -> transactional snapshot -> safe FREE projection -> idempotent pay -> full projection of the same snapshot.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title

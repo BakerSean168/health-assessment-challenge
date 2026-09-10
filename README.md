@@ -6,7 +6,7 @@ The project is intentionally scoped as a three-day engineering challenge. The go
 
 ## Status
 
-**Phase:** T13 idempotent simulated payment complete; T14 active result projection is next
+**Phase:** T14 backend assessment/payment/result loop complete; T15 shadcn/Base UI assessment shell is next
 
 The repository is public from the start so the implementation history, test-first workflow, design decisions, and trade-offs remain reviewable.
 

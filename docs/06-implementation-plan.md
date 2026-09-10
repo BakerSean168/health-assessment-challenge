@@ -423,10 +423,23 @@ T13 TDD evidence: contract and route integration tests were written before the p
 
 ### T14 Active result policy
 
+**Status:** done — 2026-09-11
+
 Acceptance:
 
 - same result endpoint now returns full result after activation;
 - no second "premium-only" calculation occurs.
+
+Implemented behavior:
+
+- `projectResult(snapshot, access)` is the single subscription-aware domain projection;
+- FREE preserves the T12 locked DTO and continues to omit premium values;
+- ACTIVE exposes the stored calorie value and serializes the stored target date as `YYYY-MM-DD`;
+- the same `GET /api/assessment/result` endpoint switches projection based on server-owned subscription state;
+- payment changes only subscription/access state and never invokes the calculation policy;
+- the integration test intentionally seeds result values that differ from what the assessment inputs would calculate, then pays and verifies those exact stored values are returned. The result row ID and `createdAt` remain unchanged, proving unlock uses the existing snapshot rather than recomputing it.
+
+T14 TDD evidence: the domain test failed because `projectResult` did not exist and the API integration test failed because an ACTIVE session still received the FREE projection (RED). After adding the active DTO and selecting it from stored subscription status, both suites passed (GREEN).
 
 ## 8. Phase 6 — product UI
 
