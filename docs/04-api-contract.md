@@ -123,7 +123,7 @@ These numeric bounds are implementation choices for the challenge and are not cl
 }
 ```
 
-If an earlier edit invalidates a dependent answer, `nextRequiredStep` can move backward to the first missing or context-invalid step. Existing later values are not automatically deleted.
+If an earlier edit invalidates a dependent answer, `nextRequiredStep` can move backward to the first missing or context-invalid step. Existing later values are not automatically deleted. For v1, target-weight consistency follows a simple deterministic rule: lose requires target below current weight, gain requires target above current weight, and maintain requires an equal target. This is challenge product logic, not medical guidance.
 
 A missing or malformed session cookie returns `401 SESSION_REQUIRED`. A syntactically valid but unknown session identity cannot select another assessment and returns `404 ASSESSMENT_NOT_FOUND`.
 

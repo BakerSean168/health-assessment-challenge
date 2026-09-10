@@ -23,6 +23,7 @@ This is a lightweight ADR index for decisions that are important enough to expla
 | D017 | intake calculation formula | pending | source brief requires output but does not prescribe formula |
 | D018 | target-date rate policy | pending | must be deterministic and explicitly scoped as demo logic |
 | D019 | scalar assessment input bounds | accepted | freeze runtime-validation boundaries in tests while keeping them explicitly separate from source requirements and cross-field health logic |
+| D020 | goal/target directional invariant | accepted | keep the questionnaire internally coherent with a deterministic non-medical rule and make upstream edits revalidate downstream target state |
 
 ## D001 — Next.js modular monolith
 
@@ -100,3 +101,9 @@ This is not a rule to maximize dependency/component count. Only components actua
 The v1 request contracts accept age 18–100 (integer), height 120–230 cm, and current/target weight 25–300 kg, all inclusive. These are project-level validation choices used to make boundary behavior deterministic and testable; the challenge brief does not prescribe these exact limits.
 
 Scalar bounds only answer whether one field is structurally acceptable. They do not decide whether a target weight is semantically compatible with `goal` and current weight; that cross-field invariant is owned by the assessment step/domain policy.
+
+## D020 — Goal/target directional invariant
+
+V1 treats target-weight consistency as product-state logic: a lose goal requires a target below current weight, a gain goal requires a target above current weight, and a maintain goal requires the target to equal current weight. The rule is intentionally simple and deterministic. It is not presented as health or clinical advice.
+
+The main architectural value is dependency revalidation: if an already-complete assessment draft changes `goal` or `weightKg`, a previously stored `targetWeightKg` can become invalid. Progress is therefore derived back to `TARGET_WEIGHT` without a mutable current-step column or destructive clearing of unrelated answers.

@@ -214,6 +214,24 @@ Only then was the first-step-specific path refactored into a typed `AssessmentSt
 
 All seven fields persist incrementally, each successful mutation advances revision exactly once, the complete answer state is recoverable, and the domain resolver reaches ready-to-submit (`nextRequiredStep: null`). Cross-field target-weight semantics remain for the dedicated state-policy slice rather than being smuggled into scalar validation.
 
+### 2026-09-10 — T07 reject an incorrect test, not correct behavior
+
+**Context**
+
+The server-side step policy needed to distinguish a real skipped unresolved step from editing a value that is already present, while also revalidating target weight after upstream edits.
+
+**TDD evidence**
+
+The initial RED suite correctly exposed two missing production behaviors: later unresolved steps were accepted, and target weight was validated only by presence. However, one generated unit fixture for "skip HEIGHT" accidentally retained `heightCm` from a complete fixture. Under the agreed policy, an already-present answer is editable, so production code correctly returned `allowed: true`.
+
+**Developer review / rejection**
+
+The failing test was rejected as incorrectly specified. The fixture was changed to make `heightCm` genuinely unresolved rather than weakening the production rule to make a bad test green. This is the clearest example so far of TDD constraining AI while still requiring human review of the tests themselves.
+
+**Outcome**
+
+The final policy rejects unresolved skips, permits edits, and revalidates target weight contextually (`LOSE_WEIGHT`: target lower; `GAIN_WEIGHT`: target higher; `MAINTAIN`: target equal). The API returns stable `STEP_OUT_OF_ORDER` details and leaves revision unchanged on rejection.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title

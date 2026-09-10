@@ -153,7 +153,13 @@ Completed assessments reject answer mutations unless a future explicit restart u
 
 All seven answer groups, including `targetWeightKg`, are required in v1. We intentionally do not introduce a speculative branch that omits target weight for `MAINTAIN`.
 
-`targetWeightKg` is cross-validated with `goal` and `weightKg`. T06 freezes only the scalar input range (`25..300 kg`); the cross-field direction/tolerance rule is intentionally left for the step-policy slice so it is introduced with executable dependency-change tests. The important domain rule is that a previously entered target can become invalid after an earlier answer changes.
+`targetWeightKg` is cross-validated with `goal` and `weightKg`. T07 freezes a deliberately simple product-consistency invariant:
+
+- `LOSE_WEIGHT` requires `targetWeightKg < weightKg`;
+- `GAIN_WEIGHT` requires `targetWeightKg > weightKg`;
+- `MAINTAIN` requires `targetWeightKg === weightKg`.
+
+This is an implementation rule for keeping the questionnaire internally coherent, not a medical recommendation. It also gives earlier edits meaningful consequences: changing `goal` or current weight can make a previously persisted target invalid, and `getNextRequiredStep()` then derives `TARGET_WEIGHT` again without deleting unrelated later data.
 
 ## 8. Optimistic concurrency
 

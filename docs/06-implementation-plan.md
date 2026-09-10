@@ -258,6 +258,8 @@ T06 TDD evidence: the runtime-contract suite first failed because the shared ste
 
 ### T07 Step-order policy
 
+**Status:** done — 2026-09-10
+
 Acceptance:
 
 - next legal unresolved step succeeds;
@@ -265,6 +267,18 @@ Acceptance:
 - dependent later answers are revalidated after earlier edits;
 - skipped unresolved step returns `STEP_OUT_OF_ORDER`;
 - `nextRequiredStep` is derived correctly without persisting duplicate progress state.
+
+Implemented behavior:
+
+- the application use case loads current aggregate state before mutation and validates the semantic step policy;
+- only the current unresolved step or an already-present answer can be written while `IN_PROGRESS`;
+- attempting to skip an unresolved prerequisite returns `409 STEP_OUT_OF_ORDER` with the server-derived `nextRequiredStep`, without changing revision;
+- editing an earlier answered step remains legal and preserves unrelated later answers;
+- target-weight validity is now contextual: lose `<` current, gain `>` current, maintain `===` current;
+- changing an earlier goal can invalidate the existing target and move derived progress back to `TARGET_WEIGHT`;
+- persistence still performs the revision-conditioned update after policy validation, so a concurrent change between read and write remains protected by the repository CAS boundary.
+
+T07 TDD evidence: unit tests first failed because `validateStepWrite()` and contextual target validation did not exist, while the integration test proved the API incorrectly accepted a skipped `HEIGHT`. During GREEN, one proposed unit fixture was itself found to be wrong: it claimed to test a skipped height while keeping `heightCm` already populated, which by the frozen policy is a legitimate edit. The fixture was corrected instead of changing production code to satisfy an invalid test. All domain and integration behavior then passed.
 
 ### T08 Optimistic concurrency
 

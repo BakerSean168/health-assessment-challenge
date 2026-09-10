@@ -55,6 +55,19 @@ export async function PATCH(request: NextRequest, context: StepRouteContext) {
     return apiError(404, result.code, "The assessment was not found.");
   }
 
+  if (!result.ok && result.code === "STEP_OUT_OF_ORDER") {
+    return apiError(
+      409,
+      result.code,
+      "This assessment step cannot be submitted yet.",
+      { nextRequiredStep: result.nextRequiredStep },
+    );
+  }
+
+  if (!result.ok && result.code === "ASSESSMENT_ALREADY_COMPLETED") {
+    return apiError(409, result.code, "The assessment is already completed.");
+  }
+
   if (!result.ok) {
     return apiError(
       409,
