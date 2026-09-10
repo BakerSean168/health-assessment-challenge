@@ -303,6 +303,8 @@ T08 did not require new production logic: the acceptance tests passed immediatel
 
 ### T09 Freeze calculation policy
 
+**Status:** done — 2026-09-10
+
 Before writing production calculation code:
 
 - create ADR for intake and target-date formulas;
@@ -310,6 +312,18 @@ Before writing production calculation code:
 - define rounding rules;
 - define BMI category thresholds;
 - explicitly state non-medical intent.
+
+Frozen in `10-calculation-policy.md` as `demo-v1`:
+
+- BMI metric formula; one-decimal display/storage; raw-value category classification at 18.5/25/30;
+- Mifflin–St Jeor resting estimate with an explicit midpoint fallback for `OTHER`;
+- project-defined activity multipliers 1.2 / 1.375 / 1.55 / 1.725 / 1.9;
+- lose/maintain/gain adjustment of -300 / 0 / +300 kcal/day;
+- defensive 1000 kcal/day lower guard and nearest-10 rounding;
+- static 0.5 kg/week target-date projection for lose/gain; maintain returns `referenceDate`;
+- UTC calendar-date semantics and injected time;
+- required RED vectors and limitations;
+- external references are separated from project constants so the README does not imply the challenge supplied a medical algorithm.
 
 ### T10 Calculation unit tests
 

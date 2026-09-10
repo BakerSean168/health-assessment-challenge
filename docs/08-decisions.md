@@ -20,8 +20,8 @@ This is a lightweight ADR index for decisions that are important enough to expla
 | D014 | `Float` for physical measurements/result BMI | accepted | financial precision is not required; simpler TS/JSON boundary than Prisma `Decimal` |
 | D015 | strict stale PATCH semantics | accepted | a stale write returns conflict even if the value matches; idempotency is reserved for explicit submit/payment retry contracts |
 | D016 | shadcn/ui + Base UI, library-first component policy | accepted | use maintained accessible primitives as the shared baseline, then customize/compose locally to keep UI consistent and avoid duplicate primitives |
-| D017 | intake calculation formula | pending | source brief requires output but does not prescribe formula |
-| D018 | target-date rate policy | pending | must be deterministic and explicitly scoped as demo logic |
+| D017 | intake calculation formula | accepted | freeze a deterministic `demo-v1` estimate with explicit external references, project constants, rounding, guard, and limitations |
+| D018 | target-date rate policy | accepted | use injected UTC date plus a documented static 0.5 kg/week demo projection; do not pretend to implement a physiological model |
 | D019 | scalar assessment input bounds | accepted | freeze runtime-validation boundaries in tests while keeping them explicitly separate from source requirements and cross-field health logic |
 | D020 | goal/target directional invariant | accepted | keep the questionnaire internally coherent with a deterministic non-medical rule and make upstream edits revalidate downstream target state |
 
@@ -107,3 +107,11 @@ Scalar bounds only answer whether one field is structurally acceptable. They do 
 V1 treats target-weight consistency as product-state logic: a lose goal requires a target below current weight, a gain goal requires a target above current weight, and a maintain goal requires the target to equal current weight. The rule is intentionally simple and deterministic. It is not presented as health or clinical advice.
 
 The main architectural value is dependency revalidation: if an already-complete assessment draft changes `goal` or `weightKg`, a previously stored `targetWeightKg` can become invalid. Progress is therefore derived back to `TARGET_WEIGHT` without a mutable current-step column or destructive clearing of unrelated answers.
+
+## D017 — Recommended-intake demo policy
+
+`demo-v1` uses the Mifflin–St Jeor resting-energy equation as an externally recognizable base, then applies project-defined activity multipliers and a -300/0/+300 kcal/day goal adjustment. Output has a defensive 1000 kcal/day lower guard and is rounded to the nearest 10. Because the questionnaire includes `OTHER` while the source equation publishes male/female constants, the demo uses their arithmetic midpoint (-78) for that branch and documents this as a limitation rather than a physiological category. Full formulas and references live in `10-calculation-policy.md`.
+
+## D018 — Static target-date demo policy
+
+`demo-v1` projects lose/gain progress at a static 0.5 kg/week and adds `ceil(abs(current-target)/0.5) * 7` days to an injected UTC calendar date. Maintain returns the reference date because the v1 step policy requires target=current. This is intentionally a transparent simulation, not the dynamic physiological model used by NIDDK's Body Weight Planner.

@@ -250,6 +250,24 @@ No production change was made just to manufacture a TDD RED phase. The behavior 
 
 The concurrency contract is now directly tested against PostgreSQL rather than inferred from the presence of a `revision` field.
 
+### 2026-09-10 — T09 calculation policy before calculation code
+
+**Context**
+
+The source challenge names three outputs but does not define the intake or target-date algorithms. Implementing a plausible formula directly in code would silently invent requirements and make later tests merely mirror the implementation.
+
+**Research/review**
+
+CDC BMI category guidance, the published Mifflin–St Jeor equation, and NIDDK's Body Weight Planner were reviewed as external context. The NIDDK planner is a dynamic physiological model; reproducing it is outside this three-day challenge.
+
+**Developer decision**
+
+A separate `demo-v1` calculation policy was frozen first. Recognizable external formulas/thresholds are distinguished from project constants such as activity multipliers, ±300 calorie adjustment, the `OTHER` midpoint fallback, and the deliberately static 0.5 kg/week projection. All limitations are explicit and the output is not presented as medical advice.
+
+**Outcome**
+
+`10-calculation-policy.md` now contains exact formulas, rounding/date semantics, external references, and required RED vectors. T10 can therefore write tests from the policy rather than from production code.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title

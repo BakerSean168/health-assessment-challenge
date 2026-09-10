@@ -6,7 +6,7 @@ The project is intentionally scoped as a three-day engineering challenge. The go
 
 ## Status
 
-**Phase:** T08 optimistic concurrency verified; T09 calculation policy freeze is next
+**Phase:** T09 calculation policy v1 frozen; T10 calculation RED/GREEN implementation is next
 
 The repository is public from the start so the implementation history, test-first workflow, design decisions, and trade-offs remain reviewable.
 
@@ -113,6 +113,7 @@ Integration tests drive persistence, resume behavior, ordering, optimistic locki
 - [AI usage log](docs/07-ai-usage-log.md)
 - [Decision log](docs/08-decisions.md)
 - [UI component policy](docs/09-ui-component-policy.md)
+- [Calculation policy v1](docs/10-calculation-policy.md)
 
 ## Non-goals
 

@@ -251,15 +251,15 @@ BMI uses the standard metric relationship:
 BMI = weightKg / (heightMeters ^ 2)
 ```
 
-Rounding rules and category thresholds are frozen in tests before implementation.
+Policy details, thresholds, rounding, and references are frozen in `10-calculation-policy.md` before production implementation.
 
 ### Recommended intake
 
-The source brief requires recommended-intake output but does not prescribe a formula. The engineering-demo formula remains pending until D017 is resolved. The ADR must define inputs, constants, rounding, boundaries, limitations, and non-medical intent before production code is written.
+D017 is accepted. `demo-v1` uses Mifflin–St Jeor as a recognizable resting-energy base, project-defined activity multipliers, a ±300 kcal/day goal adjustment, a defensive 1000 kcal/day lower guard, and nearest-10 rounding. The `OTHER` branch uses the arithmetic midpoint of the published male/female constants and is explicitly documented as a demo limitation rather than a physiological claim.
 
 ### Estimated target date
 
-The source brief likewise requires a target-date estimate without prescribing the rate model. D018 will freeze the policy. `referenceDate` is injected so CI remains deterministic.
+D018 is accepted. `demo-v1` uses a deliberately static 0.5 kg/week projection for lose/gain and returns the injected reference date for maintain. The model is intentionally simpler than a physiological dynamic model and is labeled as an estimate/simulation. `referenceDate` is injected so CI remains deterministic.
 
 ## 13. Domain functions to implement
 
