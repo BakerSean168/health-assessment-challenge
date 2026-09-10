@@ -24,6 +24,7 @@ function toDomainSession(
           id: session.assessment.id,
           status: session.assessment.status,
           revision: session.assessment.revision,
+          gender: session.assessment.gender,
         }
       : null,
   };

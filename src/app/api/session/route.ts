@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getPrismaClient } from "@/lib/db";
+import { getNextRequiredStep } from "@/modules/assessment/domain/assessment";
 import { ensureAnonymousSession } from "@/modules/session/application/ensure-anonymous-session";
 import { PrismaAnonymousSessionRepository } from "@/modules/session/infrastructure/prisma-anonymous-session-repository";
 import {
@@ -26,7 +27,9 @@ export async function POST(request: NextRequest) {
       assessment: {
         status: session.assessment.status,
         nextRequiredStep:
-          session.assessment.status === "IN_PROGRESS" ? "GENDER" : null,
+          session.assessment.status === "IN_PROGRESS"
+            ? getNextRequiredStep({ gender: session.assessment.gender })
+            : null,
         revision: session.assessment.revision,
       },
     },

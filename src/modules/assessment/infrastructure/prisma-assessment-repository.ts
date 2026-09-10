@@ -8,6 +8,37 @@ import type {
 export class PrismaAssessmentRepository implements AssessmentRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
+  async findBySessionId(sessionId: string) {
+    const assessment = await this.prisma.assessment.findUnique({
+      where: { sessionId },
+      select: {
+        id: true,
+        status: true,
+        revision: true,
+        gender: true,
+      },
+    });
+
+    if (!assessment) {
+      return null;
+    }
+
+    return {
+      id: assessment.id,
+      status: assessment.status,
+      revision: assessment.revision,
+      answers: {
+        gender: assessment.gender,
+        goal: null,
+        activityLevel: null,
+        heightCm: null,
+        weightKg: null,
+        age: null,
+        targetWeightKg: null,
+      },
+    };
+  }
+
   async saveGender(
     input: SaveGenderInput,
   ): Promise<SaveGenderPersistenceResult> {

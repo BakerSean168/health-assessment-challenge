@@ -198,6 +198,8 @@ T04 TDD evidence: the route integration test first failed because the step route
 
 ### T05 Resume assessment
 
+**Status:** done — 2026-09-10
+
 Acceptance criterion:
 
 > Saved answers and the semantic next step survive refresh/revisit.
@@ -205,8 +207,21 @@ Acceptance criterion:
 Implementation after RED:
 
 - `GET /api/assessment`;
-- recovery DTO;
-- derived `nextRequiredStep` resolver (no persisted current-step column).
+- application recovery use case + repository read model;
+- stable recovery DTO;
+- derived `nextRequiredStep` resolver (no persisted current-step column);
+- session bootstrap response updated to use the same derived progress semantics after persisted answers exist.
+
+Implemented behavior:
+
+- a saved gender survives a later request and is returned from the database;
+- recovery returns `revision` and derives `GOAL` as the next required step;
+- response already reserves the full v1 answer shape, with not-yet-entered values represented as `null`;
+- retrying `POST /api/session` with the existing cookie now reports the derived persisted progress instead of resetting the response projection to `GENDER`;
+- missing/malformed session identity returns `401 SESSION_REQUIRED`;
+- an unknown but syntactically valid session identity returns `404 ASSESSMENT_NOT_FOUND`.
+
+T05 TDD evidence: the recovery suite was written before `GET /api/assessment` existed and failed on module resolution (RED). The test also specified that retrying session bootstrap after a saved answer must report `GOAL`, preventing the bootstrap endpoint from keeping its earlier hard-coded `GENDER` projection. All four recovery behaviors now pass (GREEN).
 
 ### T06 Remaining answer contracts
 

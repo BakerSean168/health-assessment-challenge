@@ -178,6 +178,24 @@ A later ownership test deliberately sent a valid UUID that did not own an assess
 
 Gender persistence, runtime validation, revision increment, derived next-step behavior, missing-session handling, and unknown-assessment handling are all executable against PostgreSQL. No generic multi-step abstraction was introduced before the second step proves which parts actually generalize.
 
+### 2026-09-10 — T05 server-derived recovery
+
+**Context**
+
+Once the first answer was persisted, the system needed to prove that refresh/revisit state comes from PostgreSQL rather than client-only state or a duplicated progress pointer.
+
+**TDD evidence**
+
+The recovery integration suite was added before `GET /api/assessment` existed and failed on module resolution. It also exercised `POST /api/session` after saving gender and expected `GOAL`, revealing that the bootstrap response still contained the temporary hard-coded `GENDER` used before answer persistence existed.
+
+**Developer/review decision**
+
+Both recovery and bootstrap now project progress through the domain `getNextRequiredStep()` function. No `currentStepKey` column was introduced. The persistence read model exposes stored facts, and the application layer derives the resumable state.
+
+**Outcome**
+
+Saved gender, revision, and semantic progress survive a new request; invalid/unknown session identities remain bounded by stable 401/404 behavior.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title

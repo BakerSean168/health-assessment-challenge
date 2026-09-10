@@ -6,7 +6,7 @@ The project is intentionally scoped as a three-day engineering challenge. The go
 
 ## Status
 
-**Phase:** T04 first persisted assessment answer complete; T05 assessment resume is next
+**Phase:** T05 assessment recovery complete; T06 remaining answer contracts is next
 
 The repository is public from the start so the implementation history, test-first workflow, design decisions, and trade-offs remain reviewable.
 

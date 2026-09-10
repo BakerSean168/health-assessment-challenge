@@ -5,6 +5,7 @@ export interface SessionAssessment {
   id: string;
   status: AssessmentStatus;
   revision: number;
+  gender: "MALE" | "FEMALE" | "OTHER" | null;
 }
 
 export interface AnonymousSessionAggregate {
