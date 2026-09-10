@@ -169,16 +169,32 @@ T03 TDD evidence: the route-level integration test was written before `src/app/a
 
 ### T04 First assessment and first saved step
 
+**Status:** done — 2026-09-10
+
 Acceptance criterion:
 
 > Saving `GENDER` persists the answer and increments revision.
 
 Implementation after RED:
 
-- `Assessment` model fields required for this slice;
-- `saveAssessmentStep` application use case;
-- gender Zod schema;
-- step endpoint.
+- `Gender` enum and nullable `Assessment.gender` persistence field;
+- semantic `getNextRequiredStep()` domain resolver started with the first two observable states (`GENDER` -> `GOAL`);
+- assessment repository port + Prisma adapter;
+- focused `saveGenderStep` application use case;
+- strict gender Zod request contract;
+- `PATCH /api/assessment/steps/:stepKey` Route Handler with the first supported step;
+- stable API error envelope for session, validation, not-found, and version-conflict boundaries.
+
+Implemented behavior:
+
+- valid gender persists and increments `revision` from 0 to 1;
+- response derives `nextRequiredStep: GOAL` from domain state instead of hard-coding a stored progress pointer;
+- invalid enum values are rejected before persistence and do not increment revision;
+- requests without a valid session are rejected with `401 SESSION_REQUIRED`;
+- a valid UUID that does not own an assessment returns `404 ASSESSMENT_NOT_FOUND`, not a misleading version conflict;
+- persistence results distinguish `saved`, `not_found`, and `conflict`, keeping HTTP status mapping out of the Prisma adapter.
+
+T04 TDD evidence: the route integration test first failed because the step route did not exist (RED). A separate domain test then failed because `getNextRequiredStep` did not exist, preventing the implementation from hard-coding `GOAL`. Finally an ownership/error test exposed that a missing assessment was incorrectly collapsed into `409`; the repository result was refined until the API returned the intended `404`. All T04 cases then passed (GREEN).
 
 ### T05 Resume assessment
 

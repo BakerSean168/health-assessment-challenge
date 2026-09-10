@@ -27,6 +27,7 @@ All mutating assessment requests use the current server session; callers do not 
 Initial stable error codes:
 
 - `VALIDATION_ERROR`
+- `SESSION_REQUIRED`
 - `ASSESSMENT_NOT_FOUND`
 - `STEP_OUT_OF_ORDER`
 - `ASSESSMENT_VERSION_CONFLICT`
@@ -111,6 +112,20 @@ The Zod schema selected by `stepKey` validates the `value` type/range.
 ```
 
 If an earlier edit invalidates a dependent answer, `nextRequiredStep` can move backward to the first missing or context-invalid step. Existing later values are not automatically deleted.
+
+A missing or malformed session cookie returns `401 SESSION_REQUIRED`. A syntactically valid but unknown session identity cannot select another assessment and returns `404 ASSESSMENT_NOT_FOUND`.
+
+### Not found `404`
+
+```json
+{
+  "error": {
+    "code": "ASSESSMENT_NOT_FOUND",
+    "message": "The assessment was not found.",
+    "details": {}
+  }
+}
+```
 
 ### Conflict `409`
 

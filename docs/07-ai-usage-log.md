@@ -162,6 +162,22 @@ The code follows the installed Next.js 16 documentation rather than older synchr
 
 The three integration cases pass against PostgreSQL, and the session/assessment ownership boundary now exists for T04 answer persistence.
 
+### 2026-09-10 — T04 first answer persistence
+
+**Context**
+
+The first assessment mutation needed to persist `GENDER`, advance the optimistic aggregate revision, and establish the shape that later answer steps will reuse.
+
+**TDD evidence**
+
+The route-level integration test was written before the dynamic step Route Handler existed and failed on module resolution. During GREEN work, a hard-coded `GOAL` response was recognized as inconsistent with the frozen domain decision that progress must be derived, so a separate RED unit test was added for `getNextRequiredStep()` before implementing the resolver.
+
+A later ownership test deliberately sent a valid UUID that did not own an assessment. It failed because the first repository API collapsed both "not found" and "stale revision" into the same null/409 outcome. The persistence contract was changed to a discriminated `saved | not_found | conflict` result so the application/HTTP boundary can map the states correctly.
+
+**Outcome**
+
+Gender persistence, runtime validation, revision increment, derived next-step behavior, missing-session handling, and unknown-assessment handling are all executable against PostgreSQL. No generic multi-step abstraction was introduced before the second step proves which parts actually generalize.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title
