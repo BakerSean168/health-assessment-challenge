@@ -300,6 +300,24 @@ The first scripted Prisma-schema edit added `BmiCategory` but failed to insert t
 
 First submit is revision-safe and transactional, retries reuse exactly one stored snapshot, and a stale first-time submit cannot create a result. The incident is retained as evidence that AI/scripted edits are not trusted without executable database verification.
 
+### 2026-09-11 — T12 prove locked values are absent, not blurred
+
+**Context**
+
+The challenge distinguishes free and subscribed results. A visually blurred premium value would still leak the data to the browser and would not be authorization.
+
+**TDD evidence**
+
+The free-result tests were written before implementation. In addition to exact DTO shape, both domain and integration coverage serialize the response and assert that the real calorie value and target date do not occur in the JSON at all.
+
+**Developer decision**
+
+The domain creates a dedicated free projection rather than returning the persistence model and asking React to hide selected properties. The result route is session-scoped and returns `RESULT_NOT_FOUND` until a canonical snapshot exists.
+
+**Outcome**
+
+The access boundary is executable: FREE receives public BMI plus locked markers, with premium values omitted before serialization.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title

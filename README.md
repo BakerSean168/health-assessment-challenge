@@ -6,7 +6,7 @@ The project is intentionally scoped as a three-day engineering challenge. The go
 
 ## Status
 
-**Phase:** T11 transactional submit + immutable result snapshot complete; T12 free result projection is next
+**Phase:** T12 free result projection complete; T13 idempotent simulated payment is next
 
 The repository is public from the start so the implementation history, test-first workflow, design decisions, and trade-offs remain reviewable.
 

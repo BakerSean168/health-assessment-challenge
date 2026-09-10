@@ -378,11 +378,25 @@ T11 TDD evidence: both the domain readiness test and route integration suite wer
 
 ### T12 Free result policy
 
+**Status:** done — 2026-09-11
+
 Acceptance:
 
 - BMI/public summary available;
 - premium fields are represented as locked;
 - actual premium values are absent from the serialized response.
+
+Implemented behavior:
+
+- `projectFreeResult()` constructs a purpose-built DTO from the stored result snapshot;
+- BMI value/category are public;
+- calorie and target-date sections expose only `{ locked: true }` and never carry their underlying values;
+- `GET /api/assessment/result` resolves the current session server-side and queries the result through a repository port;
+- missing/malformed session identity returns `401 SESSION_REQUIRED`;
+- a valid session without a result snapshot returns `404 RESULT_NOT_FOUND`;
+- a serialization assertion verifies that the actual calorie/date values are absent from the free JSON, not merely hidden by CSS.
+
+T12 TDD evidence: the domain projection and route integration suites were created before the projection module/route existed and both failed on module resolution (RED). After adding the smallest free-result projection, repository, use case, and route, the two projection cases plus three PostgreSQL-backed route cases passed (GREEN).
 
 ### T13 Simulated payment
 
