@@ -58,6 +58,8 @@ Calculation-policy constants remain intentionally pending until T09, where ADR +
 
 ### T01 Initialize Next.js/TypeScript toolchain
 
+**Status:** done — 2026-09-10
+
 RED/verification first:
 
 - add a trivial test to prove test runner executes;
@@ -87,6 +89,19 @@ pnpm build
 ```
 
 all succeed from a clean install.
+
+Implemented baseline:
+
+- Node.js `24.19.0` and pnpm `11.22.0` pinned in repository metadata;
+- Next.js `16.3.4`, React `19.2.8`, strict TypeScript;
+- Tailwind CSS v4;
+- shadcn/ui initialized with explicit `--base base` and `base-nova` preset;
+- first shared `Button` primitive added from shadcn rather than recreated locally;
+- Vitest `5.0.0` and Playwright `1.63.0` scaffolded;
+- `.env.example`, `.editorconfig`, `AGENTS.md`, lint/typecheck/test/build scripts;
+- peer dependency check clean after aligning `@types/node` with Node 24 / Vitest requirements.
+
+T01 TDD evidence: the bootstrap test existed before Vitest was installed and `pnpm test` failed with `vitest: not found` (RED). After installing/configuring the runner, the same test passed (GREEN), followed by successful typecheck, lint, and production build.
 
 ### T02 PostgreSQL + Prisma test foundation
 

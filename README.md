@@ -6,7 +6,7 @@ The project is intentionally scoped as a three-day engineering challenge. The go
 
 ## Status
 
-**Phase:** domain model frozen (v0.2); implementation bootstrap is next
+**Phase:** T01 project bootstrap complete; T02 PostgreSQL + Prisma foundation is next
 
 The repository is public from the start so the implementation history, test-first workflow, design decisions, and trade-offs remain reviewable.
 
@@ -48,9 +48,10 @@ The planned implementation keeps seven persisted assessment inputs while using f
 
 ## Frozen stack
 
-- Next.js App Router + React + strict TypeScript
-- Tailwind CSS
-- shadcn/ui using Base UI primitives
+- Node.js 24.19.0 + pnpm 11.22.0
+- Next.js 16.3.4 App Router + React 19.2.8 + strict TypeScript
+- Tailwind CSS 4
+- shadcn/ui `base-nova` preset using Base UI primitives
 - Lucide icons
 - PostgreSQL
 - Prisma

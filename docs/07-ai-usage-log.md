@@ -102,6 +102,28 @@ The challenge benefits from a consistent accessible UI baseline, while shadcn's 
 
 The stack, architecture, implementation plan, and dedicated UI component policy were updated before project bootstrap.
 
+### 2026-09-10 — T01 toolchain bootstrap
+
+**Context**
+
+Implementation began after the domain and UI-component policies were frozen.
+
+**AI-assisted execution**
+
+The project was scaffolded with the current Next.js App Router template, then shadcn/ui was initialized explicitly with Base UI and the Nova preset. A shadcn `Button` was added as the first shared primitive to verify the library-first policy in the actual repository.
+
+**TDD evidence**
+
+`src/test/bootstrap.test.ts` was written before Vitest was installed. Running `pnpm test` failed because the runner did not exist (RED). Vitest was then installed/configured and the same test passed (GREEN).
+
+**Developer/review correction**
+
+The first dependency verification exposed an unmet Vitest peer requirement because create-next-app had selected `@types/node` 20 while the runtime is Node 24. The types package was deliberately aligned to `@types/node` 24 and `pnpm peers check` was required to be clean before accepting the bootstrap.
+
+**Outcome**
+
+`pnpm test`, `pnpm typecheck`, `pnpm lint`, and `pnpm build` all pass. The shadcn project reports `base` as its component base and `base-nova` as its style preset.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title

@@ -2,7 +2,7 @@
 
 ## 1. Decision
 
-The project uses **Tailwind CSS + shadcn/ui with Base UI primitives** as the shared UI foundation.
+The project uses **Tailwind CSS v4 + shadcn/ui `base-nova` with Base UI primitives** as the shared UI foundation.
 
 The default engineering rule is **library first, compose second, create a new primitive last**.
 

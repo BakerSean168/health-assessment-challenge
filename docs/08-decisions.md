@@ -75,7 +75,7 @@ Architecture provides boundaries; TDD decides the concrete implementation increm
 
 ## D016 — shadcn/ui with Base UI; library first
 
-The frontend uses shadcn/ui initialized with the Base UI component base and Tailwind CSS. shadcn components are checked first whenever the product needs a common primitive such as a button, input, progress indicator, radio group, dialog, alert, separator, or skeleton.
+The frontend uses shadcn/ui initialized with the Base UI component base, the `base-nova` preset, and Tailwind CSS v4. shadcn components are checked first whenever the product needs a common primitive such as a button, input, progress indicator, radio group, dialog, alert, separator, or skeleton.
 
 Because shadcn installs component source into the repository, product styling and variants can be implemented directly on that shared baseline. Assessment-specific components should compose these primitives. A new low-level component is justified only when an existing shadcn/Base UI primitive does not fit the required semantics or interaction model.
 
