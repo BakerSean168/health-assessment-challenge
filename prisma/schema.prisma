@@ -37,6 +37,13 @@ enum ActivityLevel {
   VERY_ACTIVE
 }
 
+enum BmiCategory {
+  UNDERWEIGHT
+  NORMAL
+  OVERWEIGHT
+  OBESE
+}
+
 model AnonymousSession {
   id                 String             @id @default(uuid()) @db.Uuid
   subscriptionStatus SubscriptionStatus @default(FREE) @map("subscription_status")
@@ -48,20 +55,36 @@ model AnonymousSession {
 }
 
 model Assessment {
-  id        String           @id @default(uuid()) @db.Uuid
-  sessionId String           @unique @map("session_id") @db.Uuid
-  status         AssessmentStatus @default(IN_PROGRESS)
-  revision       Int              @default(0)
+  id             String            @id @default(uuid()) @db.Uuid
+  sessionId      String            @unique @map("session_id") @db.Uuid
+  status         AssessmentStatus  @default(IN_PROGRESS)
+  revision       Int               @default(0)
   gender         Gender?
   goal           Goal?
-  activityLevel  ActivityLevel?   @map("activity_level")
-  heightCm       Float?           @map("height_cm")
-  weightKg       Float?           @map("weight_kg")
+  activityLevel  ActivityLevel?    @map("activity_level")
+  heightCm       Float?            @map("height_cm")
+  weightKg       Float?            @map("weight_kg")
   age            Int?
-  targetWeightKg Float?           @map("target_weight_kg")
-  createdAt      DateTime         @default(now()) @map("created_at")
-  updatedAt DateTime         @updatedAt @map("updated_at")
-  session   AnonymousSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  targetWeightKg Float?            @map("target_weight_kg")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+  completedAt    DateTime?         @map("completed_at")
+  session        AnonymousSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  result         AssessmentResult?
 
   @@map("assessments")
+}
+
+model AssessmentResult {
+  id                       String      @id @default(uuid()) @db.Uuid
+  assessmentId             String      @unique @map("assessment_id") @db.Uuid
+  bmi                      Float
+  bmiCategory              BmiCategory @map("bmi_category")
+  recommendedDailyCalories Int         @map("recommended_daily_calories")
+  estimatedGoalDate        DateTime    @map("estimated_goal_date") @db.Date
+  calculationVersion       String      @map("calculation_version")
+  createdAt                DateTime    @default(now()) @map("created_at")
+  assessment               Assessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@map("assessment_results")
 }

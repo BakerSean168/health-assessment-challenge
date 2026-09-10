@@ -116,3 +116,32 @@ export function estimateTargetDate(
 
   return targetDate;
 }
+
+export const CALCULATION_VERSION = "demo-v1" as const;
+
+export interface AssessmentCalculationInput extends RecommendedCaloriesInput {
+  targetWeightKg: number;
+}
+
+export interface AssessmentCalculationResult {
+  bmi: number;
+  bmiCategory: BmiCategory;
+  recommendedDailyCalories: number;
+  estimatedGoalDate: Date;
+  calculationVersion: typeof CALCULATION_VERSION;
+}
+
+export function calculateAssessmentResult(
+  input: AssessmentCalculationInput,
+  referenceDate: Date,
+): AssessmentCalculationResult {
+  const bmi = calculateBmi(input);
+
+  return {
+    bmi: bmi.bmi,
+    bmiCategory: bmi.category,
+    recommendedDailyCalories: calculateRecommendedDailyCalories(input),
+    estimatedGoalDate: estimateTargetDate(input, referenceDate),
+    calculationVersion: CALCULATION_VERSION,
+  };
+}

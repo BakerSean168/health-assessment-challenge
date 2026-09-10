@@ -350,6 +350,8 @@ T10 TDD evidence: `calculation.test.ts` was written first from the already-froze
 
 ### T11 Submit + result snapshot
 
+**Status:** done — 2026-09-11
+
 Acceptance:
 
 - incomplete assessment rejected with missing/invalid steps;
@@ -358,6 +360,19 @@ Acceptance:
 - aggregate revision increments on first successful submit;
 - calculation version persisted;
 - retry after successful completion returns the existing result even though the aggregate revision already advanced.
+
+Implemented behavior:
+
+- `validateAssessmentReadyForSubmission()` derives the complete missing/invalid semantic-step list and returns a typed complete answer set only when the draft is valid;
+- strict submit input accepts only `expectedRevision` and never accepts client-computed result values;
+- first-time submit verifies ownership, revision, and completeness before invoking `calculateAssessmentResult()`;
+- `AssessmentResult` persists BMI, category, recommended calories, estimated calendar date, calculation version, and creation timestamp;
+- assessment completion, revision increment, `completedAt`, and result creation happen in one Prisma transaction;
+- unique `AssessmentResult.assessmentId` enforces one canonical result per assessment;
+- retry after completed state returns success without recomputation or duplicate rows, even when the caller carries the pre-completion revision;
+- stale first-time submit remains `409 ASSESSMENT_VERSION_CONFLICT` and creates no result.
+
+T11 TDD evidence: both the domain readiness test and route integration suite were written before the submission modules existed and failed on module resolution (RED). During GREEN, an incomplete schema-edit accidentally generated only the new BMI enum while omitting the `AssessmentResult` model; the integration test immediately failed because `prisma.assessmentResult` did not exist. The bad uncommitted migration was discarded, the disposable database was recreated from the four committed migrations, and a corrected result-snapshot migration was generated and verified before the tests passed. This is exactly the kind of persistence wiring defect the real-database integration suite is intended to expose.
 
 ## 7. Phase 5 — result access and payment
 

@@ -47,7 +47,7 @@ classDiagram
       Float bmi
       BmiCategory bmiCategory
       Int recommendedDailyCalories
-      Date? estimatedGoalDate
+      Date estimatedGoalDate
       String calculationVersion
       DateTime createdAt
     }
@@ -191,7 +191,7 @@ A result contains:
 - `bmi`;
 - `bmiCategory`;
 - `recommendedDailyCalories`;
-- `estimatedGoalDate`;
+- `estimatedGoalDate` (stored as a PostgreSQL calendar `date`);
 - `calculationVersion`;
 - creation timestamp.
 

@@ -282,6 +282,24 @@ A 22-case unit suite was written before `calculation.ts` existed and failed on m
 
 The resulting production functions are pure and have no framework, database, environment, cookie, or wall-clock dependency. Test expectations came from the prior policy document, avoiding the anti-pattern of writing implementation first and tests that simply reproduce it afterward.
 
+### 2026-09-11 — T11 result snapshot migration caught by integration test
+
+**Context**
+
+Submission is the first multi-write aggregate transition: validate a complete draft, calculate a versioned result, mark the assessment completed, and create the canonical snapshot atomically.
+
+**TDD evidence**
+
+Domain and integration tests were written before the submission modules existed. The route suite covers incomplete submit, successful snapshot creation, retry idempotency, and stale first-time submission.
+
+**Implementation/review correction**
+
+The first scripted Prisma-schema edit added `BmiCategory` but failed to insert the `AssessmentResult` model because a textual replacement anchor did not match the formatted schema. Prisma therefore generated a syntactically valid but incomplete migration, and the integration suite failed at runtime because `prisma.assessmentResult` was absent. The incomplete migration had not been committed, so it was removed; the disposable PostgreSQL database was destroyed/recreated from committed migrations; the schema was rewritten explicitly; and a corrected migration was generated. The generated client was then inspected to verify the `assessmentResult` accessor before rerunning the suite.
+
+**Outcome**
+
+First submit is revision-safe and transactional, retries reuse exactly one stored snapshot, and a stale first-time submit cannot create a result. The incident is retained as evidence that AI/scripted edits are not trusted without executable database verification.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title

@@ -188,6 +188,8 @@ No client calculation values are accepted. The client includes only the aggregat
 }
 ```
 
+The first successful submit creates the canonical result snapshot and changes the assessment from `IN_PROGRESS` to `COMPLETED` in the same database transaction. The aggregate revision increments once as part of that transition.
+
 ### Retry semantics
 
 If the assessment is already completed and has its canonical result snapshot, return the existing successful state rather than recomputing a different result. This completed-result check takes precedence over a stale `expectedRevision`, allowing a network retry of the successful submit to remain idempotent.

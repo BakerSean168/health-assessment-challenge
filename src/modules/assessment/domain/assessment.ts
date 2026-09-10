@@ -87,10 +87,18 @@ const requiredSteps: ReadonlyArray<StepDefinition> = [
   },
 ];
 
+export function getInvalidAssessmentSteps(
+  answers: AssessmentAnswers,
+): AssessmentStep[] {
+  return requiredSteps
+    .filter(({ isValid }) => !isValid(answers))
+    .map(({ step }) => step);
+}
+
 export function getNextRequiredStep(
   answers: AssessmentAnswers,
 ): AssessmentStep | null {
-  return requiredSteps.find(({ isValid }) => !isValid(answers))?.step ?? null;
+  return getInvalidAssessmentSteps(answers)[0] ?? null;
 }
 
 export type StepWritePolicyResult =

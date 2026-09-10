@@ -6,7 +6,7 @@ The project is intentionally scoped as a three-day engineering challenge. The go
 
 ## Status
 
-**Phase:** T10 calculation domain complete; T11 submit + result snapshot is next
+**Phase:** T11 transactional submit + immutable result snapshot complete; T12 free result projection is next
 
 The repository is public from the start so the implementation history, test-first workflow, design decisions, and trade-offs remain reviewable.
 
