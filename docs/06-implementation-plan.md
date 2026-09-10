@@ -65,13 +65,17 @@ RED/verification first:
 
 Implementation:
 
-- Next.js application;
+- Next.js App Router application;
 - strict TypeScript;
+- Tailwind CSS;
+- shadcn/ui initialized explicitly with the Base UI component base;
+- a minimal initial shadcn primitive set needed by bootstrap/demo work rather than bulk-installing the registry;
 - ESLint;
 - Vitest;
 - Playwright scaffold;
 - environment example;
-- formatting conventions.
+- formatting conventions;
+- pinned Node/pnpm toolchain metadata.
 
 Acceptance:
 
@@ -243,14 +247,16 @@ Acceptance:
 
 ### T15 Assessment shell
 
-Implement the reusable funnel layout:
+Implement the reusable funnel layout using the UI-component policy in `09-ui-component-policy.md`:
 
+- add suitable shadcn/ui Base UI-backed primitives before building equivalents locally;
 - progress indicator;
 - question title/supporting copy;
 - answer controls;
 - continue/back behavior;
 - save/loading/error feedback;
-- responsive layout.
+- responsive layout;
+- product-specific compositions and variants may extend the local shadcn source, but must not create a parallel generic component system.
 
 ### T16 Wire persisted steps
 

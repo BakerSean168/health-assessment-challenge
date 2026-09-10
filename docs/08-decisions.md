@@ -19,8 +19,9 @@ This is a lightweight ADR index for decisions that are important enough to expla
 | D013 | target weight required in v1 | accepted | source scope names target weight and projection depends on it; avoid speculative branching |
 | D014 | `Float` for physical measurements/result BMI | accepted | financial precision is not required; simpler TS/JSON boundary than Prisma `Decimal` |
 | D015 | strict stale PATCH semantics | accepted | a stale write returns conflict even if the value matches; idempotency is reserved for explicit submit/payment retry contracts |
-| D016 | intake calculation formula | pending | source brief requires output but does not prescribe formula |
-| D017 | target-date rate policy | pending | must be deterministic and explicitly scoped as demo logic |
+| D016 | shadcn/ui + Base UI, library-first component policy | accepted | use maintained accessible primitives as the shared baseline, then customize/compose locally to keep UI consistent and avoid duplicate primitives |
+| D017 | intake calculation formula | pending | source brief requires output but does not prescribe formula |
+| D018 | target-date rate policy | pending | must be deterministic and explicitly scoped as demo logic |
 
 ## D001 — Next.js modular monolith
 
@@ -71,3 +72,11 @@ Height, weight, target weight, and BMI use regular floating-point values at pers
 ## D010 — Outside-in TDD
 
 Architecture provides boundaries; TDD decides the concrete implementation incrementally. This also provides a controlled interface for AI assistance: code must satisfy reviewed behavior rather than letting generated code define requirements implicitly.
+
+## D016 — shadcn/ui with Base UI; library first
+
+The frontend uses shadcn/ui initialized with the Base UI component base and Tailwind CSS. shadcn components are checked first whenever the product needs a common primitive such as a button, input, progress indicator, radio group, dialog, alert, separator, or skeleton.
+
+Because shadcn installs component source into the repository, product styling and variants can be implemented directly on that shared baseline. Assessment-specific components should compose these primitives. A new low-level component is justified only when an existing shadcn/Base UI primitive does not fit the required semantics or interaction model.
+
+This is not a rule to maximize dependency/component count. Only components actually needed by a vertical slice are added. The purpose is consistency, accessibility, maintainability, and avoiding duplicated focus/keyboard/state behavior.

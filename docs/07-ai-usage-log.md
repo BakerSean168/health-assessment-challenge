@@ -84,6 +84,24 @@ The deciding principle was to persist independent facts once and derive dependen
 
 `scope`, reference audit, architecture, domain/data model, API contract, TDD strategy, implementation plan, decision log, and README were synchronized to domain model v0.2 before T01 bootstrap.
 
+### 2026-09-10 — UI primitive strategy
+
+**Context**
+
+The initial architecture had not frozen a UI component library and could have led to locally rebuilding generic controls during funnel implementation.
+
+**Developer decision**
+
+Use shadcn/ui with the Base UI component base and prefer existing library components whenever they fit. Local customization and product-level composition are encouraged, but a second hand-built primitive set should not be created in parallel.
+
+**Evidence / rationale**
+
+The challenge benefits from a consistent accessible UI baseline, while shadcn's local-source model still permits product-specific styling. Reusing established primitives reduces duplicated keyboard/focus/state work and keeps the three-day implementation focused on the assessed behavior.
+
+**Outcome**
+
+The stack, architecture, implementation plan, and dedicated UI component policy were updated before project bootstrap.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title

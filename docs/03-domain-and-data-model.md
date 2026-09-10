@@ -240,11 +240,11 @@ Rounding rules and category thresholds are frozen in tests before implementation
 
 ### Recommended intake
 
-The source brief requires recommended-intake output but does not prescribe a formula. The engineering-demo formula remains pending until D016 is resolved. The ADR must define inputs, constants, rounding, boundaries, limitations, and non-medical intent before production code is written.
+The source brief requires recommended-intake output but does not prescribe a formula. The engineering-demo formula remains pending until D017 is resolved. The ADR must define inputs, constants, rounding, boundaries, limitations, and non-medical intent before production code is written.
 
 ### Estimated target date
 
-The source brief likewise requires a target-date estimate without prescribing the rate model. D017 will freeze the policy. `referenceDate` is injected so CI remains deterministic.
+The source brief likewise requires a target-date estimate without prescribing the rate model. D018 will freeze the policy. `referenceDate` is injected so CI remains deterministic.
 
 ## 13. Domain functions to implement
 
@@ -293,4 +293,4 @@ Before implementation begins, the following are frozen:
 - payment replay safety uses a session-scoped idempotency key;
 - only server logic can activate subscription.
 
-Calculation constants/ranges are intentionally not frozen here; D016/D017 plus RED tests will freeze them before implementation of those policies.
+Calculation constants/ranges are intentionally not frozen here; D017/D018 plus RED tests will freeze them before implementation of those policies.

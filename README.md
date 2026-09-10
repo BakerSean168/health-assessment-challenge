@@ -46,9 +46,12 @@ The planned implementation keeps seven persisted assessment inputs while using f
 - Develop behavior-first using RED -> GREEN -> REFACTOR.
 - Keep CI as executable evidence of linting, typing, tests, and build health.
 
-## Planned stack
+## Frozen stack
 
-- Next.js + React + TypeScript
+- Next.js App Router + React + strict TypeScript
+- Tailwind CSS
+- shadcn/ui using Base UI primitives
+- Lucide icons
 - PostgreSQL
 - Prisma
 - Zod
@@ -57,7 +60,9 @@ The planned implementation keeps seven persisted assessment inputs while using f
 - GitHub Actions
 - Vercel-compatible deployment
 
-The exact dependency versions will be pinned when implementation begins.
+The UI layer follows a library-first policy: when shadcn/ui provides a suitable component, use that component as the accessible, styled baseline and customize it locally for the product rather than rebuilding the primitive from scratch. Project-specific composition remains encouraged; duplicate primitives are not.
+
+Exact dependency versions are pinned by the lockfile during bootstrap.
 
 ## Architecture at a glance
 
@@ -106,6 +111,7 @@ Integration tests drive persistence, resume behavior, ordering, optimistic locki
 - [Implementation plan](docs/06-implementation-plan.md)
 - [AI usage log](docs/07-ai-usage-log.md)
 - [Decision log](docs/08-decisions.md)
+- [UI component policy](docs/09-ui-component-policy.md)
 
 ## Non-goals
 

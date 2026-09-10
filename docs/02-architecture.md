@@ -69,7 +69,36 @@ src/
     └── e2e/
 ```
 
-## 4. Request lifecycle
+## 4. UI system and component ownership
+
+The presentation layer uses **Tailwind CSS + shadcn/ui with Base UI primitives**.
+
+shadcn/ui is treated as local source code for shared UI primitives, not as a black-box dependency. The project follows a library-first rule:
+
+1. check whether a suitable shadcn/ui component already exists;
+2. add the Base UI-backed shadcn component through the CLI;
+3. customize its local implementation or variants when product needs require it;
+4. compose assessment-specific components from those primitives;
+5. hand-roll a new primitive only when the library does not provide a suitable semantic/accessibility baseline.
+
+```text
+Base UI primitive
+      -> shadcn/ui local component
+            -> project variants/tokens
+                  -> assessment-specific composition
+```
+
+Examples:
+
+- use shadcn `Button` rather than defining a second generic button system;
+- use shadcn `Progress` for the funnel progress indicator;
+- use shadcn `RadioGroup` when the question semantics are a single selection;
+- use shadcn `Dialog` for the simulated-payment/paywall interaction when a dialog is appropriate;
+- build `AssessmentOptionCard` as a product composition on top of shared primitives rather than recreating keyboard/focus behavior manually.
+
+This policy exists to preserve accessibility behavior, interaction consistency, design tokens, and reviewability while still allowing the BetterMe-inspired funnel to have its own visual identity.
+
+## 5. Request lifecycle
 
 Example: saving a weight step.
 
@@ -120,7 +149,7 @@ Only transient presentation state belongs solely in the browser, for example:
 
 The browser is never authoritative for subscription or completed assessment state. Resumable answer progress is not stored as a second mutable server field either: it is derived from persisted answers plus domain validation.
 
-## 6. Assessment answer progression
+## 7. Assessment answer progression
 
 The persisted domain has seven answer steps. `ANALYZING`, wellness-profile, projection, result, and paywall screens are UI/result states and are not persisted assessment steps.
 
@@ -149,7 +178,7 @@ Rules:
 - completed assessments reject answer mutations unless a future explicit restart use case is introduced;
 - transition resolution uses semantic step keys, not UI array indexes or a persisted current-step pointer.
 
-## 7. Concurrency model
+## 8. Concurrency model
 
 `Assessment.revision` implements optimistic concurrency control for aggregate mutations.
 
@@ -159,7 +188,7 @@ A stale answer write returns HTTP `409` with `ASSESSMENT_VERSION_CONFLICT` even 
 
 This prevents a delayed tab or duplicate UI from silently overwriting or acting on more recent server state.
 
-## 8. Submission semantics
+## 9. Submission semantics
 
 `POST /api/assessment/submit` is semantically idempotent.
 
@@ -175,7 +204,7 @@ On first valid submit:
 
 On retry after a successful completion, the existing snapshot is returned before applying stale-revision rejection. This preserves true retry safety after a lost response while keeping first-time submission concurrency-safe.
 
-## 9. Result snapshot rationale
+## 10. Result snapshot rationale
 
 Results are persisted rather than recalculated on every read.
 
@@ -190,7 +219,7 @@ Assessment answers
 
 This makes a completed assessment reproducible and allows future calculation-policy changes without mutating historical results.
 
-## 10. Authorization model
+## 11. Authorization model
 
 Authorization happens before serialization.
 
@@ -203,13 +232,13 @@ flowchart LR
 
 A free DTO does not contain premium values. CSS blur is presentation only and is not considered an access-control mechanism.
 
-## 11. Payment simulation
+## 12. Payment simulation
 
 The challenge uses a simulated payment endpoint rather than a provider integration.
 
 A client/demo `idempotencyKey` is stored in `PaymentEvent` with a uniqueness constraint scoped to the anonymous session. Replaying the same key returns the already-applied outcome and does not repeat subscription side effects. The name is intentional: this endpoint simulates payment behavior and does not pretend to receive a real payment-provider transaction ID.
 
-## 12. Error model
+## 13. Error model
 
 All API failures use a stable envelope:
 
@@ -225,7 +254,7 @@ All API failures use a stable envelope:
 
 Stable `code` values are for client logic and tests. Human-readable `message` is not used as a programmatic discriminator.
 
-## 13. Security boundaries
+## 14. Security boundaries
 
 The minimum security posture is:
 
@@ -239,7 +268,7 @@ The minimum security posture is:
 - free result serialization omits locked values entirely;
 - no secrets committed to the repository.
 
-## 14. Observability for the challenge
+## 15. Observability for the challenge
 
 Do not introduce a heavy observability stack. Use structured server logs for key lifecycle events:
 
