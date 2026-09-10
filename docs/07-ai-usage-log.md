@@ -354,6 +354,24 @@ Access projection is a pure domain concern over `(snapshot, subscriptionStatus)`
 
 The complete backend loop now works: progressive draft -> transactional snapshot -> safe FREE projection -> idempotent pay -> full projection of the same snapshot.
 
+### 2026-09-11 — T15 component-library policy exercised in real UI code
+
+**Context**
+
+The first product UI slice was the point where the earlier library-first rule could either remain documentation or become an enforceable implementation habit.
+
+**TDD evidence**
+
+A component test was written before `AssessmentShell` existed and described accessible heading, progress, step context, and optional back interaction.
+
+**Developer decision**
+
+Common controls were added from shadcn's Base UI-backed registry instead of recreated locally. `AssessmentShell` is intentionally a product composition of `Card`, `Progress`, and `Button`; it does not introduce a second button/progress/card primitive system. Testing Library assertions target roles, labels, and behavior rather than generated DOM/class details owned by shadcn/Base UI.
+
+**Outcome**
+
+The repository now has a consistent accessible UI foundation ready for the persisted funnel, while the low-level primitives remain the shadcn-managed local source requested for this challenge.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title

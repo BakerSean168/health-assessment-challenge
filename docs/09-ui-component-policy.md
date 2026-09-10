@@ -114,3 +114,9 @@ Before merging a new UI component, ask:
 3. Are focus, keyboard, disabled, loading, and error states preserved?
 4. Does it reuse the same tokens/spacing conventions as the rest of the funnel?
 5. Is the abstraction product-specific enough to justify existing?
+
+## 9. Installed baseline
+
+As of T15, the repository contains the shadcn/Base UI-backed `Button`, `Progress`, `RadioGroup`, `Input`, `Card`, `Alert`, `Skeleton`, `Separator`, `Dialog`, and `Label` primitives. They were selected because the next three product slices directly need assessment inputs, progress, feedback/loading, and paywall/result surfaces; this is still a focused subset rather than a registry-wide install.
+
+`AssessmentShell` is the first product composition and imports shared primitives from `components/ui` rather than implementing equivalent keyboard/focus/progress behavior itself.

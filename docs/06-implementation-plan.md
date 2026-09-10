@@ -445,6 +445,8 @@ T14 TDD evidence: the domain test failed because `projectResult` did not exist a
 
 ### T15 Assessment shell
 
+**Status:** done — 2026-09-11
+
 Implement the reusable funnel layout using the UI-component policy in `09-ui-component-policy.md`:
 
 - add suitable shadcn/ui Base UI-backed primitives before building equivalents locally;
@@ -455,6 +457,15 @@ Implement the reusable funnel layout using the UI-component policy in `09-ui-com
 - save/loading/error feedback;
 - responsive layout;
 - product-specific compositions and variants may extend the local shadcn source, but must not create a parallel generic component system.
+
+Implemented baseline:
+
+- added only the shadcn/Base UI primitives anticipated by T15–T17 (`Progress`, `RadioGroup`, `Input`, `Card`, `Alert`, `Skeleton`, `Separator`, `Dialog`, `Label`) while retaining the existing library `Button`;
+- created `AssessmentShell` as a product composition rather than a replacement primitive;
+- shell composes shadcn `Card`, `Progress`, and `Button`, provides responsive width/spacing, semantic heading, step count, accessible progressbar, optional supporting copy, optional back action, and footer slot;
+- React Testing Library + jsdom were added for behavior-focused component tests; tests assert accessible roles/labels and interaction rather than Tailwind class snapshots.
+
+T15 TDD evidence: `assessment-shell.test.tsx` was written before the product component existed and failed on import resolution (RED). The shell was then implemented on top of the installed shadcn primitives until progress semantics and conditional back behavior passed (GREEN).
 
 ### T16 Wire persisted steps
 
