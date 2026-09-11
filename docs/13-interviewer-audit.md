@@ -75,3 +75,7 @@ A separate code-level pass reviewed repository ports, transaction boundaries, HT
 - local Playwright could reuse an unrelated/stale server on port 3000; it now owns a dedicated port and never reuses an existing process.
 
 The review also retained several choices deliberately: `400` is used for malformed request syntax/schema, `422` for a structurally valid but semantically inconsistent answer, and `409` for aggregate state/order/concurrency conflicts; repository interfaces remain use-case-specific rather than collapsing into a generic repository; and submit correctness continues to rely on the transactional compare-and-swap boundary rather than trying to make its preliminary read snapshot authoritative.
+
+## Interview defense
+
+For likely follow-up questions and concise code-backed answers, see `15-interview-defense.md`. The guide explicitly separates shipped guarantees from demo-scope limitations so the interview explanation does not overclaim production authentication, billing, or medical correctness.

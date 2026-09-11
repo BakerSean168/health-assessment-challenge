@@ -217,8 +217,8 @@ pnpm test:all
 
 | Layer | Current evidence | Why this layer exists |
 |---|---|---|
-| Unit/component | 54 tests | Pure calculation boundaries, step policy, FREE redaction, production Prisma lifecycle, and product-component behavior should fail fast without infrastructure noise |
-| PostgreSQL integration | 34 tests | Persistence, recovery, ordering, optimistic concurrency, malformed/injection-shaped input, atomic submit, result authorization, and payment idempotency depend on real database/HTTP-boundary semantics |
+| Unit/component | 60 tests | Pure calculation boundaries, step policy, FREE redaction, production Prisma lifecycle, and product-component behavior should fail fast without infrastructure noise |
+| PostgreSQL integration | 35 tests | Persistence, recovery, ordering, optimistic concurrency, malformed/injection-shaped input, atomic submit, result authorization, and payment idempotency depend on real database/HTTP-boundary semantics |
 | Playwright | 2 browser journeys | The two highest-value user paths prove cookies, Next routes, refresh recovery, FREE result, paywall, simulated payment, and ACTIVE result work together |
 | GitHub Actions | 4 jobs | A clean runner proves lint/typecheck/tests/build and immutable application/migration image publication are reproducible |
 
@@ -227,7 +227,7 @@ Intentionally not covered in this three-day scope: real account authentication, 
 The two browser flows can also be pointed at an already-deployed environment without starting a local dev server:
 
 ```bash
-E2E_BASE_URL=https://assessment.bakersean.top pnpm exec playwright test --project=chromium
+E2E_BASE_URL=https://assessment.bakersean.top pnpm test:e2e
 ```
 
 Evaluator-side paid projection check:
@@ -254,6 +254,7 @@ curl -sS 'https://assessment.bakersean.top/api/assessment/result' \
 - [AI collaboration retrospective](docs/12-ai-retrospective.md)
 - [Interviewer-perspective audit](docs/13-interviewer-audit.md)
 - [Interviewer code-review audit](docs/14-code-review-audit.md)
+- [Technical interview defense guide](docs/15-interview-defense.md)
 
 ## Non-goals
 

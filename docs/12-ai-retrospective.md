@@ -26,13 +26,14 @@ The highest leverage came from quickly enumerating edge cases and turning them i
 3. **Latest-version upgrades without compatibility proof.** ESLint 10 and TypeScript 7 were both evaluated. The project itself largely worked, but the current Next lint/plugin stack did not support those versions cleanly, so both upgrades were rolled back rather than weakening linting or carrying custom compatibility hacks.
 4. **Production Prisma lifecycle.** The production database helper created a fresh Prisma/pg pool on repeated lookups. Local tests did not expose it, but the first public concurrent Playwright run produced `P2037 TooManyConnections`. A production-mode failing regression test was added first; the fix reuses one application client and caps the pool at four connections.
 5. **Personalized-response caching and semantic target writes.** A final interviewer-style code review found that session-scoped JSON had no explicit no-store policy, and a scalar-valid but goal-inconsistent target could be persisted while the funnel stayed on the same step. Failing integration assertions were added first; responses are now `private, no-store`, and inconsistent target candidates return `422 STEP_VALUE_INCONSISTENT` without mutating revision.
+6. **Persisted-data trust and remote test isolation.** A technical-interview pressure test found that domain completion treated any non-null scalar already in PostgreSQL as valid, even when it violated the HTTP contract range. RED domain/submission tests proved the gap; domain validity now rechecks the shared bounds. The same pass removed unnecessary local PostgreSQL bootstrap from `E2E_BASE_URL` runs so deployed-environment tests depend only on the deployed system.
 
 ## Evidence used to accept changes
 
 At delivery time the repository has:
 
-- 54 Vitest unit/component tests;
-- 34 PostgreSQL integration tests against committed migrations;
+- 60 Vitest unit/component tests;
+- 35 PostgreSQL integration tests against committed migrations;
 - two Playwright browser flows covering FREE and paid journeys;
 - GitHub Actions gates for lint, route-aware typecheck, tests, production build, and immutable container publication;
 - the same two Playwright flows passing against the public HTTPS deployment;

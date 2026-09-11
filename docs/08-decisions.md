@@ -30,6 +30,8 @@ This is a lightweight ADR index for decisions that are important enough to expla
 | D024 | private/no-store session API responses | accepted | personalized assessment/result payloads must not be eligible for shared-cache reuse |
 | D025 | reject inconsistent target candidates before persistence | accepted | avoid reporting a successful save that leaves the same semantic step unresolved |
 | D026 | isolated local Playwright server | accepted | one-command E2E must execute the current checkout rather than silently reusing a stale port-3000 process |
+| D027 | revalidate persisted scalar invariants in the domain | accepted | transport validation is not sufficient proof that stored legacy/manual data is safe to submit |
+| D028 | remote E2E has no local database bootstrap | accepted | production smoke tests should exercise only the remote deployment and not depend on unrelated local Docker state |
 
 ## D001 — Next.js modular monolith
 
@@ -153,3 +155,11 @@ Scalar input validation and cross-field domain validation have different respons
 ## D026 — Isolated local Playwright server
 
 Local browser tests run on a dedicated `127.0.0.1:3100` server with `reuseExistingServer: false`. This intentionally fails on an unexpected port collision instead of silently testing a stale developer process. Public-deployment verification remains opt-in through `E2E_BASE_URL`.
+
+## D027 — Revalidate persisted scalar invariants in the domain
+
+Zod remains the HTTP contract boundary, but stored state is not assumed valid merely because it exists. `getNextRequiredStep()` and submission validation reuse the frozen scalar limits for height, weight, target weight, and integer age. This protects recovery/submission from legacy, manual, seed, or otherwise non-HTTP data that violates current invariants. The calculation functions can therefore continue to accept a validated complete input rather than duplicating defensive range checks internally.
+
+## D028 — Remote E2E skips local database bootstrap
+
+`E2E_BASE_URL` is a production/deployed-environment verification mode. The E2E wrapper now starts PostgreSQL, applies migrations, and resets fixtures only for local execution. Remote mode launches Playwright directly against the supplied URL. This keeps production smoke evidence independent from local Docker availability and avoids touching an unrelated test database.
