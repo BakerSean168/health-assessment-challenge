@@ -139,6 +139,8 @@ edit goal = GAIN_WEIGHT
 
 The old target value can remain stored for user convenience, but it cannot satisfy readiness until corrected. Unrelated valid later answers are not erased merely because the resolver moved backward.
 
+That preservation rule applies when an upstream edit (for example `goal`) makes an already stored target invalid. A newly submitted `TARGET_WEIGHT` candidate that is already inconsistent with the current goal/current weight is rejected with `STEP_VALUE_INCONSISTENT` before persistence, so the UI does not report a successful save while remaining on the same unresolved step.
+
 ## 6. Step-write policy
 
 For an in-progress assessment, a step mutation is allowed when either:

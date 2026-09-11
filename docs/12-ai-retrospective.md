@@ -25,13 +25,14 @@ The highest leverage came from quickly enumerating edge cases and turning them i
 2. **Client-side premium hiding.** A tempting result design sent full result data and blurred premium values. This was rejected because CSS is not authorization. FREE responses now omit protected values entirely and return only `{ locked: true }`.
 3. **Latest-version upgrades without compatibility proof.** ESLint 10 and TypeScript 7 were both evaluated. The project itself largely worked, but the current Next lint/plugin stack did not support those versions cleanly, so both upgrades were rolled back rather than weakening linting or carrying custom compatibility hacks.
 4. **Production Prisma lifecycle.** The production database helper created a fresh Prisma/pg pool on repeated lookups. Local tests did not expose it, but the first public concurrent Playwright run produced `P2037 TooManyConnections`. A production-mode failing regression test was added first; the fix reuses one application client and caps the pool at four connections.
+5. **Personalized-response caching and semantic target writes.** A final interviewer-style code review found that session-scoped JSON had no explicit no-store policy, and a scalar-valid but goal-inconsistent target could be persisted while the funnel stayed on the same step. Failing integration assertions were added first; responses are now `private, no-store`, and inconsistent target candidates return `422 STEP_VALUE_INCONSISTENT` without mutating revision.
 
 ## Evidence used to accept changes
 
 At delivery time the repository has:
 
 - 54 Vitest unit/component tests;
-- 33 PostgreSQL integration tests against committed migrations;
+- 34 PostgreSQL integration tests against committed migrations;
 - two Playwright browser flows covering FREE and paid journeys;
 - GitHub Actions gates for lint, route-aware typecheck, tests, production build, and immutable container publication;
 - the same two Playwright flows passing against the public HTTPS deployment;

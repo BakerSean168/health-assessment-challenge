@@ -1,4 +1,4 @@
-# API contract v0.2
+# API contract v1
 
 ## 1. Conventions
 
@@ -7,6 +7,8 @@ Base path: `/api`
 Authentication model: anonymous HttpOnly session cookie.
 
 Content type: `application/json` for request/response bodies unless no body is required.
+
+All session-scoped API responses, including errors, send `Cache-Control: private, no-store` so personalized assessment/result data is not eligible for shared-cache reuse.
 
 All mutating assessment requests use the current server session; callers do not select another session by sending an arbitrary identifier.
 
@@ -31,6 +33,7 @@ Initial stable error codes:
 - `SESSION_NOT_FOUND`
 - `ASSESSMENT_NOT_FOUND`
 - `STEP_OUT_OF_ORDER`
+- `STEP_VALUE_INCONSISTENT`
 - `ASSESSMENT_VERSION_CONFLICT`
 - `ASSESSMENT_INCOMPLETE`
 - `ASSESSMENT_ALREADY_COMPLETED`
@@ -161,6 +164,22 @@ A missing or malformed session cookie returns `401 SESSION_REQUIRED`. A syntacti
     "message": "This assessment step cannot be submitted yet.",
     "details": {
       "nextRequiredStep": "HEIGHT"
+    }
+  }
+}
+```
+
+### Semantically inconsistent value `422`
+
+A scalar-valid target weight is still rejected if it contradicts the already selected goal/current weight. The invalid candidate is not persisted and the aggregate revision does not advance.
+
+```json
+{
+  "error": {
+    "code": "STEP_VALUE_INCONSISTENT",
+    "message": "The target weight does not match the selected goal.",
+    "details": {
+      "nextRequiredStep": "TARGET_WEIGHT"
     }
   }
 }

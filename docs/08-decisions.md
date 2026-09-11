@@ -25,8 +25,11 @@ This is a lightweight ADR index for decisions that are important enough to expla
 | D019 | scalar assessment input bounds | accepted | freeze runtime-validation boundaries in tests while keeping them explicitly separate from source requirements and cross-field health logic |
 | D020 | goal/target directional invariant | accepted | keep the questionnaire internally coherent with a deterministic non-medical rule and make upstream edits revalidate downstream target state |
 | D021 | stable dependency refresh with compatibility gate | accepted | prefer current stable runtime packages only when the full framework/plugin toolchain supports them; reject upgrades that break quality gates |
-| D022 | reviewer-first delivery surface | accepted | expose the required demo, API, schema, one-command tests, coverage rationale, and AI evidence without making an interviewer search through implementation history |
 | D022 | one bounded production database pool per app process | accepted | prevent per-request Prisma/pg pools from exhausting the isolated production role |
+| D023 | reviewer-first delivery surface | accepted | expose the required demo, API, schema, one-command tests, coverage rationale, and AI evidence without making an interviewer search through implementation history |
+| D024 | private/no-store session API responses | accepted | personalized assessment/result payloads must not be eligible for shared-cache reuse |
+| D025 | reject inconsistent target candidates before persistence | accepted | avoid reporting a successful save that leaves the same semantic step unresolved |
+| D026 | isolated local Playwright server | accepted | one-command E2E must execute the current checkout rather than silently reusing a stale port-3000 process |
 
 ## D001 — Next.js modular monolith
 
@@ -135,6 +138,18 @@ The standalone Next.js process caches one application `PrismaClient` on `globalT
 
 This decision was made from production evidence rather than style preference: the first public concurrent Playwright run exposed `P2037 TooManyConnections` because the previous production branch constructed a fresh Prisma client and pg pool for repeated request-path lookups. A dedicated production-lifecycle regression test now prevents that behavior from returning.
 
-## D022 — Reviewer-first delivery surface
+## D023 — Reviewer-first delivery surface
 
 A correct implementation can still be a weak submission if the reviewer must infer where evidence lives. The final README therefore front-loads the public demo, paid evaluator identity, endpoint map, reproducible `/pay` cURL, actual schema, one-command test runner, behavior coverage, and intentional exclusions. `docs/13-interviewer-audit.md` maps the supplied brief to concrete evidence and names the remaining trade-offs explicitly.
+
+## D024 — Private/no-store session API responses
+
+Every API route in this challenge is scoped to the anonymous bearer session. Success and error JSON therefore use a shared response helper that emits `Cache-Control: private, no-store`. Cloudflare currently treats these routes as dynamic, but correctness should not depend on a particular edge-cache default or future configuration.
+
+## D025 — Reject inconsistent target candidates before persistence
+
+Scalar input validation and cross-field domain validation have different responsibilities. A target can be a valid numeric weight yet contradict `LOSE_WEIGHT`, `GAIN_WEIGHT`, or `MAINTAIN` relative to the stored current weight. Direct inconsistent candidates return `422 STEP_VALUE_INCONSISTENT` and do not advance the optimistic revision. If a previously valid stored target becomes invalid because an earlier goal/current-weight answer is edited, that historical value may remain stored while derived progress moves back to `TARGET_WEIGHT`.
+
+## D026 — Isolated local Playwright server
+
+Local browser tests run on a dedicated `127.0.0.1:3100` server with `reuseExistingServer: false`. This intentionally fails on an unexpected port collision instead of silently testing a stale developer process. Public-deployment verification remains opt-in through `E2E_BASE_URL`.

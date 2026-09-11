@@ -12,12 +12,12 @@ This is a final review against the supplied three-day challenge brief, written f
 | Stable/extensible data model | Explicit relational columns, 1:1 session-assessment, immutable result snapshot, payment idempotency events, Mermaid schema | PASS |
 | Incremental persistence | Every accepted answer is persisted before UI progression; revision increments are integration-tested | PASS |
 | Progress recovery | `GET /api/assessment` restores answers; `nextRequiredStep` is derived from persisted facts; public E2E reloads mid-funnel | PASS |
-| State consistency | Server-side step ordering, cross-field target revalidation, strict stale-write `409`, real concurrent-writer integration test | PASS |
+| State consistency | Server-side step ordering, direct inconsistent target rejection, upstream cross-field revalidation, strict stale-write `409`, real concurrent-writer integration test | PASS |
 | BMI / intake / target date | Versioned `demo-v1` pure calculations with explicit bounds/rounding/reference date and 22 calculation tests | PASS |
 | Persist calculated result | Submit transaction creates one canonical `AssessmentResult` snapshot and completes the aggregate atomically | PASS |
 | FREE vs member access | FREE JSON omits premium values entirely; ACTIVE reads the same stored snapshot with protected fields present | PASS |
 | `/pay` closed loop | Session-scoped idempotency key, replay/concurrent tests, public browser paywall flow, README cURL | PASS |
-| Extreme/missing/illegal input | Inclusive boundary tests plus route-level missing/null/object/injection-shaped payload rejection with no mutation | PASS |
+| Extreme/missing/illegal input | Inclusive boundary tests plus route-level missing/null/object/injection-shaped payload rejection and goal-inconsistent target rejection with no mutation | PASS |
 | Interrupted/repeated/out-of-order/concurrent behavior | Integration tests cover resume, skip rejection, stale same-value retry, submit retry, concurrent OCC and payment replay | PASS |
 | One-command tests | `pnpm test:all` runs unit/component + PostgreSQL integration + Playwright E2E | PASS |
 | CI | GitHub Actions runs Quality, PostgreSQL integration, Chromium E2E, and immutable container publishing | PASS |
@@ -65,3 +65,13 @@ The browser suite is reserved for the two end-to-end behaviors with the highest 
 - The health calculations are deterministic demo policies, not clinical recommendations.
 
 These limitations are explicit rather than hidden because each corresponds to work outside the supplied challenge's core evaluation boundary.
+
+## Second-round code review
+
+A separate code-level pass reviewed repository ports, transaction boundaries, HTTP caching/status semantics, error handling, and test isolation. It found three concrete issues worth changing rather than merely documenting:
+
+- session-personalized JSON had no explicit cache directive; all API success/error responses now use `Cache-Control: private, no-store`;
+- a directly entered target weight could be scalar-valid but contradict the selected goal, be persisted, and leave the UI on the same step; it now returns `422 STEP_VALUE_INCONSISTENT` without advancing revision;
+- local Playwright could reuse an unrelated/stale server on port 3000; it now owns a dedicated port and never reuses an existing process.
+
+The review also retained several choices deliberately: `400` is used for malformed request syntax/schema, `422` for a structurally valid but semantically inconsistent answer, and `409` for aggregate state/order/concurrency conflicts; repository interfaces remain use-case-specific rather than collapsing into a generic repository; and submit correctness continues to rely on the transactional compare-and-swap boundary rather than trying to make its preliminary read snapshot authoritative.

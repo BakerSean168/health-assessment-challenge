@@ -68,7 +68,7 @@ Behavior IDs use the `Bxx` prefix so they cannot be confused with executable imp
 | B02 | persist first answer | integration | assessment cannot save gender | DB contains answer + revision advances |
 | B03 | resume after refresh | integration/unit | GET loses saved state | answers restored + next required step derived |
 | B04 | reject skipped step | integration/unit | target step accepted too early | stable `STEP_OUT_OF_ORDER` |
-| B05 | edit earlier step | integration/unit | dependent answer stays falsely valid | resolver moves to first context-invalid step without unnecessary data loss |
+| B05 | cross-field target consistency | integration/unit | invalid direct target is saved or upstream edit leaves progress falsely complete | direct inconsistent candidate is rejected; upstream edit derives `TARGET_WEIGHT` without unnecessary data loss |
 | B06 | reject stale write | integration | two writers overwrite/accept stale duplicate | stale revision returns `409`, even for same-value retry |
 | B07 | calculate BMI | unit | function absent | fixed examples + boundaries pass |
 | B08 | calculate intake | unit | policy absent | frozen policy cases pass |

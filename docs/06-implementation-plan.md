@@ -537,7 +537,7 @@ Implemented behavior and evidence:
 - the FREE result asserts BMI/category visibility, both premium metrics visibly locked, and the unlock CTA available;
 - a second reload on `/result` verifies the stored snapshot remains available and the session remains FREE;
 - `scripts/e2e.mjs` makes the browser test reproducible by starting the disposable PostgreSQL 17 Compose service, applying committed migrations, and passing the same test database URL to the Next.js web server;
-- Playwright now uses `localhost` consistently for its browser/base URL and web-server health check, avoiding a cross-origin dev-HMR boundary between `127.0.0.1` and the Next development origin.
+- Local Playwright now owns a dedicated `127.0.0.1:3100` web-server port with `reuseExistingServer: false`, so `pnpm test:e2e` cannot silently pass against a stale developer server on port 3000. Remote verification still bypasses the local server through `E2E_BASE_URL`.
 
 T18 TDD evidence: the browser specification was added before E2E database/environment wiring and initially failed on the first assessment heading (RED). After adding the self-contained E2E runner and consistent origin, the same spec completed the real funnel and passed in Chromium (GREEN).
 
@@ -571,7 +571,7 @@ Required jobs/checks:
 Implemented pipeline:
 
 - `Quality`: ESLint, Next route type generation + TypeScript, 54 unit/component tests, and production `next build`;
-- `PostgreSQL integration`: starts the disposable PostgreSQL 17 Compose service from a clean runner, applies all committed migrations, resets aggregate test data, then runs 33 integration tests;
+- `PostgreSQL integration`: starts the disposable PostgreSQL 17 Compose service from a clean runner, applies all committed migrations, resets aggregate test data, then runs 34 integration tests;
 - `Chromium E2E`: installs Playwright Chromium and exercises both FREE and paid browser flows against the real Next/API/PostgreSQL stack;
 - CI uses Node 24.21.0 and the repository-pinned pnpm 11.22.0, read-only repository permissions, per-ref concurrency cancellation, and a failed-run Playwright report artifact;
 - database-backed commands are self-contained: `pnpm test:integration` and `pnpm test:e2e` can start their default local test database rather than relying on an undocumented pre-existing container.

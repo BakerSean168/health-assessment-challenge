@@ -86,6 +86,7 @@ The implementation keeps seven persisted assessment inputs while using feedback 
 - Generate deterministic result snapshots on submit.
 - Return different result DTOs for free and active subscriptions.
 - Never send locked premium values to free clients.
+- Mark all session-scoped API responses as private/no-store.
 - Make assessment submit and simulated payment safe to retry while keeping stale answer writes strict under optimistic concurrency.
 - Develop behavior-first using RED -> GREEN -> REFACTOR.
 - Keep CI as executable evidence of linting, typing, tests, and build health.
@@ -217,7 +218,7 @@ pnpm test:all
 | Layer | Current evidence | Why this layer exists |
 |---|---|---|
 | Unit/component | 54 tests | Pure calculation boundaries, step policy, FREE redaction, production Prisma lifecycle, and product-component behavior should fail fast without infrastructure noise |
-| PostgreSQL integration | 33 tests | Persistence, recovery, ordering, optimistic concurrency, malformed/injection-shaped input, atomic submit, result authorization, and payment idempotency depend on real database/HTTP-boundary semantics |
+| PostgreSQL integration | 34 tests | Persistence, recovery, ordering, optimistic concurrency, malformed/injection-shaped input, atomic submit, result authorization, and payment idempotency depend on real database/HTTP-boundary semantics |
 | Playwright | 2 browser journeys | The two highest-value user paths prove cookies, Next routes, refresh recovery, FREE result, paywall, simulated payment, and ACTIVE result work together |
 | GitHub Actions | 4 jobs | A clean runner proves lint/typecheck/tests/build and immutable application/migration image publication are reproducible |
 
@@ -252,6 +253,7 @@ curl -sS 'https://assessment.bakersean.top/api/assessment/result' \
 - [Deployment and evaluator demo](docs/11-deployment.md)
 - [AI collaboration retrospective](docs/12-ai-retrospective.md)
 - [Interviewer-perspective audit](docs/13-interviewer-audit.md)
+- [Interviewer code-review audit](docs/14-code-review-audit.md)
 
 ## Non-goals
 
