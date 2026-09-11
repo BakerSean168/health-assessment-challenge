@@ -33,6 +33,7 @@ This is a lightweight ADR index for decisions that are important enough to expla
 | D027 | revalidate persisted scalar invariants in the domain | accepted | transport validation is not sufficient proof that stored legacy/manual data is safe to submit |
 | D028 | remote E2E has no local database bootstrap | accepted | production smoke tests should exercise only the remote deployment and not depend on unrelated local Docker state |
 | D029 | product-facing UI, reviewer-facing engineering evidence | accepted | let the public funnel behave like a real product; keep persistence/snapshot/TDD/server narration in repository evidence |
+| D030 | live client BMI preview from the shared pure calculation | accepted | provide immediate user value on the weight step without duplicating or replacing the server-side result snapshot |
 
 ## D001 — Next.js modular monolith
 
@@ -172,3 +173,9 @@ The public funnel is not an architecture presentation. Engineering terms such as
 Mock payment remains transparent without exposing backend mechanics: the paywall states that no payment details are required and the user will not be charged, while details about the idempotency key and subscription-state transition remain in reviewer documentation.
 
 This corrects an earlier reviewer-first interpretation that over-optimized the live page for demonstrating implementation details. Reviewer discoverability is still provided by D023, but on the repository surface rather than inside the end-user experience.
+
+## D030 — Live client BMI preview from the shared pure calculation
+
+Once height is already saved, the current-weight step calculates BMI immediately after the draft weight becomes valid. The preview imports the same pure `calculateBmi()` domain function used by submission, so the browser does not carry a second formula or threshold table. This is presentation feedback only: it does not persist a result and does not replace the canonical server-side snapshot created on submission.
+
+Assessment numeric fields retain `type=number` and mobile `inputMode`, but suppress browser-native spinner controls through local styling so height/current-weight/age/target-weight entry remains visually consistent with the product surface.

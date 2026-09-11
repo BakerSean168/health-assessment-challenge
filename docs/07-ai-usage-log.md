@@ -384,7 +384,7 @@ The first end-user flow needed to connect the seven persisted backend steps to R
 
 **Review corrections**
 
-The first implementation run showed two component-level defects that backend tests could not reveal: test DOM from earlier cases was not being cleaned up under the current Vitest configuration, and the Base UI RadioGroup changed from uncontrolled to controlled when the first value arrived. A conditional Testing Library cleanup hook and a stable controlled `value` resolved them. We also moved assessment scalar bounds into a shared domain constant so the UI range hints and Zod contracts cannot drift independently.
+The first implementation run showed two component-level defects that backend tests could not reveal: test DOM from earlier cases was not being cleaned up under the current Vitest configuration, and the Base UI RadioGroup changed from uncontrolled to controlled when the first value arrived. A conditional Testing Library cleanup hook and a stable controlled `value` resolved them. We also moved assessment scalar bounds into a shared domain constant so the UI input constraints and Zod contracts cannot drift independently.
 
 **Component policy outcome**
 
@@ -582,3 +582,7 @@ The user identified the mismatch directly and rejected the assumption that engin
 **Outcome**
 
 The live application now behaves like a wellness assessment rather than explaining how it was engineered. Repository evidence remains reviewer-first through README, architecture/API docs, TDD evidence, decision logs, and interview audits. Mock checkout stays honest with the user-facing statement that no payment details are required and no charge occurs, without exposing idempotency/session-state mechanics in the dialog.
+
+### 2026-09-12 — Product UI review: numeric entry and immediate BMI feedback
+
+A manual product pass caught two details that automated correctness checks had not prioritized: browser-native number steppers visually collided with the unit suffix, and the current-weight step missed an opportunity to provide immediate value after height was already known. RED component tests were added first for the numeric-field presentation contract and live BMI behavior. The implementation keeps the shadcn/Base UI `Input`, suppresses only its native spinner chrome, and reuses the same pure `calculateBmi()` function as the server calculation path instead of duplicating BMI logic in React. A browser E2E assertion now verifies the 175 cm / 75 kg step displays BMI 24.5 / Normal range before the answer is submitted.

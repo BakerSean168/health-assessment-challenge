@@ -126,7 +126,7 @@ As of T15, the repository contains the shadcn/Base UI-backed `Button`, `Progress
 The persisted funnel adds two assessment-specific compositions rather than new generic primitives:
 
 - `AssessmentOptionGroup` uses the shadcn/Base UI `RadioGroup` and `RadioGroupItem` for single-choice semantics, keyboard/focus behavior, and checked state;
-- `NumericAnswer` uses shadcn `Input` and `Label`, adding only assessment-specific range/unit copy.
+- `NumericAnswer` uses shadcn `Input` and `Label`, adding the unit suffix and product sizing while runtime bounds stay shared with the assessment contract.
 
 `AssessmentFunnel` composes these with the existing shared `Button`, `Alert`, `Card`, and `Skeleton`. Numeric input limits are imported from the same domain constant used by server validation so HTML input constraints cannot silently diverge from the runtime contract.
 
@@ -138,3 +138,7 @@ The public application should read like a small real wellness product, not like 
 Product copy may still disclose behavior that materially affects user trust, such as a general-wellness disclaimer or the fact that the checkout does not collect payment details. Those disclosures should be phrased in user terms rather than architecture terms.
 
 This separation is deliberate: the application demonstrates product completion by behaving correctly, while the repository demonstrates how and why it is correct.
+
+## 11. Live numeric feedback
+
+Numeric assessment fields reuse the shared shadcn/Base UI `Input`; native browser stepper buttons are visually suppressed rather than introducing a parallel custom input primitive. The weight step composes the existing `Card` with the shared pure `calculateBmi()` function to provide an immediate BMI preview once the entered weight is valid and a saved height is available. The preview is transient UI feedback; the final result remains the server-created snapshot.

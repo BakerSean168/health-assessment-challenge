@@ -61,7 +61,7 @@ Stable machine-readable error codes remain more important than prose messages fo
 
 ## Evidence after this review
 
-- 60 unit/component tests;
+- 62 unit/component tests;
 - 35 real PostgreSQL integration tests;
 - 2 Playwright browser journeys;
 - `pnpm test:all` runs all three layers;
