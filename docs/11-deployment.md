@@ -61,10 +61,11 @@ The anonymous session cookie becomes `Secure` automatically when `NODE_ENV=produ
 Production Compose runs the migration image before the application starts:
 
 ```bash
-docker compose --env-file .env -f compose.production.yaml up -d
+scp scripts/deploy-aliyun.sh <ssh-host>:/opt/health-assessment/deploy.sh
+ssh <ssh-host> 'chmod 700 /opt/health-assessment/deploy.sh && /opt/health-assessment/deploy.sh'
 ```
 
-The `app` service depends on successful completion of the one-shot `migrate` service. `prisma migrate deploy` therefore remains an explicit release step rather than happening during the Next.js build.
+The deployment helper validates the Compose configuration, pulls the immutable images, removes any stale one-shot migration container, runs the bounded migration step, and only then replaces/starts the application. A failed migration therefore leaves any already-running application untouched. The script waits for the application healthcheck before reporting success. `prisma migrate deploy` remains an explicit release step rather than happening during the Next.js build.
 
 ## Caddy route
 
