@@ -112,6 +112,26 @@ describe("POST /api/assessment/submit", () => {
     expect(assessment.revision).toBe(1);
   });
 
+  it("refuses to submit persisted scalar data that violates domain bounds", async () => {
+    const cookie = await createSession();
+    await completeDraft(cookie);
+
+    await prisma.assessment.updateMany({
+      data: { heightCm: 80 },
+    });
+
+    const response = await submitRequest(cookie, 7);
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({
+      error: {
+        code: "ASSESSMENT_INCOMPLETE",
+        details: { missingSteps: ["HEIGHT"] },
+      },
+    });
+    await expect(prisma.assessmentResult.count()).resolves.toBe(0);
+  });
+
   it("creates one versioned result snapshot and completes the aggregate atomically", async () => {
     const cookie = await createSession();
     await completeDraft(cookie);
