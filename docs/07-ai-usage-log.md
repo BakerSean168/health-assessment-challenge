@@ -567,3 +567,18 @@ The same review found a test-harness reproducibility risk: local Playwright had 
 ### 2026-09-11 — technical-interview pressure test exposed persisted-data trust gap
 
 A final defense pass asked whether the domain could still prove its invariants if PostgreSQL contained data written outside the normal HTTP route. The existing resolver only checked non-null height/weight/age values, so a manually persisted out-of-range scalar could be treated as submission-ready even though Zod would have rejected it at the network boundary. RED domain/submission tests reproduced the problem. The domain now reuses the frozen scalar limits and integer-age rule, and an integration case proves corrupted stored state cannot create a result snapshot. The same pass simplified remote Playwright execution: `E2E_BASE_URL` no longer starts or resets the local test database.
+
+
+### 2026-09-11 — user product review rejected engineering narration in the live UI
+
+**Context**
+
+The implementation had become increasingly reviewer-oriented: the landing page explicitly advertised “Progressive persistence,” “Versioned result snapshot,” and “Real access boundary”; assessment steps repeated save semantics; the result/paywall described deterministic snapshots, simulated payment mechanics, and the FREE -> ACTIVE server transition. Those facts were correct, but they made the public site read like an annotated take-home submission instead of a completed product experience.
+
+**User/developer correction**
+
+The user identified the mismatch directly and rejected the assumption that engineering proof should be visible inside the product UI. Product-facing copy tests were changed first to require end-user value language and the absence of implementation narration; those assertions failed against the existing UI (RED). Landing, funnel, processing, result, paywall, and metadata copy were then rewritten around user goals while preserving the same application behavior and shadcn/Base UI composition (GREEN). Static accepted-range narration was also removed from numeric inputs; the actual input/domain constraints remain unchanged.
+
+**Outcome**
+
+The live application now behaves like a wellness assessment rather than explaining how it was engineered. Repository evidence remains reviewer-first through README, architecture/API docs, TDD evidence, decision logs, and interview audits. Mock checkout stays honest with the user-facing statement that no payment details are required and no charge occurs, without exposing idempotency/session-state mechanics in the dialog.

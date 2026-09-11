@@ -13,6 +13,7 @@ This pass assumes the reviewer is no longer asking whether the challenge works. 
 | E2E isolation | Local Playwright could reuse any responsive server on port 3000 | A stale developer process can make a clean-checkout test command validate the wrong code/database | Local E2E owns `127.0.0.1:3100` and sets `reuseExistingServer: false` |
 | Persisted scalar invariants | Domain progress/submission previously treated any non-null height/weight/age as valid | HTTP validation is not the only possible source of persisted data; old migrations/manual writes must not produce a result from invalid state | Domain validity now rechecks shared scalar limits and integer age before progress/submission |
 | Remote E2E bootstrap | `E2E_BASE_URL` skipped the local web server but the wrapper still started/reset local PostgreSQL | Public smoke verification should not require unrelated local infrastructure | Remote E2E now runs Playwright directly; local DB/migration/reset only happen for local E2E |
+| Product/reviewer boundary | Live pages narrated persistence, snapshots, server state, and simulated-payment mechanics | A take-home can look less complete when the product explains its implementation to the user | Public copy now stays end-user-facing; engineering proof remains in repository/docs/tests |
 
 The first two changes were driven RED-first by integration assertions. The E2E isolation change was verified while a separate development process remained on port 3000; Playwright launched the current checkout on port 3100 and both journeys passed.
 

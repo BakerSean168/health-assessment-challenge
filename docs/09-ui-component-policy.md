@@ -128,4 +128,13 @@ The persisted funnel adds two assessment-specific compositions rather than new g
 - `AssessmentOptionGroup` uses the shadcn/Base UI `RadioGroup` and `RadioGroupItem` for single-choice semantics, keyboard/focus behavior, and checked state;
 - `NumericAnswer` uses shadcn `Input` and `Label`, adding only assessment-specific range/unit copy.
 
-`AssessmentFunnel` composes these with the existing shared `Button`, `Alert`, `Card`, and `Skeleton`. Numeric input limits are imported from the same domain constant used by server validation so presentation hints cannot silently diverge from the runtime contract.
+`AssessmentFunnel` composes these with the existing shared `Button`, `Alert`, `Card`, and `Skeleton`. Numeric input limits are imported from the same domain constant used by server validation so HTML input constraints cannot silently diverge from the runtime contract.
+
+
+## 11. Product surface vs reviewer surface
+
+The public application should read like a small real wellness product, not like an annotated engineering submission. Implementation proof such as optimistic concurrency, persistence timing, result snapshots, server-side projection, FREE/ACTIVE state, TDD, and database behavior belongs in README/docs/tests rather than explanatory UI copy.
+
+Product copy may still disclose behavior that materially affects user trust, such as a general-wellness disclaimer or the fact that the checkout does not collect payment details. Those disclosures should be phrased in user terms rather than architecture terms.
+
+This separation is deliberate: the application demonstrates product completion by behaving correctly, while the repository demonstrates how and why it is correct.

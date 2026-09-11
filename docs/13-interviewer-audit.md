@@ -39,7 +39,7 @@ History/restarts are not required. `Assessment.sessionId` is unique, which makes
 
 ### Why a static target-date policy?
 
-The challenge requires a deterministic target prediction, not a clinical model. `demo-v1` uses an injected date and documented fixed rate so tests remain reproducible. The UI and docs explicitly label results as engineering-demo estimates, not medical advice.
+The challenge requires a deterministic target prediction, not a clinical model. `demo-v1` uses an injected date and documented fixed rate so tests remain reproducible. Engineering-demo details stay in repository documentation; the live UI uses a concise general-wellness/not-medical-advice disclaimer rather than implementation narration.
 
 ### Why only two browser E2E tests?
 
@@ -53,6 +53,7 @@ The browser suite is reserved for the two end-to-end behaviors with the highest 
 4. Public responses exposed `X-Powered-By: Next.js`. This is not a functional requirement, but the production config now disables that unnecessary framework disclosure.
 5. Final docs still contained a few bootstrap-era words such as "planned" and an obsolete future-tense database-test note. Those were reconciled to the implementation that actually shipped.
 6. A lightweight desktop/mobile browser audit found no horizontal overflow, console errors, page errors, or failed network requests on the landing, assessment entry, and paid-result surfaces. A local app icon was added so the submission does not fall back to a missing favicon request.
+7. The live UI had accumulated reviewer-facing implementation narration (persistence, versioned snapshots, access boundaries, server transition details). A product-surface pass moved that evidence back to README/docs/tests and rewrote landing, questionnaire, processing, result, checkout, and metadata copy around end-user value while keeping mock checkout transparent.
 
 ## Remaining known limitations
 

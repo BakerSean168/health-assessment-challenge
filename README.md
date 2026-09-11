@@ -14,6 +14,8 @@ The repository is public from the start so the implementation history, test-firs
 
 **Live demo:** https://assessment.bakersean.top
 
+The live site is intentionally product-facing: it presents the wellness journey to an end user rather than narrating persistence, snapshots, server state, TDD, or other implementation details. Reviewer evidence lives in this README, the docs, tests, and commit history.
+
 **Synthetic paid evaluator sessionId:** `11111111-1111-4111-8111-111111111111` (contains demo data only).
 
 ## Reviewer quick path

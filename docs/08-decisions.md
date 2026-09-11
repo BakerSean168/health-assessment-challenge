@@ -32,6 +32,7 @@ This is a lightweight ADR index for decisions that are important enough to expla
 | D026 | isolated local Playwright server | accepted | one-command E2E must execute the current checkout rather than silently reusing a stale port-3000 process |
 | D027 | revalidate persisted scalar invariants in the domain | accepted | transport validation is not sufficient proof that stored legacy/manual data is safe to submit |
 | D028 | remote E2E has no local database bootstrap | accepted | production smoke tests should exercise only the remote deployment and not depend on unrelated local Docker state |
+| D029 | product-facing UI, reviewer-facing engineering evidence | accepted | let the public funnel behave like a real product; keep persistence/snapshot/TDD/server narration in repository evidence |
 
 ## D001 — Next.js modular monolith
 
@@ -163,3 +164,11 @@ Zod remains the HTTP contract boundary, but stored state is not assumed valid me
 ## D028 — Remote E2E skips local database bootstrap
 
 `E2E_BASE_URL` is a production/deployed-environment verification mode. The E2E wrapper now starts PostgreSQL, applies migrations, and resets fixtures only for local execution. Remote mode launches Playwright directly against the supplied URL. This keeps production smoke evidence independent from local Docker availability and avoids touching an unrelated test database.
+
+## D029 — Product-facing UI, reviewer-facing engineering evidence
+
+The public funnel is not an architecture presentation. Engineering terms such as progressive persistence, versioned result snapshot, access boundary, server state, deterministic implementation, and FREE/ACTIVE transition belong in README/docs/tests. The live UI instead explains user value: body metrics, calorie estimate, goal timeline, and a concise wellness disclaimer.
+
+Mock payment remains transparent without exposing backend mechanics: the paywall states that no payment details are required and the user will not be charged, while details about the idempotency key and subscription-state transition remain in reviewer documentation.
+
+This corrects an earlier reviewer-first interpretation that over-optimized the live page for demonstrating implementation details. Reviewer discoverability is still provided by D023, but on the repository surface rather than inside the end-user experience.
