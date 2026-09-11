@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const remoteBaseUrl = process.env.E2E_BASE_URL;
+
 export default defineConfig({
   testDir: "./src/test/e2e",
   fullyParallel: true,
@@ -8,7 +10,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: "html",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: remoteBaseUrl ?? "http://localhost:3000",
     trace: "on-first-retry",
   },
   projects: [
@@ -17,9 +19,11 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
-    command: "pnpm dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: remoteBaseUrl
+    ? undefined
+    : {
+        command: "pnpm dev",
+        url: "http://localhost:3000",
+        reuseExistingServer: !process.env.CI,
+      },
 });

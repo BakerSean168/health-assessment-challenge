@@ -20,6 +20,7 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
+      DATABASE_POOL_MAX: ${DATABASE_POOL_MAX:-4}
       NODE_OPTIONS: --max-old-space-size=256
     expose:
       - "3000"
