@@ -461,3 +461,21 @@ Roll back to TypeScript 5.9.3. We do not introduce a side-by-side TS6 compiler A
 **Outcome**
 
 The repository keeps the latest fully supported TypeScript line for its current Next lint stack, and the rejected upgrade is preserved as executable compatibility evidence.
+
+### 2026-09-11 — T18 first real-browser funnel
+
+**Context**
+
+The assessment had component and PostgreSQL integration coverage, but no browser had yet proven that cookies, Next routes, persisted progress, navigation, and result rendering work together.
+
+**TDD evidence**
+
+The Playwright test was written first and failed at the first question because the dev server did not have the E2E database environment and the original `127.0.0.1` browser origin crossed Next's dev-resource origin boundary.
+
+**Developer decision**
+
+Fix the test environment rather than weakening the browser assertion: a Node E2E runner starts the disposable Postgres service, deploys migrations, injects the application database URL, and Playwright uses one `localhost` origin consistently.
+
+**Outcome**
+
+Chromium now completes the seven-step funnel, survives a mid-assessment reload, reaches the redacted FREE result, and survives a result reload without direct database manipulation.

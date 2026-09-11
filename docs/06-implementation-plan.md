@@ -524,9 +524,22 @@ T17 TDD evidence: `result-experience.test.tsx` was written before the result cli
 
 ### T18 Browser flow: free user
 
+**Status:** done — 2026-09-11
+
 New browser -> complete funnel -> submit -> free result.
 
 Assert premium values are visibly locked and flow can complete without manually modifying DB state.
+
+Implemented behavior and evidence:
+
+- added the first real Chromium Playwright path through all seven assessment inputs and the server-side submit/result transition;
+- the browser deliberately reloads after current weight and must resume at `AGE`, proving the user-facing recovery path against the real API/database rather than a mocked component adapter;
+- the FREE result asserts BMI/category visibility, both premium metrics visibly locked, and the unlock CTA available;
+- a second reload on `/result` verifies the stored snapshot remains available and the session remains FREE;
+- `scripts/e2e.mjs` makes the browser test reproducible by starting the disposable PostgreSQL 17 Compose service, applying committed migrations, and passing the same test database URL to the Next.js web server;
+- Playwright now uses `localhost` consistently for its browser/base URL and web-server health check, avoiding a cross-origin dev-HMR boundary between `127.0.0.1` and the Next development origin.
+
+T18 TDD evidence: the browser specification was added before E2E database/environment wiring and initially failed on the first assessment heading (RED). After adding the self-contained E2E runner and consistent origin, the same spec completed the real funnel and passed in Chromium (GREEN).
 
 ### T19 Browser flow: paid user
 

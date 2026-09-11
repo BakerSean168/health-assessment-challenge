@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test",
+    "test:e2e": "node scripts/e2e.mjs",
     "db:generate": "prisma generate",
     "db:test:up": "docker compose -f compose.test.yaml up -d --wait",
     "db:test:down": "docker compose -f compose.test.yaml down -v",
