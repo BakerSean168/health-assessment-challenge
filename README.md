@@ -61,7 +61,7 @@ The planned implementation keeps seven persisted assessment inputs while using f
 - Vitest 5
 - Playwright 1.63
 - GitHub Actions
-- Vercel-compatible deployment
+- Docker/GHCR deployment to the existing Chengdu Aliyun host behind Caddy
 
 The UI layer follows a library-first policy: when shadcn/ui provides a suitable component, use that component as the accessible, styled baseline and customize it locally for the product rather than rebuilding the primitive from scratch. Project-specific composition remains encouraged; duplicate primitives are not.
 
@@ -116,6 +116,7 @@ Integration tests drive persistence, resume behavior, ordering, optimistic locki
 - [Decision log](docs/08-decisions.md)
 - [UI component policy](docs/09-ui-component-policy.md)
 - [Calculation policy v1](docs/10-calculation-policy.md)
+- [Deployment and evaluator demo](docs/11-deployment.md)
 
 ## Non-goals
 
