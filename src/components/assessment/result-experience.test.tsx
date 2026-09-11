@@ -49,6 +49,8 @@ describe("ResultExperience", () => {
     expect(screen.getAllByText("Locked")).toHaveLength(2);
     expect(screen.queryByText("2460")).not.toBeInTheDocument();
     expect(screen.queryByText("2026-12-31")).not.toBeInTheDocument();
+    expect(screen.queryByText(/engineering-demo/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/stored result/i)).not.toBeInTheDocument();
   });
 
   it("opens a shadcn/Base UI paywall and unlocks the same result endpoint after demo payment", async () => {
@@ -72,10 +74,12 @@ describe("ResultExperience", () => {
       await screen.findByRole("button", { name: "Unlock my full result" }),
     );
     expect(
-      screen.getByRole("dialog", { name: "Unlock your full result" }),
+      screen.getByRole("dialog", { name: "Unlock your complete profile" }),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Complete demo payment" }));
+    expect(screen.getByText(/No payment details are required/i)).toBeInTheDocument();
+    expect(screen.queryByText(/FREE to ACTIVE/i)).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Unlock my results" }));
 
     await waitFor(() => expect(pay).toHaveBeenCalledWith("demo_unlock_001"));
     await waitFor(() => expect(getResult).toHaveBeenCalledTimes(2));
@@ -107,13 +111,13 @@ describe("ResultExperience", () => {
     await user.click(
       await screen.findByRole("button", { name: "Unlock my full result" }),
     );
-    await user.click(screen.getByRole("button", { name: "Complete demo payment" }));
+    await user.click(screen.getByRole("button", { name: "Unlock my results" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Payment response was interrupted.",
     );
 
-    await user.click(screen.getByRole("button", { name: "Try demo payment again" }));
+    await user.click(screen.getByRole("button", { name: "Try again" }));
 
     await waitFor(() => expect(pay).toHaveBeenCalledTimes(2));
     expect(pay).toHaveBeenNthCalledWith(1, "stable_retry_key");

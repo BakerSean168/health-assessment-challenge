@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     return apiError(
       401,
       "SESSION_REQUIRED",
-      "Start an assessment session before using simulated payment.",
+      "Start an assessment before unlocking your results.",
     );
   }
 

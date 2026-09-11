@@ -156,7 +156,7 @@ export function ResultExperience({
     };
   }, [api]);
 
-  async function completeDemoPayment() {
+  async function unlockResults() {
     paymentKey.current ??= idempotencyKeyFactory();
     setIsPaying(true);
     setPaymentError(null);
@@ -169,7 +169,7 @@ export function ResultExperience({
       }
     } catch (error) {
       setPaymentError(
-        error instanceof Error ? error.message : "The demo payment could not be completed.",
+        error instanceof Error ? error.message : "We couldn’t unlock your results. Please try again.",
       );
     } finally {
       setIsPaying(false);
@@ -209,8 +209,7 @@ export function ResultExperience({
             Your wellness profile
           </h1>
           <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-            This is a deterministic engineering-demo result based on your saved answers.
-            It is not medical advice.
+            Your results are based on the information you provided and are intended for general wellness guidance only. They are not medical advice.
           </p>
         </header>
 
@@ -236,12 +235,12 @@ export function ResultExperience({
               <LockedMetric
                 icon={<Flame className="size-4" aria-hidden="true" />}
                 title="Recommended daily intake"
-                description="Your demo calorie estimate"
+                description="Personalized calorie guidance"
               />
               <LockedMetric
                 icon={<CalendarDays className="size-4" aria-hidden="true" />}
                 title="Estimated goal date"
-                description="Your static demo projection"
+                description="A timeline based on your target"
               />
             </>
           ) : (
@@ -278,10 +277,10 @@ export function ResultExperience({
               <div className="space-y-2">
                 <div className="flex items-center gap-2 font-semibold">
                   <Sparkles className="size-4" aria-hidden="true" />
-                  Your full result is ready
+                  Unlock your complete profile
                 </div>
                 <p className="text-sm leading-6 text-muted-foreground">
-                  Unlock the stored calorie estimate and goal-date projection with the simulated payment flow.
+                  See your personalized daily calorie target and estimated goal timeline.
                 </p>
               </div>
               <Button type="button" size="lg" onClick={() => setPaywallOpen(true)}>
@@ -292,31 +291,31 @@ export function ResultExperience({
         ) : (
           <Alert>
             <CheckCircle2 aria-hidden="true" />
-            <AlertTitle>Full result unlocked</AlertTitle>
+            <AlertTitle>Your complete profile is ready</AlertTitle>
             <AlertDescription>
-              These values come from the same result snapshot created when you submitted the assessment.
+              Your personalized calorie target and goal timeline are now available.
             </AlertDescription>
           </Alert>
         )}
       </div>
 
       <Dialog open={paywallOpen} onOpenChange={setPaywallOpen}>
-        <DialogContent aria-label="Unlock your full result">
+        <DialogContent aria-label="Unlock your complete profile">
           <DialogHeader>
-            <DialogTitle>Unlock your full result</DialogTitle>
+            <DialogTitle>Unlock your complete profile</DialogTitle>
             <DialogDescription>
-              This challenge uses a simulated payment only. No card details or real money are involved.
+              See your personalized daily calorie target and estimated goal timeline.
             </DialogDescription>
           </DialogHeader>
 
           <div className="rounded-lg border bg-muted/30 p-3 text-sm leading-6 text-muted-foreground">
-            The server will switch this anonymous session from FREE to ACTIVE, then the same result endpoint will be fetched again.
+            No payment details are required and you won’t be charged.
           </div>
 
           {paymentError ? (
             <Alert variant="destructive">
               <RefreshCw aria-hidden="true" />
-              <AlertTitle>Demo payment needs another try</AlertTitle>
+              <AlertTitle>We couldn’t unlock your results</AlertTitle>
               <AlertDescription>{paymentError}</AlertDescription>
             </Alert>
           ) : null}
@@ -326,13 +325,13 @@ export function ResultExperience({
               type="button"
               className="w-full sm:w-auto"
               disabled={isPaying}
-              onClick={() => void completeDemoPayment()}
+              onClick={() => void unlockResults()}
             >
               {isPaying
                 ? "Processing…"
                 : paymentError
-                  ? "Try demo payment again"
-                  : "Complete demo payment"}
+                  ? "Try again"
+                  : "Unlock my results"}
             </Button>
           </DialogFooter>
         </DialogContent>

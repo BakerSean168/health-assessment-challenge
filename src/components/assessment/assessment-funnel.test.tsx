@@ -53,6 +53,8 @@ describe("AssessmentFunnel", () => {
     expect(
       await screen.findByRole("heading", { name: "Which best describes you?" }),
     ).toBeInTheDocument();
+    expect(screen.getByText("This helps personalize your results.")).toBeInTheDocument();
+    expect(screen.queryByText(/Progress is saved after every Continue/i)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("radio", { name: "Male" }));
     await user.click(screen.getByRole("button", { name: "Continue" }));

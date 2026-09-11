@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
-  title: "Health Assessment Challenge",
-  description: "A TDD-first full-stack health assessment funnel challenge",
+  title: "Wellness Assessment",
+  description: "Discover your wellness profile with personalized body metrics and goal insights.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

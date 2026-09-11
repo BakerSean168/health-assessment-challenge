@@ -49,10 +49,6 @@ export function NumericAnswer({
           </span>
         ) : null}
       </div>
-      <p className="text-xs text-muted-foreground">
-        Accepted range: {min}–{max}
-        {unit ? ` ${unit}` : ""}
-      </p>
     </div>
   );
 }

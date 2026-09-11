@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock3, Sparkles, Target } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -18,7 +18,7 @@ export function AssessmentLanding() {
         <section className="space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground">
             <Sparkles className="size-3.5" aria-hidden="true" />
-            Progressive health-assessment demo
+            Personalized wellness assessment
           </div>
 
           <div className="space-y-4">
@@ -26,20 +26,19 @@ export function AssessmentLanding() {
               Build your wellness snapshot
             </h1>
             <p className="max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
-              Answer 7 short questions to generate a deterministic BMI, intake,
-              and goal-date demo. Your progress is saved after every step, so
-              you can safely refresh and continue.
+              Answer a few quick questions to better understand your current
+              body metrics and get personalized insights for your goal.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-2">
-              <CheckCircle2 className="size-4" aria-hidden="true" />
-              7 short questions
+              <Clock3 className="size-4" aria-hidden="true" />
+              Takes about 2 minutes
             </span>
             <span className="inline-flex items-center gap-2">
-              <ShieldCheck className="size-4" aria-hidden="true" />
-              Server-saved progress
+              <Target className="size-4" aria-hidden="true" />
+              Personalized to your goal
             </span>
           </div>
 
@@ -52,37 +51,44 @@ export function AssessmentLanding() {
           </Link>
 
           <p className="max-w-xl text-xs leading-5 text-muted-foreground">
-            Engineering demonstration only. The generated result is not medical
-            advice and no real payment is collected.
+            For general wellness information only. Results are estimates and are
+            not medical advice.
           </p>
         </section>
 
         <Card className="w-full">
           <CardHeader>
-            <CardDescription>What this demo proves</CardDescription>
-            <CardTitle className="text-2xl">A complete persisted flow</CardTitle>
+            <CardDescription>What you&apos;ll get</CardDescription>
+            <CardTitle className="text-2xl">A clearer view of your goals</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1">
-              <p className="font-medium">Progressive persistence</p>
+              <p className="flex items-center gap-2 font-medium">
+                <CheckCircle2 className="size-4" aria-hidden="true" />
+                BMI snapshot
+              </p>
               <p className="text-sm leading-6 text-muted-foreground">
-                Each answer is validated and saved before the funnel advances.
+                See where your current body mass index falls.
               </p>
             </div>
             <Separator />
             <div className="space-y-1">
-              <p className="font-medium">Versioned result snapshot</p>
+              <p className="flex items-center gap-2 font-medium">
+                <CheckCircle2 className="size-4" aria-hidden="true" />
+                Daily calorie estimate
+              </p>
               <p className="text-sm leading-6 text-muted-foreground">
-                Submission produces one deterministic result that is reused on
-                later reads instead of silently recalculating.
+                Get an estimate based on your profile, activity, and goal.
               </p>
             </div>
             <Separator />
             <div className="space-y-1">
-              <p className="font-medium">Real access boundary</p>
+              <p className="flex items-center gap-2 font-medium">
+                <CheckCircle2 className="size-4" aria-hidden="true" />
+                Goal timeline
+              </p>
               <p className="text-sm leading-6 text-muted-foreground">
-                Free responses omit protected values; a simulated payment
-                unlocks the same stored result server-side.
+                See an estimated timeline toward your target weight.
               </p>
             </div>
           </CardContent>

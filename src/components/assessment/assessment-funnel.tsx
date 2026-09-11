@@ -36,7 +36,7 @@ const optionQuestions = {
   GENDER: {
     title: "Which best describes you?",
     description:
-      "This helps us keep the demo calculation consistent with the selected profile.",
+      "This helps personalize your results.",
     ariaLabel: "Gender",
     options: [
       { value: "MALE", label: "Male" },
@@ -46,7 +46,7 @@ const optionQuestions = {
   },
   GOAL: {
     title: "What is your main goal?",
-    description: "Choose one direction for this assessment.",
+    description: "Choose what you'd like to work toward.",
     ariaLabel: "Goal",
     options: [
       { value: "LOSE_WEIGHT", label: "Lose weight" },
@@ -90,7 +90,7 @@ const numericQuestions = {
   },
   AGE: {
     title: "How old are you?",
-    description: "The demo intake estimate uses age as one of its inputs.",
+    description: "Age helps tailor your daily calorie estimate.",
     label: "Age",
     min: ASSESSMENT_INPUT_LIMITS.age.min,
     max: ASSESSMENT_INPUT_LIMITS.age.max,
@@ -100,7 +100,7 @@ const numericQuestions = {
   TARGET_WEIGHT: {
     title: "What is your target weight?",
     description:
-      "We'll use the difference from your current weight for the demo projection.",
+      "Your target helps us estimate a possible timeline toward your goal.",
     label: "Target weight",
     min: ASSESSMENT_INPUT_LIMITS.targetWeightKg.min,
     max: ASSESSMENT_INPUT_LIMITS.targetWeightKg.max,
@@ -216,7 +216,7 @@ function SubmittingAssessment() {
               Creating your wellness profile
             </h1>
             <p className="text-sm leading-6 text-muted-foreground">
-              We are turning your saved answers into a versioned result snapshot.
+              We’re putting your wellness profile together based on your answers.
             </p>
           </div>
           <Skeleton className="mx-auto h-2 w-4/5" />
@@ -394,12 +394,7 @@ export function AssessmentFunnel({
               <AlertTitle>We could not save this answer</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
-          ) : (
-            <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-              <CheckCircle2 className="size-3.5" aria-hidden="true" />
-              Progress is saved after every Continue.
-            </p>
-          )}
+          ) : null}
           <Button
             type="button"
             size="lg"
