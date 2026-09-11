@@ -521,3 +521,17 @@ Keep the typed Next 16 `LayoutProps` API rather than replacing it with a weaker 
 **Outcome**
 
 `pnpm typecheck` is now reproducible from a clean checkout and no longer depends on a previous `next dev` or `next build` side effect.
+
+### 2026-09-11 — Test database exposure caught during deployment preflight
+
+**Context**
+
+Deployment preflight inspected listening sockets on the shared development VPS and found the disposable PostgreSQL test container published as `0.0.0.0:55432`. Application code only used loopback, so public binding was unnecessary.
+
+**Developer decision**
+
+Bind the Compose test database explicitly to `127.0.0.1:55432`. Test infrastructure should be reachable by local runners only and should not expand the host's public attack surface.
+
+**Outcome**
+
+The test database remains fully usable by integration/E2E runners while the host no longer publishes that port on all interfaces.
