@@ -32,7 +32,7 @@ type StepDefinition = {
   isPresent: (answers: AssessmentAnswers) => boolean;
 };
 
-function isTargetWeightValid(answers: AssessmentAnswers): boolean {
+export function isTargetWeightCompatible(answers: AssessmentAnswers): boolean {
   const { goal, weightKg, targetWeightKg } = answers;
 
   if (goal == null || weightKg == null || targetWeightKg == null) {
@@ -82,7 +82,7 @@ const requiredSteps: ReadonlyArray<StepDefinition> = [
   },
   {
     step: "TARGET_WEIGHT",
-    isValid: isTargetWeightValid,
+    isValid: isTargetWeightCompatible,
     isPresent: (answers) => answers.targetWeightKg != null,
   },
 ];

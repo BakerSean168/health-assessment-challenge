@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { privateJson } from "@/lib/api-response";
 
 export function apiError(
   status: number,
@@ -6,7 +6,7 @@ export function apiError(
   message: string,
   details: Record<string, unknown> = {},
 ) {
-  return NextResponse.json(
+  return privateJson(
     {
       error: {
         code,

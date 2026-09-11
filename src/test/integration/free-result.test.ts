@@ -67,6 +67,7 @@ describe("GET /api/assessment/result for FREE sessions", () => {
     const response = await GET(requestForSession(session.id));
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
     const body = await response.json();
     expect(body).toEqual({
       access: "FREE",
@@ -101,6 +102,7 @@ describe("GET /api/assessment/result for FREE sessions", () => {
     );
 
     expect(response.status).toBe(401);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
     const body = await response.json();
     expect(body.error.code).toBe("SESSION_REQUIRED");
   });

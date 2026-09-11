@@ -1,6 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const remoteBaseUrl = process.env.E2E_BASE_URL;
+const localE2ePort = process.env.E2E_PORT ?? "3100";
+const localBaseUrl = `http://127.0.0.1:${localE2ePort}`;
 
 export default defineConfig({
   testDir: "./src/test/e2e",
@@ -10,7 +12,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: "html",
   use: {
-    baseURL: remoteBaseUrl ?? "http://localhost:3000",
+    baseURL: remoteBaseUrl ?? localBaseUrl,
     trace: "on-first-retry",
   },
   projects: [
@@ -22,8 +24,8 @@ export default defineConfig({
   webServer: remoteBaseUrl
     ? undefined
     : {
-        command: "pnpm dev",
-        url: "http://localhost:3000",
-        reuseExistingServer: !process.env.CI,
+        command: `pnpm dev --hostname 127.0.0.1 --port ${localE2ePort}`,
+        url: localBaseUrl,
+        reuseExistingServer: false,
       },
 });

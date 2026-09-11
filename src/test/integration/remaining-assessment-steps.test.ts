@@ -101,6 +101,42 @@ describe("remaining assessment answer contracts", () => {
     });
   });
 
+  it("rejects a target weight that conflicts with the selected goal without persisting it", async () => {
+    const bootstrap = await bootstrapSession(
+      new NextRequest("http://localhost/api/session", { method: "POST" }),
+    );
+    const cookie = cookieFrom(bootstrap);
+
+    const sequence = [
+      ["gender", "MALE"],
+      ["goal", "LOSE_WEIGHT"],
+      ["activity", "MODERATE"],
+      ["height", 175],
+      ["weight", 80],
+      ["age", 24],
+    ] as const;
+
+    for (const [revision, [stepKey, value]] of sequence.entries()) {
+      const response = await saveStep(cookie, stepKey, value, revision);
+      expect(response.status, stepKey).toBe(200);
+    }
+
+    const incompatible = await saveStep(cookie, "target-weight", 90, 6);
+
+    expect(incompatible.status).toBe(422);
+    await expect(incompatible.json()).resolves.toEqual({
+      error: {
+        code: "STEP_VALUE_INCONSISTENT",
+        message: "The target weight does not match the selected goal.",
+        details: { nextRequiredStep: "TARGET_WEIGHT" },
+      },
+    });
+
+    const persisted = await prisma.assessment.findFirstOrThrow();
+    expect(persisted.targetWeightKg).toBeNull();
+    expect(persisted.revision).toBe(6);
+  });
+
   it("rejects missing and injection-shaped numeric input before persistence", async () => {
     const bootstrap = await bootstrapSession(
       new NextRequest("http://localhost/api/session", { method: "POST" }),

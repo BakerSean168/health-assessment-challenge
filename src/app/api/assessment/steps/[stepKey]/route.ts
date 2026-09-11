@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { apiError } from "@/lib/api-error";
+import { privateJson } from "@/lib/api-response";
 import { getPrismaClient } from "@/lib/db";
 import { saveAssessmentStep } from "@/modules/assessment/application/save-assessment-step";
 import { parseAssessmentStepRequest } from "@/modules/assessment/contracts/assessment-step";
@@ -68,6 +69,15 @@ export async function PATCH(request: NextRequest, context: StepRouteContext) {
     return apiError(409, result.code, "The assessment is already completed.");
   }
 
+  if (!result.ok && result.code === "STEP_VALUE_INCONSISTENT") {
+    return apiError(
+      422,
+      result.code,
+      "The target weight does not match the selected goal.",
+      { nextRequiredStep: result.nextRequiredStep },
+    );
+  }
+
   if (!result.ok) {
     return apiError(
       409,
@@ -76,7 +86,7 @@ export async function PATCH(request: NextRequest, context: StepRouteContext) {
     );
   }
 
-  return NextResponse.json({
+  return privateJson({
     saved: true,
     revision: result.revision,
     nextRequiredStep: result.nextRequiredStep,

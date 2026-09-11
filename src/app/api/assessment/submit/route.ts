@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { apiError } from "@/lib/api-error";
+import { privateJson } from "@/lib/api-response";
 import { getPrismaClient } from "@/lib/db";
 import { submitAssessment } from "@/modules/assessment/application/submit-assessment";
 import { submitAssessmentRequestSchema } from "@/modules/assessment/contracts/submit-assessment";
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({
+  return privateJson({
     status: "COMPLETED",
     resultReady: true,
   });

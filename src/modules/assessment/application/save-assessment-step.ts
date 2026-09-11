@@ -1,6 +1,7 @@
 import type { AssessmentStepCommand } from "../contracts/assessment-step";
 import {
   getNextRequiredStep,
+  isTargetWeightCompatible,
   validateStepWrite,
 } from "../domain/assessment";
 import type { AssessmentRepository } from "./assessment-repository";
@@ -27,6 +28,11 @@ export type SaveAssessmentStepResult =
   | {
       ok: false;
       code: "ASSESSMENT_ALREADY_COMPLETED";
+    }
+  | {
+      ok: false;
+      code: "STEP_VALUE_INCONSISTENT";
+      nextRequiredStep: "TARGET_WEIGHT";
     };
 
 export async function saveAssessmentStep(
@@ -53,6 +59,20 @@ export async function saveAssessmentStep(
       ok: false,
       code: "STEP_OUT_OF_ORDER",
       nextRequiredStep: policy.nextRequiredStep,
+    };
+  }
+
+  if (
+    input.step === "TARGET_WEIGHT" &&
+    !isTargetWeightCompatible({
+      ...current.answers,
+      targetWeightKg: input.value,
+    })
+  ) {
+    return {
+      ok: false,
+      code: "STEP_VALUE_INCONSISTENT",
+      nextRequiredStep: "TARGET_WEIGHT",
     };
   }
 

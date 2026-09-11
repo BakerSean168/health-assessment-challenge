@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+
+import { privateJson } from "@/lib/api-response";
 
 import { getPrismaClient } from "@/lib/db";
 import { getNextRequiredStep } from "@/modules/assessment/domain/assessment";
@@ -21,7 +23,7 @@ export async function POST(request: NextRequest) {
     throw new Error("Session bootstrap completed without an assessment.");
   }
 
-  const response = NextResponse.json(
+  const response = privateJson(
     {
       subscriptionStatus: session.subscriptionStatus,
       assessment: {

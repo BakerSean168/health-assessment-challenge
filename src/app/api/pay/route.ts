@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { apiError } from "@/lib/api-error";
+import { privateJson } from "@/lib/api-response";
 import { getPrismaClient } from "@/lib/db";
 import { activateSubscription } from "@/modules/payment/application/activate-subscription";
 import { payRequestSchema } from "@/modules/payment/contracts/pay";
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
     return apiError(404, result.code, "The session was not found.");
   }
 
-  return NextResponse.json({
+  return privateJson({
     status: result.status,
     subscriptionStatus: result.subscriptionStatus,
     replayed: result.replayed,
