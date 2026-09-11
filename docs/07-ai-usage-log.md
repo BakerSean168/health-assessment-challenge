@@ -425,3 +425,21 @@ AI-assisted implementation proposed a separate result browser adapter and extrac
 The payment UI deliberately reuses one idempotency key after a failed response instead of generating a new key for each click. This preserves the server-side idempotency contract when a payment may have succeeded but the response was interrupted. Component tests were written first for FREE redaction, Base UI dialog interaction, ACTIVE unlock via the same result endpoint, and stable retry keys.
 
 The implementation also rejected the tempting shortcut of rendering premium values and visually blurring them: the UI consumes the server-projected FREE DTO, which contains no calorie/date value to leak.
+
+### 2026-09-11 — Dependency upgrade rejected by executable compatibility evidence
+
+**Context**
+
+After T17, the dependency set was audited against current stable releases rather than assuming the bootstrap versions should remain forever.
+
+**AI proposal**
+
+Upgrade React/React DOM, Zod, related type packages, and ESLint to their current stable releases, then use the existing quality gates as the acceptance boundary.
+
+**Developer review and evidence**
+
+React 19.3 and Zod 4.6 passed unit/component tests, real-PostgreSQL integration tests, peer checks, lint, typecheck, and `next build`. ESLint 10 did not: the current `eslint-plugin-react@7.37.5` used by the Next lint stack supports ESLint only through v9 and crashed while loading `react/display-name`. ESLint was rolled back to 9.39.5 instead of disabling rules or patching third-party code to force a version number.
+
+**Outcome**
+
+The compatible runtime/type upgrades are kept. ESLint 10 is explicitly deferred until the upstream plugin chain supports it. This is a concrete example where an AI-suggested latest-version upgrade was rejected after executable verification.

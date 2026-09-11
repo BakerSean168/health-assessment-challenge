@@ -24,6 +24,7 @@ This is a lightweight ADR index for decisions that are important enough to expla
 | D018 | target-date rate policy | accepted | use injected UTC date plus a documented static 0.5 kg/week demo projection; do not pretend to implement a physiological model |
 | D019 | scalar assessment input bounds | accepted | freeze runtime-validation boundaries in tests while keeping them explicitly separate from source requirements and cross-field health logic |
 | D020 | goal/target directional invariant | accepted | keep the questionnaire internally coherent with a deterministic non-medical rule and make upstream edits revalidate downstream target state |
+| D021 | stable dependency refresh with compatibility gate | accepted | prefer current stable runtime packages only when the full framework/plugin toolchain supports them; reject upgrades that break quality gates |
 
 ## D001 — Next.js modular monolith
 
@@ -115,3 +116,11 @@ The main architectural value is dependency revalidation: if an already-complete 
 ## D018 — Static target-date demo policy
 
 `demo-v1` projects lose/gain progress at a static 0.5 kg/week and adds `ceil(abs(current-target)/0.5) * 7` days to an injected UTC calendar date. Maintain returns the reference date because the v1 step policy requires target=current. This is intentionally a transparent simulation, not the dynamic physiological model used by NIDDK's Body Weight Planner.
+
+## D021 — Stable dependency refresh with compatibility gate
+
+The project prefers current stable dependencies, but "latest" is not treated as a requirement that overrides compatibility evidence. After T17, React/React DOM were updated from 19.2.8 to 19.3.0, Zod from 4.5.4 to 4.6.2, and the matching React/Node type packages were refreshed. The complete unit/component, PostgreSQL integration, lint, typecheck, peer-dependency, and production-build gates remained green.
+
+ESLint 10.10.0 was evaluated separately and rejected for now. `eslint-config-next@16.3.4` still resolves `eslint-plugin-react@7.37.5`; that plugin declares support only through ESLint 9 and fails at runtime under ESLint 10 (`contextOrFilename.getFilename is not a function`). Keeping ESLint 9.39.5 is therefore an explicit compatibility decision, not an unnoticed stale dependency. The project will move to ESLint 10 only when the Next/React lint stack supports it cleanly.
+
+Prisma 7.10 remains intentionally unchanged because its current schema/client/migration workflow is already covered by real PostgreSQL integration tests; a major ORM migration is not justified solely to maximize version numbers during this challenge.
