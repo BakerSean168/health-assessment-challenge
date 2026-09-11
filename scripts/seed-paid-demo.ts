@@ -3,12 +3,6 @@ import { randomUUID } from "node:crypto";
 import { createPrismaClient } from "../src/lib/db";
 import { calculateAssessmentResult } from "../src/modules/assessment/domain/calculation";
 
-const databaseUrl = process.env.DATABASE_URL;
-
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL is required to seed the paid demo session.");
-}
-
 const sessionId = process.env.DEMO_SESSION_ID ?? randomUUID();
 const referenceDate = new Date("2026-09-11T00:00:00.000Z");
 const completedAt = new Date();
@@ -22,70 +16,82 @@ const answers = {
   targetWeightKg: 68,
 };
 const result = calculateAssessmentResult(answers, referenceDate);
-const prisma = createPrismaClient(databaseUrl);
+async function main() {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL is required to seed the paid demo session.");
+  }
 
-try {
-  await prisma.$transaction(async (tx) => {
-    await tx.anonymousSession.upsert({
-      where: { id: sessionId },
-      update: { subscriptionStatus: "ACTIVE" },
-      create: { id: sessionId, subscriptionStatus: "ACTIVE" },
-    });
+  const prisma = createPrismaClient(databaseUrl);
 
-    const assessment = await tx.assessment.upsert({
-      where: { sessionId },
-      update: {
-        ...answers,
-        status: "COMPLETED",
-        revision: 8,
-        completedAt,
-      },
-      create: {
-        sessionId,
-        ...answers,
-        status: "COMPLETED",
-        revision: 8,
-        completedAt,
-      },
-    });
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.anonymousSession.upsert({
+        where: { id: sessionId },
+        update: { subscriptionStatus: "ACTIVE" },
+        create: { id: sessionId, subscriptionStatus: "ACTIVE" },
+      });
 
-    await tx.assessmentResult.upsert({
-      where: { assessmentId: assessment.id },
-      update: {
-        bmi: result.bmi,
-        bmiCategory: result.bmiCategory,
-        recommendedDailyCalories: result.recommendedDailyCalories,
-        estimatedGoalDate: result.estimatedGoalDate,
-        calculationVersion: result.calculationVersion,
-      },
-      create: {
-        assessmentId: assessment.id,
-        bmi: result.bmi,
-        bmiCategory: result.bmiCategory,
-        recommendedDailyCalories: result.recommendedDailyCalories,
-        estimatedGoalDate: result.estimatedGoalDate,
-        calculationVersion: result.calculationVersion,
-      },
-    });
+      const assessment = await tx.assessment.upsert({
+        where: { sessionId },
+        update: {
+          ...answers,
+          status: "COMPLETED",
+          revision: 8,
+          completedAt,
+        },
+        create: {
+          sessionId,
+          ...answers,
+          status: "COMPLETED",
+          revision: 8,
+          completedAt,
+        },
+      });
 
-    await tx.paymentEvent.upsert({
-      where: {
-        sessionId_idempotencyKey: {
+      await tx.assessmentResult.upsert({
+        where: { assessmentId: assessment.id },
+        update: {
+          bmi: result.bmi,
+          bmiCategory: result.bmiCategory,
+          recommendedDailyCalories: result.recommendedDailyCalories,
+          estimatedGoalDate: result.estimatedGoalDate,
+          calculationVersion: result.calculationVersion,
+        },
+        create: {
+          assessmentId: assessment.id,
+          bmi: result.bmi,
+          bmiCategory: result.bmiCategory,
+          recommendedDailyCalories: result.recommendedDailyCalories,
+          estimatedGoalDate: result.estimatedGoalDate,
+          calculationVersion: result.calculationVersion,
+        },
+      });
+
+      await tx.paymentEvent.upsert({
+        where: {
+          sessionId_idempotencyKey: {
+            sessionId,
+            idempotencyKey: "seeded-paid-demo",
+          },
+        },
+        update: {},
+        create: {
           sessionId,
           idempotencyKey: "seeded-paid-demo",
+          status: "SUCCEEDED",
         },
-      },
-      update: {},
-      create: {
-        sessionId,
-        idempotencyKey: "seeded-paid-demo",
-        status: "SUCCEEDED",
-      },
+      });
     });
-  });
 
-  console.log(`Paid demo sessionId: ${sessionId}`);
-  console.log(`Cookie: health_assessment_session=${sessionId}`);
-} finally {
-  await prisma.$disconnect();
+    console.log(`Paid demo sessionId: ${sessionId}`);
+    console.log(`Cookie: health_assessment_session=${sessionId}`);
+  } finally {
+    await prisma.$disconnect();
+  }
 }
+
+main().catch((error: unknown) => {
+  console.error(error);
+  process.exit(1);
+});
