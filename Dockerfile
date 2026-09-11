@@ -25,7 +25,7 @@ ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml prisma.config.ts ./
 COPY prisma ./prisma
-CMD ["pnpm", "exec", "prisma", "migrate", "deploy"]
+CMD ["/app/node_modules/.bin/prisma", "migrate", "deploy"]
 
 FROM node:24.21.0-bookworm-slim AS runner
 ENV NODE_ENV=production

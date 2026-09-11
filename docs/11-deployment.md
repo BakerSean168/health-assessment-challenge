@@ -121,3 +121,8 @@ Before marking T21 complete, verify from the deployed hostname rather than local
 ## Remaining external dependency
 
 Repository and host-side deployment can proceed without Vercel or Supabase. The only external DNS action still required for the preferred hostname is an `assessment.bakersean.top` record pointing/proxying to the Chengdu Aliyun origin. DNS credentials are intentionally not stored in this repository.
+
+
+The production Compose file connects the app/migrator to the existing MemoFlow Docker network, while the application keeps its own Compose project and lifecycle.
+
+On the small Chengdu host, migration is deliberately bounded to 256 MiB and executes the checked-in Prisma CLI directly from `node_modules`; it does not invoke Corepack/pnpm at container startup. This avoids an unnecessary package-manager bootstrap/network dependency and limits transient pressure on the existing production workloads.
