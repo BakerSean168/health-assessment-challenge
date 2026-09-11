@@ -35,8 +35,9 @@ The Aliyun host pulls images rather than building the application locally. This 
 
 ```text
 /opt/health-assessment/
-  compose.production.yaml
-  .env                 # root-only, never committed
+  compose.yaml          # deployed copy of repository compose.production.yaml
+  deploy.sh             # deployed copy of scripts/deploy-aliyun.sh
+  .env                  # root-only, never committed
 ```
 
 The app joins the external `memoflow_memoflow-network` network but remains a separate Compose project and lifecycle from MemoFlow.
@@ -52,6 +53,7 @@ APP_IMAGE=ghcr.io/bakersean168/health-assessment-challenge:sha-<commit>
 MIGRATOR_IMAGE=ghcr.io/bakersean168/health-assessment-challenge:migrate-sha-<commit>
 DATABASE_URL=postgresql://health_assessment_app:<secret>@postgres:5432/health_assessment?schema=public
 SHARED_DOCKER_NETWORK=memoflow_memoflow-network
+DATABASE_POOL_MAX=4
 ```
 
 The anonymous session cookie becomes `Secure` automatically when `NODE_ENV=production`, while remaining `HttpOnly`, `SameSite=Lax`, and scoped to `/`.
@@ -69,7 +71,7 @@ The deployment helper validates the Compose configuration, pulls the immutable i
 
 ## Caddy route
 
-The existing production Caddy instance remains the only public listener on ports 80/443. Add one site block after DNS resolves to the host:
+The existing production Caddy instance remains the only public listener on ports 80/443. The active production site block is:
 
 ```caddy
 assessment.bakersean.top {
@@ -85,7 +87,7 @@ assessment.bakersean.top {
 }
 ```
 
-Validate before graceful reload. Do not restart or replace the existing MemoFlow Caddy service just to add this route.
+Configuration changes are validated before reload. In normal operation a graceful reload is sufficient; during the initial cutover the Caddy container was recreated once because its bind mount still referenced an older Caddyfile inode. MemoFlow application containers were not replaced.
 
 ## Paid evaluator session
 
@@ -127,17 +129,24 @@ As of 2026-09-11, the Chengdu Aliyun host has:
 - all six committed Prisma migrations applied successfully;
 - the immutable GHCR application image running as a healthy Next.js standalone container;
 - a 384 MiB application memory limit, 256 MiB V8 old-space ceiling, and a 1 GiB host swap safety net;
-- one synthetic ACTIVE evaluator session seeded out-of-band for review.
+- one synthetic ACTIVE evaluator session seeded out-of-band for review;
+- a public HTTPS endpoint at `https://assessment.bakersean.top` with a Caddy-managed certificate behind Cloudflare;
+- both FREE and paid Playwright flows passing against the public deployment.
 
 The first deployment attempt exposed a production-only packaging defect: the migration image started via `pnpm`, so Corepack attempted to download pnpm from `registry.npmjs.org` at container startup. On the mainland host that request stalled, while Docker healthchecks across the machine began timing out. Previous-boot kernel logs contain no OOM kill evidence. The corrected image invokes the checked-in Prisma CLI directly and bounds migration memory. The migrator dependency set is now also isolated from the full application/test dependency graph; local image size drops from about 1.65 GB to about 675 MB (roughly 59% smaller) while still applying the same committed migrations.
 
 A `sslip.io` hostname was tested only as a temporary DNS-free probe, but the mainland origin returned an Alibaba `403` before Caddy could serve it, so that route was removed rather than retained as a brittle workaround.
 
-## Remaining external dependency
+## Public verification
 
-Repository and host-side deployment no longer require Vercel or Supabase. The only remaining external action for the final public URL is a DNS record for `assessment.bakersean.top` pointing/proxying to the Chengdu Aliyun origin. After DNS resolves, add the documented Caddy site block, validate/reload Caddy, and run the public FREE/paid smoke checklist. DNS credentials are intentionally not stored in this repository.
-
-
-The production Compose file connects the app/migrator to the existing MemoFlow Docker network, while the application keeps its own Compose project and lifecycle.
+The production Compose file connects the app/migrator to the existing MemoFlow Docker network, while the application keeps its own Compose project and lifecycle. DNS credentials remain outside this repository.
 
 On the small Chengdu host, migration is deliberately bounded to 256 MiB and executes the checked-in Prisma CLI directly from `node_modules`; it does not invoke Corepack/pnpm at container startup. This avoids an unnecessary package-manager bootstrap/network dependency and limits transient pressure on the existing production workloads.
+
+The first public Playwright run exposed a second production-only defect: `getPrismaClient()` created a fresh Prisma client in `NODE_ENV=production`. With the `@prisma/adapter-pg` adapter, each client owns a `pg` pool, so concurrent browser flows exhausted the dedicated database role's 10-connection limit and the height-step PATCH returned `P2037 TooManyConnections`. A regression test now launches the database module under a real production environment and asserts that repeated application lookups reuse the same client. Production also caps that shared pool at four connections (`DATABASE_POOL_MAX=4`). After the fix, 54 unit/component tests, 32 PostgreSQL integration tests, normal CI browser tests, and both public FREE/paid Playwright flows are green.
+
+Remote browser verification can be repeated through the public product surface. It creates ordinary synthetic anonymous sessions/payment events through the same HTTP flow; it does not manipulate the production database directly:
+
+```bash
+E2E_BASE_URL=https://assessment.bakersean.top pnpm exec playwright test --project=chromium
+```

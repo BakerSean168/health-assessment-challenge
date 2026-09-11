@@ -535,3 +535,21 @@ Bind the Compose test database explicitly to `127.0.0.1:55432`. Test infrastruct
 **Outcome**
 
 The test database remains fully usable by integration/E2E runners while the host no longer publishes that port on all interfaces.
+
+### 2026-09-11 — Public Playwright exposed production Prisma pool exhaustion
+
+**Context**
+
+After DNS and Caddy HTTPS were live, the same FREE and paid Playwright flows were pointed at the public deployment instead of localhost. Both failed at the height step even though curl-based API smoke checks worked. Caddy access logs showed the browser PATCH returning 500, and the application log identified Prisma `P2037`: the dedicated production role had reached its connection limit.
+
+**Incorrect implementation assumption**
+
+The existing database helper intentionally bypassed the global cache in `NODE_ENV=production` and created a fresh `PrismaClient`/`PrismaPg` adapter for every `getPrismaClient()` call. With the pg adapter this also meant fresh pools, so ordinary concurrent browser requests could consume the role's 10 connections. The local and CI database suites had not reproduced the production lifecycle.
+
+**TDD correction**
+
+A regression test was first executed under a real child process with `NODE_ENV=production`; it observed two different client instances (`false`) and therefore failed. The implementation was then changed to reuse one `globalThis` application client in every environment and to cap the shared pg pool at four connections. The regression test turned green before redeployment.
+
+**Outcome**
+
+The new immutable image passed the full CI pipeline, was deployed to Aliyun, and the exact public FREE and paid Playwright flows then passed 2/2 over `https://assessment.bakersean.top`. No `P2037` errors appeared after redeployment. This is retained as an example where production-like executable evidence, rather than confidence in generated code, determined the correction.

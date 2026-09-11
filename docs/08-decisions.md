@@ -25,6 +25,7 @@ This is a lightweight ADR index for decisions that are important enough to expla
 | D019 | scalar assessment input bounds | accepted | freeze runtime-validation boundaries in tests while keeping them explicitly separate from source requirements and cross-field health logic |
 | D020 | goal/target directional invariant | accepted | keep the questionnaire internally coherent with a deterministic non-medical rule and make upstream edits revalidate downstream target state |
 | D021 | stable dependency refresh with compatibility gate | accepted | prefer current stable runtime packages only when the full framework/plugin toolchain supports them; reject upgrades that break quality gates |
+| D022 | one bounded production database pool per app process | accepted | prevent per-request Prisma/pg pools from exhausting the isolated production role |
 
 ## D001 — Next.js modular monolith
 
@@ -126,3 +127,9 @@ ESLint 10.10.0 was evaluated separately and rejected for now. `eslint-config-nex
 Prisma 7.10 remains intentionally unchanged because its current schema/client/migration workflow is already covered by real PostgreSQL integration tests; a major ORM migration is not justified solely to maximize version numbers during this challenge.
 
 TypeScript 7.0.2 was also evaluated and rejected for now. The project itself typechecked and all unit/integration tests passed under TS 7, but the current `typescript-eslint` stack pulled by `eslint-config-next@16.3.4` explicitly rejects TypeScript 7. Keeping TypeScript 5.9.3 preserves a fully supported lint/typecheck toolchain instead of introducing a side-by-side compiler workaround during a three-day challenge.
+
+## D022 — One bounded production database pool per app process
+
+The standalone Next.js process caches one application `PrismaClient` on `globalThis` in every environment. The `@prisma/adapter-pg` adapter is configured with a default maximum of four pooled connections, overridable through `DATABASE_POOL_MAX`. This is intentionally below the dedicated production role's connection cap so migration/administrative work retains headroom.
+
+This decision was made from production evidence rather than style preference: the first public concurrent Playwright run exposed `P2037 TooManyConnections` because the previous production branch constructed a fresh Prisma client and pg pool for repeated request-path lookups. A dedicated production-lifecycle regression test now prevents that behavior from returning.

@@ -8,9 +8,13 @@ The project is intentionally scoped as a three-day engineering challenge. The go
 
 ## Status
 
-**Phase:** T21 deployment in progress — the app/database are running on the Chengdu Aliyun host; public DNS/HTTPS cutover is the remaining production gate
+**Phase:** implementation and public deployment complete; delivery documentation and AI retrospective reconciled
 
 The repository is public from the start so the implementation history, test-first workflow, design decisions, and trade-offs remain reviewable.
+
+**Live demo:** https://assessment.bakersean.top
+
+**Synthetic paid evaluator sessionId:** `11111111-1111-4111-8111-111111111111` (contains demo data only).
 
 ## Product flow
 
@@ -31,7 +35,7 @@ flowchart TD
     M --> N[Full Result]
 ```
 
-The planned implementation keeps seven persisted assessment inputs while using feedback screens to preserve the ask -> derive -> give-value rhythm observed in the reference funnel.
+The implementation keeps seven persisted assessment inputs while using feedback screens to preserve the ask -> derive -> give-value rhythm observed in the reference funnel.
 
 ## Engineering goals
 
@@ -103,6 +107,40 @@ Acceptance criterion
 
 Integration tests drive persistence, resume behavior, ordering, optimistic locking, submission, authorization, and payment semantics. Unit tests drive pure calculation and policy logic. Playwright is reserved for the two highest-value browser flows.
 
+## Run locally
+
+Prerequisites: Node.js 24, pnpm 11, and Docker. The quickest local path reuses the disposable PostgreSQL test container:
+
+```bash
+pnpm install
+pnpm db:test:up
+DATABASE_URL='postgresql://postgres:postgres@127.0.0.1:55432/health_assessment_test?schema=public' pnpm db:migrate:deploy
+DATABASE_URL='postgresql://postgres:postgres@127.0.0.1:55432/health_assessment_test?schema=public' pnpm dev
+```
+
+Quality gates:
+
+```bash
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm test:integration
+pnpm test:e2e
+```
+
+The two browser flows can also be pointed at an already-deployed environment without starting a local dev server:
+
+```bash
+E2E_BASE_URL=https://assessment.bakersean.top pnpm exec playwright test --project=chromium
+```
+
+Evaluator-side paid projection check:
+
+```bash
+curl -sS 'https://assessment.bakersean.top/api/assessment/result' \
+  -H 'Cookie: health_assessment_session=11111111-1111-4111-8111-111111111111'
+```
+
 ## Documentation
 
 - [Scope and success criteria](docs/00-scope-and-success-criteria.md)
@@ -117,12 +155,13 @@ Integration tests drive persistence, resume behavior, ordering, optimistic locki
 - [UI component policy](docs/09-ui-component-policy.md)
 - [Calculation policy v1](docs/10-calculation-policy.md)
 - [Deployment and evaluator demo](docs/11-deployment.md)
+- [AI collaboration retrospective](docs/12-ai-retrospective.md)
 
 ## Non-goals
 
 This challenge intentionally does **not** attempt to implement a production health platform, real medical guidance, real payment processing, marketing analytics, upsells, referral systems, or a pixel-perfect BetterMe clone.
 
-The calculation policy for calorie guidance and target-date estimation will be explicitly documented as a deterministic engineering-demo policy before it is implemented. It will not be presented as medical advice.
+The calculation policy for calorie guidance and target-date estimation is documented as a deterministic engineering-demo policy in `docs/10-calculation-policy.md`. It is not presented as medical advice.
 
 ## Repository principles
 

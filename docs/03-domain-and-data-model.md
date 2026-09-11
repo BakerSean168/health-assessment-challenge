@@ -1,4 +1,4 @@
-# Domain and data model v0.2
+# Domain and data model v1
 
 ## 1. Domain boundary
 
@@ -39,6 +39,7 @@ classDiagram
       Int revision
       DateTime createdAt
       DateTime updatedAt
+      DateTime? completedAt
     }
 
     class AssessmentResult {
@@ -67,7 +68,7 @@ classDiagram
 
 V1 intentionally enforces one assessment per anonymous session. Restart/history is a future use case, not a requirement to pre-model.
 
-## 3. Proposed enums
+## 3. Current enums
 
 ```ts
 export type SubscriptionStatus = "FREE" | "ACTIVE";

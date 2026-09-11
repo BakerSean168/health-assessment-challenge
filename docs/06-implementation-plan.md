@@ -570,7 +570,7 @@ Required jobs/checks:
 
 Implemented pipeline:
 
-- `Quality`: ESLint, Next route type generation + TypeScript, 52 unit/component tests, and production `next build`;
+- `Quality`: ESLint, Next route type generation + TypeScript, 54 unit/component tests, and production `next build`;
 - `PostgreSQL integration`: starts the disposable PostgreSQL 17 Compose service from a clean runner, applies all committed migrations, resets aggregate test data, then runs 32 integration tests;
 - `Chromium E2E`: installs Playwright Chromium and exercises both FREE and paid browser flows against the real Next/API/PostgreSQL stack;
 - CI uses Node 24.21.0 and the repository-pinned pnpm 11.22.0, read-only repository permissions, per-ref concurrency cancellation, and a failed-run Playwright report artifact;
@@ -580,7 +580,7 @@ The first clean GitHub runner exposed a real reproducibility defect: `tsc --noEm
 
 ### T21 Public deployment
 
-**Status:** in progress — application and database are running on the Chengdu Aliyun production host; public DNS/HTTPS cutover remains
+**Status:** done — 2026-09-11
 
 Acceptance:
 
@@ -599,13 +599,15 @@ Repository-side preparation completed:
 - `docs/11-deployment.md` records environment, migration, paid-session, cURL, and public smoke procedures;
 - deployment preflight caught the local test PostgreSQL port bound to all host interfaces; Compose now binds `127.0.0.1:55432` only and all integration tests remain green.
 
-Current production state: the release pipeline publishes immutable application/migration images to GHCR; the Chengdu Aliyun host now has an isolated `health_assessment` database/role, all six Prisma migrations applied, and a healthy Next.js standalone container connected through the existing private Docker network. A synthetic ACTIVE evaluator session has also been seeded. The remaining external dependency is DNS for `assessment.bakersean.top`; T21 stays open until that hostname resolves through the existing Caddy edge and the public FREE/paid smoke checks pass.
+Current production state: the release pipeline publishes immutable application/migration images to GHCR; the Chengdu Aliyun host has an isolated `health_assessment` database/role, all six Prisma migrations applied, and a healthy Next.js standalone container connected through the existing private Docker network. `assessment.bakersean.top` resolves through Cloudflare to the existing Caddy edge, Caddy holds a valid certificate, and both FREE and paid browser paths pass against the public HTTPS deployment. A synthetic ACTIVE evaluator session is seeded for direct reviewer comparison.
 
 ## 10. Phase 8 — delivery polish
 
 ### T22 Documentation reconciliation
 
-Update docs from plans to actual implementation:
+**Status:** done — 2026-09-11
+
+Reconciled delivery documentation includes:
 
 - actual schema diagram;
 - actual endpoint examples;
@@ -617,7 +619,9 @@ Update docs from plans to actual implementation:
 
 ### T23 AI usage review
 
-Convert the running AI log into a concise retrospective:
+**Status:** done — 2026-09-11
+
+The running log was converted into `docs/12-ai-retrospective.md`, covering:
 
 - where AI saved time;
 - what it proposed;
