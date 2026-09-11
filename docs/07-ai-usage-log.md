@@ -443,3 +443,21 @@ React 19.3 and Zod 4.6 passed unit/component tests, real-PostgreSQL integration 
 **Outcome**
 
 The compatible runtime/type upgrades are kept. ESLint 10 is explicitly deferred until the upstream plugin chain supports it. This is a concrete example where an AI-suggested latest-version upgrade was rejected after executable verification.
+
+### 2026-09-11 — TypeScript 7 upgrade rejected after lint-stack verification
+
+**Context**
+
+TypeScript 7.0.2 was tested as a separate toolchain experiment after the compatible runtime dependency refresh.
+
+**Evidence**
+
+The project typechecked successfully and all 52 unit/component plus 32 PostgreSQL integration tests passed under TypeScript 7. However, lint startup failed because the current `typescript-eslint` package used by `eslint-config-next@16.3.4` explicitly reports that it does not support TS 7.0.
+
+**Developer decision**
+
+Roll back to TypeScript 5.9.3. We do not introduce a side-by-side TS6 compiler API or custom lint workaround merely to advertise a newer compiler version.
+
+**Outcome**
+
+The repository keeps the latest fully supported TypeScript line for its current Next lint stack, and the rejected upgrade is preserved as executable compatibility evidence.
