@@ -18,7 +18,7 @@ FROM base AS builder
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN pnpm build
+RUN pnpm db:generate && pnpm build
 
 FROM base AS migrator
 ENV NODE_ENV=production
