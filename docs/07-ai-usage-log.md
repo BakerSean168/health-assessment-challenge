@@ -507,3 +507,17 @@ Keep the E2E assertion focused on externally visible behavior and reuse one ques
 **Outcome**
 
 A fresh Chromium context completes the real funnel, opens the Base UI paywall, performs simulated payment, observes the stored premium result, and reloads successfully with ACTIVE access. FREE and paid paths pass together.
+
+### 2026-09-11 — CI clean checkout exposed generated-route-type dependency
+
+**Context**
+
+The first real GitHub Actions run passed PostgreSQL integration and Chromium E2E, but the Quality job failed at `tsc --noEmit` on `LayoutProps<"/">`. Local typecheck had been green because a previous Next build/dev run had already generated `.next/types/routes.d.ts`. A fresh CI checkout correctly had no generated route types.
+
+**Developer decision**
+
+Keep the typed Next 16 `LayoutProps` API rather than replacing it with a weaker hand-written layout prop solely to satisfy CI. The `typecheck` script now runs `next typegen` first, which is the explicit Next.js command for generating route-aware types before invoking TypeScript.
+
+**Outcome**
+
+`pnpm typecheck` is now reproducible from a clean checkout and no longer depends on a previous `next dev` or `next build` side effect.
