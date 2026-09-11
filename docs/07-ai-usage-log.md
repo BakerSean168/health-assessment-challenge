@@ -417,3 +417,11 @@ Which requirement, test, measurement, code constraint, or trade-off informed the
 **Outcome**
 
 What changed in code/docs/tests?
+
+### 2026-09-11 — T17 result/paywall composition
+
+AI-assisted implementation proposed a separate result browser adapter and extracted shared JSON/error transport from the assessment client. The change was accepted because it removes duplicated network/error code while keeping domain/result DTOs independent.
+
+The payment UI deliberately reuses one idempotency key after a failed response instead of generating a new key for each click. This preserves the server-side idempotency contract when a payment may have succeeded but the response was interrupted. Component tests were written first for FREE redaction, Base UI dialog interaction, ACTIVE unlock via the same result endpoint, and stable retry keys.
+
+The implementation also rejected the tempting shortcut of rendering premium values and visually blurring them: the UI consumes the server-projected FREE DTO, which contains no calorie/date value to leak.

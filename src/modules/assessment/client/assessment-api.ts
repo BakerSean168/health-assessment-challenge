@@ -1,3 +1,5 @@
+import { requestJson, BrowserApiError } from "@/lib/browser-api";
+
 import type {
   ActivityLevel,
   AssessmentAnswers,
@@ -37,17 +39,6 @@ export interface AssessmentBrowserApi {
   submitAssessment(expectedRevision: number): Promise<SubmitAssessmentDto>;
 }
 
-export class AssessmentBrowserApiError extends Error {
-  constructor(
-    message: string,
-    readonly code?: string,
-    readonly status?: number,
-  ) {
-    super(message);
-    this.name = "AssessmentBrowserApiError";
-  }
-}
-
 const routeKeyByStep: Record<AssessmentStep, string> = {
   GENDER: "gender",
   GOAL: "goal",
@@ -58,26 +49,7 @@ const routeKeyByStep: Record<AssessmentStep, string> = {
   TARGET_WEIGHT: "target-weight",
 };
 
-async function requestJson<T>(
-  input: RequestInfo | URL,
-  init?: RequestInit,
-): Promise<T> {
-  const response = await fetch(input, init);
-  const body: unknown = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    const errorBody = body as
-      | { error?: { code?: string; message?: string } }
-      | null;
-    throw new AssessmentBrowserApiError(
-      errorBody?.error?.message ?? "The request could not be completed.",
-      errorBody?.error?.code,
-      response.status,
-    );
-  }
-
-  return body as T;
-}
+export { BrowserApiError as AssessmentBrowserApiError };
 
 export const browserAssessmentApi: AssessmentBrowserApi = {
   async bootstrapSession() {

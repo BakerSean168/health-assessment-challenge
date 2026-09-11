@@ -6,7 +6,7 @@ The project is intentionally scoped as a three-day engineering challenge. The go
 
 ## Status
 
-**Phase:** T16 persisted seven-step funnel wiring complete; T17 derived feedback/result/paywall UI is next
+**Phase:** T17 derived feedback/result/paywall UI complete; T18 free-user browser E2E is next
 
 The repository is public from the start so the implementation history, test-first workflow, design decisions, and trade-offs remain reviewable.
 

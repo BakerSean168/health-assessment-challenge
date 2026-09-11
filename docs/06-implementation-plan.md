@@ -495,6 +495,8 @@ T16 TDD evidence: the funnel test was written before the browser API adapter/pro
 
 ### T17 Derived feedback screens
 
+**Status:** done — 2026-09-11
+
 Implement compact reference-inspired value moments:
 
 - analysis transition;
@@ -504,6 +506,19 @@ Implement compact reference-inspired value moments:
 - paywall/full result transition.
 
 No fake long-running analysis delay.
+
+Implemented behavior:
+
+- the final assessment save transitions immediately into the submit state from T16, then navigates to `/result` once the immutable result snapshot exists;
+- `/result` uses a dedicated browser result adapter while shared JSON/error handling lives in `src/lib/browser-api.ts`, avoiding duplicate fetch/error plumbing across assessment and result clients;
+- the result experience renders BMI/category as useful free feedback and keeps calorie/date values structurally absent from FREE responses, matching the T12 server projection rather than relying on visual blur;
+- result and paywall surfaces reuse shadcn/Base UI `Card`, `Dialog`, `Alert`, `Button`, `Separator`, and `Skeleton` primitives instead of creating parallel generic controls;
+- the paywall explicitly states that payment is simulated and sends only a session-scoped idempotency key; no real card details or money are involved;
+- one idempotency key is retained across a failed payment retry, so a response interruption cannot accidentally generate a second logical payment attempt;
+- after successful payment the client calls the same result endpoint again, and ACTIVE rendering exposes the already-stored snapshot values without recalculation;
+- loading and retry states remain accessible and preserve the same result page instead of introducing a separate premium route.
+
+T17 TDD evidence: `result-experience.test.tsx` was written before the result client/product component existed and failed on module resolution (RED). The implementation was then added until the FREE feedback, shadcn/Base UI paywall, same-endpoint unlock, and stable payment-retry idempotency behavior passed. The complete unit/component suite, PostgreSQL integration suite, lint, typecheck, and production build were rerun GREEN before closing the slice.
 
 ## 9. Phase 7 — E2E, CI, deployment
 
