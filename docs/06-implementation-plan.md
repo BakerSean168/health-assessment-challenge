@@ -580,7 +580,7 @@ The first clean GitHub runner exposed a real reproducibility defect: `tsc --noEm
 
 ### T21 Public deployment
 
-**Status:** in progress — repository-side preflight complete; external hosting/database connection required
+**Status:** in progress — application and database are running on the Chengdu Aliyun production host; public DNS/HTTPS cutover remains
 
 Acceptance:
 
@@ -599,7 +599,7 @@ Repository-side preparation completed:
 - `docs/11-deployment.md` records environment, migration, paid-session, cURL, and public smoke procedures;
 - deployment preflight caught the local test PostgreSQL port bound to all host interfaces; Compose now binds `127.0.0.1:55432` only and all integration tests remain green.
 
-Current external dependency: this development host has no Vercel project/authentication and no production managed-PostgreSQL credentials configured. T21 remains open until a hosting/database account is connected; credentials must not be committed to the repository.
+Current production state: the release pipeline publishes immutable application/migration images to GHCR; the Chengdu Aliyun host now has an isolated `health_assessment` database/role, all six Prisma migrations applied, and a healthy Next.js standalone container connected through the existing private Docker network. A synthetic ACTIVE evaluator session has also been seeded. The remaining external dependency is DNS for `assessment.bakersean.top`; T21 stays open until that hostname resolves through the existing Caddy edge and the public FREE/paid smoke checks pass.
 
 ## 10. Phase 8 — delivery polish
 

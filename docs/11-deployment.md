@@ -119,9 +119,23 @@ Before marking T21 complete, verify from the deployed hostname rather than local
 5. Refresh keeps ACTIVE access.
 6. The seeded paid session ID works with the documented `curl` request.
 
+## Verified production state
+
+As of 2026-09-11, the Chengdu Aliyun host has:
+
+- an isolated `health_assessment` PostgreSQL database owned by the dedicated `health_assessment_app` role;
+- all six committed Prisma migrations applied successfully;
+- the immutable GHCR application image running as a healthy Next.js standalone container;
+- a 384 MiB application memory limit, 256 MiB V8 old-space ceiling, and a 1 GiB host swap safety net;
+- one synthetic ACTIVE evaluator session seeded out-of-band for review.
+
+The first deployment attempt exposed a production-only packaging defect: the migration image started via `pnpm`, so Corepack attempted to download pnpm from `registry.npmjs.org` at container startup. On the mainland host that request stalled, while Docker healthchecks across the machine began timing out. Previous-boot kernel logs contain no OOM kill evidence. The corrected image invokes the checked-in Prisma CLI directly and bounds migration memory. The migrator dependency set is now also isolated from the full application/test dependency graph; local image size drops from about 1.65 GB to about 675 MB (roughly 59% smaller) while still applying the same committed migrations.
+
+A `sslip.io` hostname was tested only as a temporary DNS-free probe, but the mainland origin returned an Alibaba `403` before Caddy could serve it, so that route was removed rather than retained as a brittle workaround.
+
 ## Remaining external dependency
 
-Repository and host-side deployment can proceed without Vercel or Supabase. The only external DNS action still required for the preferred hostname is an `assessment.bakersean.top` record pointing/proxying to the Chengdu Aliyun origin. DNS credentials are intentionally not stored in this repository.
+Repository and host-side deployment no longer require Vercel or Supabase. The only remaining external action for the final public URL is a DNS record for `assessment.bakersean.top` pointing/proxying to the Chengdu Aliyun origin. After DNS resolves, add the documented Caddy site block, validate/reload Caddy, and run the public FREE/paid smoke checklist. DNS credentials are intentionally not stored in this repository.
 
 
 The production Compose file connects the app/migrator to the existing MemoFlow Docker network, while the application keeps its own Compose project and lifecycle.

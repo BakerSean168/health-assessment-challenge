@@ -8,7 +8,7 @@ The project is intentionally scoped as a three-day engineering challenge. The go
 
 ## Status
 
-**Phase:** T20 GitHub Actions complete and green; T21 public deployment is next
+**Phase:** T21 deployment in progress — the app/database are running on the Chengdu Aliyun host; public DNS/HTTPS cutover is the remaining production gate
 
 The repository is public from the start so the implementation history, test-first workflow, design decisions, and trade-offs remain reviewable.
 
