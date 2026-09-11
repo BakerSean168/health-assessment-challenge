@@ -24,6 +24,19 @@ function run(command, args, extraEnv = {}) {
   }
 }
 
+
+function ensureDefaultTestDatabase() {
+  if (process.env.TEST_DATABASE_URL) return;
+  run("docker", [
+    "compose",
+    "-f",
+    "compose.test.yaml",
+    "up",
+    "-d",
+    "--wait",
+  ]);
+}
+
 function migrate() {
   run("pnpm", ["exec", "prisma", "migrate", "deploy"], {
     DATABASE_URL: testDatabaseUrl,
@@ -33,6 +46,7 @@ function migrate() {
 if (action === "migrate") {
   migrate();
 } else if (action === "test") {
+  ensureDefaultTestDatabase();
   migrate();
   run("pnpm", ["exec", "tsx", "scripts/reset-test-db.ts"], {
     TEST_DATABASE_URL: testDatabaseUrl,
