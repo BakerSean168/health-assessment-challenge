@@ -493,3 +493,17 @@ The failure was treated as a stop-the-line test-isolation defect rather than dis
 **Outcome**
 
 E2E can no longer pollute a later integration run, and each top-level database-backed suite establishes its own clean starting state.
+
+### 2026-09-11 — T19 paid browser closed loop
+
+**Context**
+
+T13/T14 integration tests and T17 component tests proved payment and result projection in isolation, but the complete browser-level FREE -> pay -> ACTIVE loop still needed evidence.
+
+**Developer decision**
+
+Keep the E2E assertion focused on externally visible behavior and reuse one questionnaire helper rather than duplicating seven-step setup in every Playwright spec. The test does not seed or edit the database directly.
+
+**Outcome**
+
+A fresh Chromium context completes the real funnel, opens the Base UI paywall, performs simulated payment, observes the stored premium result, and reloads successfully with ACTIVE access. FREE and paid paths pass together.

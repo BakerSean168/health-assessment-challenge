@@ -6,7 +6,7 @@ The project is intentionally scoped as a three-day engineering challenge. The go
 
 ## Status
 
-**Phase:** T18 free-user browser E2E complete; T19 paid-user browser E2E is next
+**Phase:** T19 paid-user browser E2E complete; T20 GitHub Actions is next
 
 The repository is public from the start so the implementation history, test-first workflow, design decisions, and trade-offs remain reviewable.
 

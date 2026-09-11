@@ -1,0 +1,50 @@
+import type { Page } from "@playwright/test";
+import { expect } from "@playwright/test";
+
+export async function completeDefaultAssessment(
+  page: Page,
+  options: { reloadBeforeAge?: boolean } = {},
+) {
+  await page.goto("/assessment");
+
+  await expect(
+    page.getByRole("heading", { name: "Which best describes you?" }),
+  ).toBeVisible();
+  await page.getByText("Male", { exact: true }).click();
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  await expect(
+    page.getByRole("heading", { name: "What is your main goal?" }),
+  ).toBeVisible();
+  await page.getByText("Lose weight", { exact: true }).click();
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  await page.getByText("Moderately active", { exact: true }).click();
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  await page.getByRole("spinbutton", { name: "Height" }).fill("175");
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  await page.getByRole("spinbutton", { name: "Current weight" }).fill("75");
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  await expect(page.getByRole("heading", { name: "How old are you?" })).toBeVisible();
+
+  if (options.reloadBeforeAge) {
+    await page.reload();
+    await expect(
+      page.getByRole("heading", { name: "How old are you?" }),
+    ).toBeVisible();
+  }
+
+  await page.getByRole("spinbutton", { name: "Age" }).fill("24");
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  await page.getByRole("spinbutton", { name: "Target weight" }).fill("68");
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  await expect(page).toHaveURL(/\/result$/);
+  await expect(
+    page.getByRole("heading", { name: "Your wellness profile" }),
+  ).toBeVisible();
+}

@@ -543,7 +543,17 @@ T18 TDD evidence: the browser specification was added before E2E database/enviro
 
 ### T19 Browser flow: paid user
 
+**Status:** done — 2026-09-11
+
 New browser -> complete funnel -> free result -> simulated payment -> same result page unlocked.
+
+Implemented behavior and evidence:
+
+- extracted a small Playwright flow helper for the repeated seven-step questionnaire path instead of duplicating selectors across FREE and paid scenarios;
+- the paid browser starts as FREE, opens the shadcn/Base UI paywall dialog, confirms the explicit simulated-payment copy, and completes `/pay` through the real browser/API/database stack;
+- after activation the same `/result` page exposes the stored `2,380 kcal/day` value for the deterministic test fixture and removes both locked placeholders;
+- reloading `/result` keeps the session ACTIVE and preserves the unlocked value, proving access is server-persisted rather than local UI state;
+- both FREE and paid Chromium paths pass together with separate browser contexts against the same PostgreSQL service.
 
 ### T20 GitHub Actions
 
