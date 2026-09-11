@@ -36,9 +36,9 @@ We extract four mechanics:
 3. **Personalized projection** — convert current state plus goal into an understandable future outcome.
 4. **Value before paywall** — show enough useful information to establish trust while keeping selected fields server-locked for free users.
 
-## 4. Planned assessment inputs
+## 4. Implemented assessment inputs
 
-The initial product model contains seven persisted answer groups:
+The implemented product model contains seven persisted answer groups:
 
 | Step key | Field | Persistence | Notes |
 |---|---|---:|---|

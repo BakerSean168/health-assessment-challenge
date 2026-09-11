@@ -82,6 +82,7 @@ Behavior IDs use the `Bxx` prefix so they cannot be confused with executable imp
 | B16 | active result projection | integration | active user still sees locked shape | full DTO returned |
 | B17 | complete free browser flow | e2e | UI not wired | assessment -> preview passes |
 | B18 | complete paid browser flow | e2e | pay/unlock not wired | preview -> pay -> full result passes |
+| B19 | reject malformed/injection-shaped input | integration/contracts | HTTP boundary accepts missing, object, or injection-shaped scalar input | `400 VALIDATION_ERROR` and no persisted mutation |
 
 ## 4. Example RED-first slice
 
@@ -132,7 +133,7 @@ The same inputs therefore produce the same expected result in CI tomorrow.
 
 Integration tests should use a real PostgreSQL-compatible test database rather than mocking Prisma behavior that is central to the challenge.
 
-The exact CI database strategy will be selected during bootstrap, with preference for a disposable PostgreSQL service/container when the environment supports it.
+The implemented strategy uses a disposable PostgreSQL 17 Compose service locally and a PostgreSQL service container in GitHub Actions. Each top-level database-backed suite resets aggregate roots before execution so E2E and integration runs cannot leak state into one another.
 
 Each integration test must isolate state through transactions, cleanup, or unique fixtures so ordering does not affect results.
 

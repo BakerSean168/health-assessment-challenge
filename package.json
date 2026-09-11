@@ -17,7 +17,7 @@
     "db:test:migrate": "node scripts/test-db.mjs migrate",
     "test:integration": "node scripts/test-db.mjs test",
     "postinstall": "prisma generate",
-    "test:all": "pnpm test && pnpm test:integration",
+    "test:all": "pnpm test && pnpm test:integration && pnpm test:e2e",
     "db:migrate:deploy": "prisma migrate deploy",
     "seed:paid-demo": "tsx scripts/seed-paid-demo.ts"
   },

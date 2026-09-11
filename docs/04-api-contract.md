@@ -281,6 +281,26 @@ Simulate successful payment and activate the current session subscription.
 
 `idempotencyKey` is a caller-generated demo key of 1–128 characters using letters, digits, `.`, `_`, `:`, or `-`. It is unique only within the current anonymous session and is not presented as a real provider transaction identifier.
 
+### Reproducible cURL
+
+The endpoint is authorized by the server-issued anonymous session cookie. This two-command example creates a disposable session cookie jar and exercises `/api/pay` without requiring browser tooling:
+
+```bash
+BASE_URL=https://assessment.bakersean.top
+COOKIE_JAR=$(mktemp)
+
+curl -sS -c "$COOKIE_JAR" -X POST "$BASE_URL/api/session"
+
+curl -sS -b "$COOKIE_JAR" \
+  -H 'content-type: application/json' \
+  -d '{"idempotencyKey":"reviewer_curl_demo_001"}' \
+  "$BASE_URL/api/pay"
+
+rm -f "$COOKIE_JAR"
+```
+
+Repeating the second request with the same cookie jar and key returns `replayed: true`.
+
 A replay of the same session-scoped `idempotencyKey` returns the already-applied outcome:
 
 ```json

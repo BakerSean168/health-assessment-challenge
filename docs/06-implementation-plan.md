@@ -571,7 +571,7 @@ Required jobs/checks:
 Implemented pipeline:
 
 - `Quality`: ESLint, Next route type generation + TypeScript, 54 unit/component tests, and production `next build`;
-- `PostgreSQL integration`: starts the disposable PostgreSQL 17 Compose service from a clean runner, applies all committed migrations, resets aggregate test data, then runs 32 integration tests;
+- `PostgreSQL integration`: starts the disposable PostgreSQL 17 Compose service from a clean runner, applies all committed migrations, resets aggregate test data, then runs 33 integration tests;
 - `Chromium E2E`: installs Playwright Chromium and exercises both FREE and paid browser flows against the real Next/API/PostgreSQL stack;
 - CI uses Node 24.21.0 and the repository-pinned pnpm 11.22.0, read-only repository permissions, per-ref concurrency cancellation, and a failed-run Playwright report artifact;
 - database-backed commands are self-contained: `pnpm test:integration` and `pnpm test:e2e` can start their default local test database rather than relying on an undocumented pre-existing container.

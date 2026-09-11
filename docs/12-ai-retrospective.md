@@ -31,7 +31,7 @@ The highest leverage came from quickly enumerating edge cases and turning them i
 At delivery time the repository has:
 
 - 54 Vitest unit/component tests;
-- 32 PostgreSQL integration tests against committed migrations;
+- 33 PostgreSQL integration tests against committed migrations;
 - two Playwright browser flows covering FREE and paid journeys;
 - GitHub Actions gates for lint, route-aware typecheck, tests, production build, and immutable container publication;
 - the same two Playwright flows passing against the public HTTPS deployment;

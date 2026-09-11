@@ -553,3 +553,7 @@ A regression test was first executed under a real child process with `NODE_ENV=p
 **Outcome**
 
 The new immutable image passed the full CI pipeline, was deployed to Aliyun, and the exact public FREE and paid Playwright flows then passed 2/2 over `https://assessment.bakersean.top`. No `P2037` errors appeared after redeployment. This is retained as an example where production-like executable evidence, rather than confidence in generated code, determined the correction.
+
+### 2026-09-11 — interviewer-perspective final audit
+
+The final pass stopped treating "all implementation tasks are done" as equivalent to "the submission is easy to review." The challenge brief was re-read item by item and mapped to executable/repository evidence. This exposed three delivery gaps despite green tests: `test:all` did not include E2E, README did not contain the requested reproducible `/pay` cURL close to the top-level delivery instructions, and illegal-value injection was only implicitly rejected by typed validation rather than named in a route-level integration case. The audit fixed those gaps, reconciled stale planning language, and added a reviewer checklist. It also disabled the unnecessary Next.js powered-by response header.

@@ -101,6 +101,28 @@ describe("remaining assessment answer contracts", () => {
     });
   });
 
+  it("rejects missing and injection-shaped numeric input before persistence", async () => {
+    const bootstrap = await bootstrapSession(
+      new NextRequest("http://localhost/api/session", { method: "POST" }),
+    );
+    const cookie = cookieFrom(bootstrap);
+
+    await saveStep(cookie, "gender", "MALE", 0);
+    await saveStep(cookie, "goal", "LOSE_WEIGHT", 1);
+    await saveStep(cookie, "activity", "LIGHT", 2);
+
+    for (const value of [undefined, null, "175 OR 1=1", { $gt: 0 }]) {
+      const response = await saveStep(cookie, "height", value, 3);
+      expect(response.status).toBe(400);
+      const body = await response.json();
+      expect(body.error.code).toBe("VALIDATION_ERROR");
+    }
+
+    const persisted = await prisma.assessment.findFirstOrThrow();
+    expect(persisted.heightCm).toBeNull();
+    expect(persisted.revision).toBe(3);
+  });
+
   it("rejects an invalid numeric answer without mutating revision", async () => {
     const bootstrap = await bootstrapSession(
       new NextRequest("http://localhost/api/session", { method: "POST" }),

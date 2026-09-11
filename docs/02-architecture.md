@@ -39,7 +39,7 @@ The domain layer must not import:
 - environment variables;
 - wall-clock time directly.
 
-## 3. Planned source layout
+## 3. Implemented source layout
 
 ```text
 src/

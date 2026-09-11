@@ -25,6 +25,7 @@ This is a lightweight ADR index for decisions that are important enough to expla
 | D019 | scalar assessment input bounds | accepted | freeze runtime-validation boundaries in tests while keeping them explicitly separate from source requirements and cross-field health logic |
 | D020 | goal/target directional invariant | accepted | keep the questionnaire internally coherent with a deterministic non-medical rule and make upstream edits revalidate downstream target state |
 | D021 | stable dependency refresh with compatibility gate | accepted | prefer current stable runtime packages only when the full framework/plugin toolchain supports them; reject upgrades that break quality gates |
+| D022 | reviewer-first delivery surface | accepted | expose the required demo, API, schema, one-command tests, coverage rationale, and AI evidence without making an interviewer search through implementation history |
 | D022 | one bounded production database pool per app process | accepted | prevent per-request Prisma/pg pools from exhausting the isolated production role |
 
 ## D001 — Next.js modular monolith
@@ -133,3 +134,7 @@ TypeScript 7.0.2 was also evaluated and rejected for now. The project itself typ
 The standalone Next.js process caches one application `PrismaClient` on `globalThis` in every environment. The `@prisma/adapter-pg` adapter is configured with a default maximum of four pooled connections, overridable through `DATABASE_POOL_MAX`. This is intentionally below the dedicated production role's connection cap so migration/administrative work retains headroom.
 
 This decision was made from production evidence rather than style preference: the first public concurrent Playwright run exposed `P2037 TooManyConnections` because the previous production branch constructed a fresh Prisma client and pg pool for repeated request-path lookups. A dedicated production-lifecycle regression test now prevents that behavior from returning.
+
+## D022 — Reviewer-first delivery surface
+
+A correct implementation can still be a weak submission if the reviewer must infer where evidence lives. The final README therefore front-loads the public demo, paid evaluator identity, endpoint map, reproducible `/pay` cURL, actual schema, one-command test runner, behavior coverage, and intentional exclusions. `docs/13-interviewer-audit.md` maps the supplied brief to concrete evidence and names the remaining trade-offs explicitly.
