@@ -580,12 +580,26 @@ The first clean GitHub runner exposed a real reproducibility defect: `tsc --noEm
 
 ### T21 Public deployment
 
+**Status:** in progress — repository-side preflight complete; external hosting/database connection required
+
 Acceptance:
 
 - public URL loads;
 - migration/database configured;
 - production secure-cookie behavior works;
 - complete assessment/payment demo works on deployed environment.
+
+Repository-side preparation completed:
+
+- `/` now has a real shadcn-based product landing experience instead of the bootstrap placeholder;
+- production session cookies already become `Secure` under `NODE_ENV=production`;
+- `pnpm db:migrate:deploy` provides an explicit committed-migration deployment command;
+- `pnpm seed:paid-demo` creates/reuses a synthetic ACTIVE evaluator session and prints the session cookie value required for direct API comparison;
+- the paid seed was executed twice against disposable PostgreSQL with the same UUID and produced one result snapshot plus one payment event, proving retry-safe seeding;
+- `docs/11-deployment.md` records environment, migration, paid-session, cURL, and public smoke procedures;
+- deployment preflight caught the local test PostgreSQL port bound to all host interfaces; Compose now binds `127.0.0.1:55432` only and all integration tests remain green.
+
+Current external dependency: this development host has no Vercel project/authentication and no production managed-PostgreSQL credentials configured. T21 remains open until a hosting/database account is connected; credentials must not be committed to the repository.
 
 ## 10. Phase 8 — delivery polish
 
