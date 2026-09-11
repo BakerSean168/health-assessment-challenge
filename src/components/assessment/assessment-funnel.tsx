@@ -6,6 +6,7 @@ import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { calculateBmi, type BmiCategory } from "@/modules/assessment/domain/calculation";
 import { Skeleton } from "@/components/ui/skeleton";
 import type {
   AssessmentAnswers,
@@ -180,6 +181,15 @@ function parseDraftValue(step: AssessmentStep, draft: string): AssessmentStepVal
   if (step === "AGE" && !Number.isInteger(numeric)) return null;
 
   return numeric;
+}
+
+function bmiCategoryLabel(category: BmiCategory): string {
+  return {
+    UNDERWEIGHT: "Underweight",
+    NORMAL: "Normal range",
+    OVERWEIGHT: "Overweight",
+    OBESE: "Obese range",
+  }[category];
 }
 
 function errorMessage(error: unknown): string {
@@ -377,7 +387,17 @@ export function AssessmentFunnel({
     : null;
   const title = optionQuestion?.title ?? numericQuestion?.title ?? "Assessment";
   const description = optionQuestion?.description ?? numericQuestion?.description;
-  const canContinue = parseDraftValue(displayStep, draftValue) !== null;
+  const parsedDraftValue = parseDraftValue(displayStep, draftValue);
+  const canContinue = parsedDraftValue !== null;
+  const bmiPreview =
+    displayStep === "WEIGHT" &&
+    typeof parsedDraftValue === "number" &&
+    assessment.answers.heightCm != null
+      ? calculateBmi({
+          heightCm: assessment.answers.heightCm,
+          weightKg: parsedDraftValue,
+        })
+      : null;
 
   return (
     <AssessmentShell
@@ -416,16 +436,33 @@ export function AssessmentFunnel({
           disabled={isSaving}
         />
       ) : numericQuestion ? (
-        <NumericAnswer
-          label={numericQuestion.label}
-          value={draftValue}
-          onChange={setDraftValue}
-          min={numericQuestion.min}
-          max={numericQuestion.max}
-          step={numericQuestion.step}
-          unit={numericQuestion.unit}
-          disabled={isSaving}
-        />
+        <div className="space-y-4">
+          <NumericAnswer
+            label={numericQuestion.label}
+            value={draftValue}
+            onChange={setDraftValue}
+            min={numericQuestion.min}
+            max={numericQuestion.max}
+            step={numericQuestion.step}
+            unit={numericQuestion.unit}
+            disabled={isSaving}
+          />
+          {bmiPreview ? (
+            <Card size="sm" className="bg-muted/30" aria-live="polite">
+              <CardContent className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <p className="font-medium">Your BMI</p>
+                  <p className="text-sm text-muted-foreground">
+                    {bmiCategoryLabel(bmiPreview.category)}
+                  </p>
+                </div>
+                <p className="font-heading text-3xl font-semibold tabular-nums">
+                  {bmiPreview.bmi}
+                </p>
+              </CardContent>
+            </Card>
+          ) : null}
+        </div>
       ) : null}
     </AssessmentShell>
   );

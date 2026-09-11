@@ -26,6 +26,9 @@ export async function completeDefaultAssessment(
   await page.getByRole("button", { name: "Continue" }).click();
 
   await page.getByRole("spinbutton", { name: "Current weight" }).fill("75");
+  await expect(page.getByText("Your BMI", { exact: true })).toBeVisible();
+  await expect(page.getByText("24.5", { exact: true })).toBeVisible();
+  await expect(page.getByText("Normal range", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Continue" }).click();
 
   await expect(page.getByRole("heading", { name: "How old are you?" })).toBeVisible();

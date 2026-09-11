@@ -41,7 +41,7 @@ export function NumericAnswer({
           step={step}
           disabled={disabled}
           onChange={(event) => onChange(event.target.value)}
-          className="h-12 px-4 text-lg md:text-lg"
+          className="h-12 px-4 text-lg [appearance:textfield] md:text-lg [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         />
         {unit ? (
           <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-sm font-medium text-muted-foreground">

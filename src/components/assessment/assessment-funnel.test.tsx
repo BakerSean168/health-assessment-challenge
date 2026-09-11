@@ -92,6 +92,40 @@ describe("AssessmentFunnel", () => {
     expect(screen.getByRole("radio", { name: "Male" })).toBeChecked();
   });
 
+  it("shows a live BMI preview as soon as a valid current weight is entered", async () => {
+    const user = userEvent.setup();
+    const api = createApi({
+      getAssessment: vi.fn().mockResolvedValue({
+        status: "IN_PROGRESS",
+        nextRequiredStep: "WEIGHT",
+        revision: 4,
+        answers: {
+          ...emptyAnswers,
+          gender: "MALE",
+          goal: "LOSE_WEIGHT",
+          activityLevel: "MODERATE",
+          heightCm: 175,
+        },
+      }),
+    });
+
+    render(<AssessmentFunnel api={api} onComplete={vi.fn()} />);
+
+    const input = await screen.findByRole("spinbutton", { name: "Current weight" });
+    expect(screen.queryByText("Your BMI")).not.toBeInTheDocument();
+
+    await user.type(input, "80");
+
+    expect(screen.getByText("Your BMI")).toBeInTheDocument();
+    expect(screen.getByText("26.1")).toBeInTheDocument();
+    expect(screen.getByText("Overweight")).toBeInTheDocument();
+    expect(api.saveStep).not.toHaveBeenCalled();
+
+    await user.clear(input);
+    await user.type(input, "400");
+    expect(screen.queryByText("Your BMI")).not.toBeInTheDocument();
+  });
+
   it("keeps the current step visible and surfaces a server save error", async () => {
     const user = userEvent.setup();
     const api = createApi({
