@@ -21,6 +21,9 @@ run("docker", ["compose", "-f", "compose.test.yaml", "up", "-d", "--wait"]);
 run("pnpm", ["exec", "prisma", "migrate", "deploy"], {
   DATABASE_URL: databaseUrl,
 });
+run("pnpm", ["exec", "tsx", "scripts/reset-test-db.ts"], {
+  TEST_DATABASE_URL: databaseUrl,
+});
 run("pnpm", ["exec", "playwright", "test", ...process.argv.slice(2)], {
   DATABASE_URL: databaseUrl,
   TEST_DATABASE_URL: databaseUrl,

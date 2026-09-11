@@ -479,3 +479,17 @@ Fix the test environment rather than weakening the browser assertion: a Node E2E
 **Outcome**
 
 Chromium now completes the seven-step funnel, survives a mid-assessment reload, reaches the redacted FREE result, and survives a result reload without direct database manipulation.
+
+### 2026-09-11 — Browser E2E exposed integration-suite state leakage
+
+**Context**
+
+After the first browser flow passed, rerunning the PostgreSQL integration suite found one failure: an assertion using the first assessment row observed a leftover E2E session at revision 0. The product code was correct; the test environment had relied on the database already being empty before the first integration case.
+
+**Developer review**
+
+The failure was treated as a stop-the-line test-isolation defect rather than dismissed as flaky. A shared test-database reset script now deletes the anonymous-session aggregate roots before both integration and E2E suites. Cascades remove assessments, result snapshots, and payment events. Existing per-test cleanup remains as defense in depth. Playwright report/output directories are also ignored.
+
+**Outcome**
+
+E2E can no longer pollute a later integration run, and each top-level database-backed suite establishes its own clean starting state.

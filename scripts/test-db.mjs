@@ -34,6 +34,9 @@ if (action === "migrate") {
   migrate();
 } else if (action === "test") {
   migrate();
+  run("pnpm", ["exec", "tsx", "scripts/reset-test-db.ts"], {
+    TEST_DATABASE_URL: testDatabaseUrl,
+  });
   run(
     "pnpm",
     ["exec", "vitest", "run", "--config", "vitest.integration.config.mts"],
