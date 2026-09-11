@@ -557,6 +557,8 @@ Implemented behavior and evidence:
 
 ### T20 GitHub Actions
 
+**Status:** done — 2026-09-11
+
 Required jobs/checks:
 
 - install/cache;
@@ -565,6 +567,16 @@ Required jobs/checks:
 - unit + integration tests;
 - build;
 - Playwright where environment is stable enough.
+
+Implemented pipeline:
+
+- `Quality`: ESLint, Next route type generation + TypeScript, 52 unit/component tests, and production `next build`;
+- `PostgreSQL integration`: starts the disposable PostgreSQL 17 Compose service from a clean runner, applies all committed migrations, resets aggregate test data, then runs 32 integration tests;
+- `Chromium E2E`: installs Playwright Chromium and exercises both FREE and paid browser flows against the real Next/API/PostgreSQL stack;
+- CI uses Node 24.21.0 and the repository-pinned pnpm 11.22.0, read-only repository permissions, per-ref concurrency cancellation, and a failed-run Playwright report artifact;
+- database-backed commands are self-contained: `pnpm test:integration` and `pnpm test:e2e` can start their default local test database rather than relying on an undocumented pre-existing container.
+
+The first clean GitHub runner exposed a real reproducibility defect: `tsc --noEmit` depended on `.next/types` left behind by prior local `next dev/build` runs because the root layout uses Next's typed `LayoutProps`. The fix keeps the stronger typed API and changes `pnpm typecheck` to `next typegen && tsc --noEmit`. The next CI run (`34551951733`) completed all three jobs green.
 
 ### T21 Public deployment
 

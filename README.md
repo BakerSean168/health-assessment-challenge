@@ -1,12 +1,14 @@
 # Health Assessment Full-Stack Challenge
 
+[![CI](https://github.com/BakerSean168/health-assessment-challenge/actions/workflows/ci.yml/badge.svg)](https://github.com/BakerSean168/health-assessment-challenge/actions/workflows/ci.yml)
+
 A TDD-first implementation of a progressive health-assessment funnel inspired by BetterMe-style Web-to-App onboarding.
 
 The project is intentionally scoped as a three-day engineering challenge. The goal is not to clone a commercial product or reproduce dozens of marketing screens. Instead, it extracts the core product mechanics that matter technically: progressive data collection, server-side persistence and recovery, deterministic result generation, subscription-gated result projection, idempotent payment simulation, and evidence-driven testing.
 
 ## Status
 
-**Phase:** T19 paid-user browser E2E complete; T20 GitHub Actions is next
+**Phase:** T20 GitHub Actions complete and green; T21 public deployment is next
 
 The repository is public from the start so the implementation history, test-first workflow, design decisions, and trade-offs remain reviewable.
 
@@ -48,16 +50,16 @@ The planned implementation keeps seven persisted assessment inputs while using f
 
 ## Frozen stack
 
-- Node.js 24.19.0 + pnpm 11.22.0
-- Next.js 16.3.4 App Router + React 19.2.8 + strict TypeScript
+- Node.js 24 LTS (`24.21.0` in CI; engine `>=24.19 <25`) + pnpm 11.22.0
+- Next.js 16.3.4 App Router + React 19.3.0 + TypeScript 5.9.3 (`strict`)
 - Tailwind CSS 4
 - shadcn/ui `base-nova` preset using Base UI primitives
 - Lucide icons
 - PostgreSQL
-- Prisma
-- Zod
-- Vitest
-- Playwright
+- Prisma 7.10 + PostgreSQL 17 integration environment
+- Zod 4.6
+- Vitest 5
+- Playwright 1.63
 - GitHub Actions
 - Vercel-compatible deployment
 
