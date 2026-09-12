@@ -5,6 +5,7 @@ import { apiError } from "@/lib/api-error";
 import { privateJson } from "@/lib/api-response";
 import { getPrismaClient } from "@/lib/db";
 import { getAssessment } from "@/modules/assessment/application/get-assessment";
+import { assessmentRecoveryDtoSchema } from "@/modules/assessment/contracts/assessment-api";
 import { PrismaAssessmentRepository } from "@/modules/assessment/infrastructure/prisma-assessment-repository";
 import { SESSION_COOKIE_NAME } from "@/modules/session/http/session-cookie";
 
@@ -32,5 +33,5 @@ export async function GET(request: NextRequest) {
     return apiError(404, result.code, "The assessment was not found.");
   }
 
-  return privateJson(result.assessment);
+  return privateJson(assessmentRecoveryDtoSchema.parse(result.assessment));
 }

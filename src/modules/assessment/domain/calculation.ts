@@ -1,6 +1,12 @@
 import type { ActivityLevel, Gender, Goal } from "./assessment";
 
-export type BmiCategory = "UNDERWEIGHT" | "NORMAL" | "OVERWEIGHT" | "OBESE";
+export const BMI_CATEGORY_VALUES = [
+  "UNDERWEIGHT",
+  "NORMAL",
+  "OVERWEIGHT",
+  "OBESE",
+] as const;
+export type BmiCategory = (typeof BMI_CATEGORY_VALUES)[number];
 
 export interface BmiInput {
   weightKg: number;

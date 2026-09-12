@@ -5,6 +5,7 @@ import { apiError } from "@/lib/api-error";
 import { privateJson } from "@/lib/api-response";
 import { getPrismaClient } from "@/lib/db";
 import { submitAssessment } from "@/modules/assessment/application/submit-assessment";
+import { submitAssessmentDtoSchema } from "@/modules/assessment/contracts/assessment-api";
 import { submitAssessmentRequestSchema } from "@/modules/assessment/contracts/submit-assessment";
 import { PrismaAssessmentSubmissionRepository } from "@/modules/assessment/infrastructure/prisma-assessment-submission-repository";
 import { SESSION_COOKIE_NAME } from "@/modules/session/http/session-cookie";
@@ -71,8 +72,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  return privateJson({
-    status: "COMPLETED",
-    resultReady: true,
-  });
+  return privateJson(
+    submitAssessmentDtoSchema.parse({
+      status: "COMPLETED",
+      resultReady: true,
+    }),
+  );
 }

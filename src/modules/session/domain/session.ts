@@ -1,7 +1,10 @@
-import type { AssessmentAnswers } from "../../assessment/domain/assessment";
+import type {
+  AssessmentAnswers,
+  AssessmentStatus,
+} from "../../assessment/domain/assessment";
 
-export type SubscriptionStatus = "FREE" | "ACTIVE";
-export type AssessmentStatus = "IN_PROGRESS" | "COMPLETED";
+export const SUBSCRIPTION_STATUS_VALUES = ["FREE", "ACTIVE"] as const;
+export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUS_VALUES)[number];
 
 export interface SessionAssessment extends Required<AssessmentAnswers> {
   id: string;

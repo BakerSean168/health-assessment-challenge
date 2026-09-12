@@ -1,14 +1,12 @@
-import type { AssessmentStepCommand } from "../contracts/assessment-step";
 import {
   getNextRequiredStep,
   isTargetWeightCompatible,
   validateStepWrite,
 } from "../domain/assessment";
-import type { AssessmentRepository } from "./assessment-repository";
-
-export type SaveAssessmentStepInput = AssessmentStepCommand & {
-  sessionId: string;
-};
+import type {
+  AssessmentRepository,
+  SaveAssessmentStepInput,
+} from "./assessment-repository";
 
 export type SaveAssessmentStepResult =
   | {

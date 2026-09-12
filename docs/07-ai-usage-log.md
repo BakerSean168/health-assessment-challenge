@@ -414,6 +414,24 @@ The migration is exercised against real PostgreSQL, payment/session/result integ
 
 The final schema now directly matches the brief's user/data/subscription relationship while preserving the existing closed loop and avoiding unnecessary billing complexity.
 
+### 2026-09-12 — Shared contracts replaced duplicated browser DTOs
+
+**Context**
+
+A final type-safety audit found that the repository already had request contracts, but several browser response DTOs were still handwritten in `client/assessment-api.ts` and `client/result-api.ts`. TypeScript therefore described the same HTTP shapes in more than one place, and the generic browser helper trusted successful JSON via a type assertion.
+
+**Developer correction**
+
+The API boundary was consolidated into explicit Zod contracts. Success response DTOs are now inferred from those schemas and imported by browser code; Route Handlers validate outgoing success bodies with the same contracts, while the browser validates successful responses before returning them to React. Domain literal sets are exported once as `as const` tuples and reused by the contracts. Assessment step/value pairing was tightened into a discriminated command union so invalid combinations fail typecheck.
+
+**Evidence**
+
+A typecheck fixture proves `AGE` cannot carry a gender string, contract tests reject response-shape drift and FREE-result value leakage, and browser-API tests reject a `200` response whose JSON violates the shared schema. The full unit/component suite increased from 69 to 74 tests.
+
+**Outcome**
+
+Frontend and backend now share one executable API contract instead of parallel DTO declarations: runtime schema -> inferred TypeScript type -> server output validation -> browser response validation.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title

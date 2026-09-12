@@ -11,4 +11,13 @@ export const payRequestSchema = z
   })
   .strict();
 
+export const payResponseSchema = z
+  .object({
+    status: z.literal("SUCCEEDED"),
+    subscriptionStatus: z.literal("ACTIVE"),
+    replayed: z.boolean(),
+  })
+  .strict();
+
 export type PayRequest = z.infer<typeof payRequestSchema>;
+export type PayResponse = z.infer<typeof payResponseSchema>;

@@ -130,7 +130,26 @@ sequenceDiagram
     R-->>B: 200 or stable error contract
 ```
 
-## 5. State ownership
+## 5. Shared contracts and runtime trust
+
+The assessment/payment HTTP boundary uses a dedicated `contracts/` layer as the single API source of truth. Runtime schemas are defined with Zod and DTO types are inferred from those schemas; browser code does not hand-maintain parallel response interfaces.
+
+```text
+domain literal tuples (`as const`)
+        |
+        v
+contracts / Zod schemas
+   |                |
+   v                v
+Route Handlers   browser API clients
+(output parse)   (response parse)
+```
+
+This deliberately avoids the weak pattern `fetch(...).json() as SomeDto`. A successful HTTP status is not enough: the browser accepts data only after the shared response schema validates it. Contract drift therefore fails closed at runtime and also fails during TypeScript checks where shapes are constructed.
+
+Assessment step/value coupling is represented as a discriminated mapped union. The command itself carries `{ step, value, expectedRevision }`, so `AGE` cannot be paired with `"MALE"` or `GENDER` with a number. The React funnel creates that same command through the shared step parser before calling the browser adapter, and the server parses the request with the same contract.
+
+## 6. State ownership
 
 ### Server-owned state
 

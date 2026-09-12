@@ -7,42 +7,9 @@ export interface AssessmentResultSnapshot {
   estimatedGoalDate: Date;
 }
 
-export interface FreeResultDto {
-  access: "FREE";
-  bmi: {
-    value: number;
-    category: BmiCategory;
-  };
-  recommendedDailyCalories: {
-    locked: true;
-  };
-  estimatedGoalDate: {
-    locked: true;
-  };
-}
-
-export interface ActiveResultDto {
-  access: "ACTIVE";
-  bmi: {
-    value: number;
-    category: BmiCategory;
-  };
-  recommendedDailyCalories: {
-    locked: false;
-    value: number;
-  };
-  estimatedGoalDate: {
-    locked: false;
-    value: string;
-  };
-}
-
-export type ResultDto = FreeResultDto | ActiveResultDto;
 export type ResultAccess = "FREE" | "ACTIVE";
 
-export function projectFreeResult(
-  snapshot: AssessmentResultSnapshot,
-): FreeResultDto {
+export function projectFreeResult(snapshot: AssessmentResultSnapshot) {
   return {
     access: "FREE",
     bmi: {
@@ -51,12 +18,10 @@ export function projectFreeResult(
     },
     recommendedDailyCalories: { locked: true },
     estimatedGoalDate: { locked: true },
-  };
+  } as const;
 }
 
-export function projectActiveResult(
-  snapshot: AssessmentResultSnapshot,
-): ActiveResultDto {
+export function projectActiveResult(snapshot: AssessmentResultSnapshot) {
   return {
     access: "ACTIVE",
     bmi: {
@@ -71,13 +36,13 @@ export function projectActiveResult(
       locked: false,
       value: snapshot.estimatedGoalDate.toISOString().slice(0, 10),
     },
-  };
+  } as const;
 }
 
 export function projectResult(
   snapshot: AssessmentResultSnapshot,
   access: ResultAccess,
-): ResultDto {
+) {
   return access === "ACTIVE"
     ? projectActiveResult(snapshot)
     : projectFreeResult(snapshot);

@@ -33,7 +33,7 @@ import {
   browserResultApi,
   type ResultBrowserApi,
 } from "@/modules/assessment/client/result-api";
-import type { ResultDto } from "@/modules/assessment/domain/result-projection";
+import type { ResultDto } from "@/modules/assessment/contracts/assessment-api";
 
 function categoryLabel(category: ResultDto["bmi"]["category"]): string {
   return {
