@@ -286,7 +286,7 @@ E2E_BASE_URL=https://assessment.bakersean.top pnpm test:e2e
 - [UI 组件策略](docs/09-ui-component-policy.md)
 - [计算策略 v1](docs/10-calculation-policy.md)
 - [部署与评估者演示](docs/11-deployment.md)
-- [AI 协作复盘](docs/12-ai-retrospective.md)
+- [AI 使用复盘](docs/12-ai-retrospective.md)
 - [面试官视角审计](docs/13-interviewer-audit.md)
 - [面试官代码审查审计](docs/14-code-review-audit.md)
 - [技术面试防御指南](docs/15-interview-defense.md)

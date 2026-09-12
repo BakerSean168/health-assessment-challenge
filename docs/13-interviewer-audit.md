@@ -24,7 +24,7 @@
 | 公开可运行 URL | `https://assessment.bakersean.top`，通过 Cloudflare/Caddy 提供 HTTPS，生产环境冒烟测试和公开 Playwright 通过 | PASS |
 | 固定 FREE / ACTIVE 评审会话 | README 提供两条使用完全相同评估数据、仅订阅状态不同的固定 session ID，可直接通过 cURL 对比脱敏与完整结果投影 | PASS |
 | 架构图 | README 快速图 + 详细文档 `03-domain-and-data-model.md`；用户/会话、评估数据、订阅状态、结果快照和支付事件均为显式关系 | PASS |
-| AI 使用回顾 | 持续记录 + 简明回顾，包含被接受/拒绝的 AI 提案及可执行证据 | PASS |
+| AI 使用回顾 | 明确说明 AI 如何参与数据库建模、Mock 数据、复杂逻辑与边界测试，并给出 T07 中“错误测试被人工否决而非修改正确生产代码”的单一具体案例 | PASS |
 | 前端完成度意愿 | 移动端优先的单题节奏、进度指示器、持久化刷新、诚实的信任文案、付费墙前可见价值、Base UI 无障碍基础组件 | PASS（在简报范围内） |
 
 ## 评审者可能提出的有意取舍
