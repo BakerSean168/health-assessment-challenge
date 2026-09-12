@@ -12,6 +12,8 @@ All session-scoped API responses, including errors, send `Cache-Control: private
 
 All mutating assessment requests use the current server session; callers do not select another session by sending an arbitrary identifier.
 
+All endpoints with JSON request bodies require `Content-Type: application/json` (parameters such as `charset=UTF-8` are allowed). JSON-looking bytes sent as `text/plain` or another media type are rejected with `415 UNSUPPORTED_MEDIA_TYPE` before body parsing. Besides making the HTTP contract explicit, this prevents state-changing JSON routes from accepting CORS-safelisted `text/plain` requests as an alternate browser write path.
+
 ## 2. Error envelope
 
 ```json
@@ -31,6 +33,7 @@ Initial stable error codes:
 - `VALIDATION_ERROR`
 - `SESSION_REQUIRED`
 - `SESSION_NOT_FOUND`
+- `UNSUPPORTED_MEDIA_TYPE`
 - `ASSESSMENT_NOT_FOUND`
 - `STEP_OUT_OF_ORDER`
 - `STEP_VALUE_INCONSISTENT`

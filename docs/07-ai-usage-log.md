@@ -450,6 +450,24 @@ The stronger compiler settings immediately exposed a real unchecked `STEP_ORDER[
 
 The repository now treats “single source of truth” as an enforceable property rather than a folder name: one source per boundary, exhaustive projections, and independent compile/runtime/database evidence where two layers must intentionally remain separate. The missed first-pass issue is kept in the retrospective because recognizing and correcting an incomplete AI-assisted review is itself part of the challenge's AI-collaboration criterion.
 
+### 2026-09-12 — Third audit: transaction snapshots, media types, and database backstops
+
+**Context**
+
+After the source-of-truth pass, the review deliberately changed attack surface: transaction return semantics, HTTP write boundaries, persistence invariants, replay side effects, and whether tests proved concurrent outcomes rather than merely sequential retries.
+
+**Developer correction**
+
+Four RED reproductions exposed real gaps. A CAS PATCH committed and then re-read the row, allowing a later revision to leak into the first response; JSON routes parsed `text/plain`; PostgreSQL accepted negative revisions/out-of-range measurements/inconsistent lifecycle timestamps/malformed payment keys; and payment replay returned early from the idempotency record even if ACTIVE access had been externally lost. The fixes use `updateManyAndReturn`, strict JSON media-type enforcement with `415`, a committed CHECK-constraint migration, and replay-side-effect repair inside the payment transaction. Existing-session bootstrap also repairs both 1:1 children with duplicate-safe inserts.
+
+**Evidence**
+
+`repository-write-snapshot.test.ts` forces a later revision to commit before the first repository call resolves and proves the response still reports revision 1. `media-type-boundary.test.ts` proves `text/plain` writes do not mutate state. `database-invariants.test.ts` executes direct Prisma writes against real PostgreSQL. Payment integration simulates an externally downgraded subscription and proves same-key replay restores ACTIVE. Concurrent submit requests both succeed while one result snapshot/revision transition is persisted.
+
+**Outcome**
+
+The fast suite is 83 tests and the PostgreSQL suite is 49 tests. This round strengthened invariants below the TypeScript contract layer rather than adding more duplicate shape checks.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title

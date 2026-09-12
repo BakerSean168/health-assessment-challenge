@@ -38,6 +38,11 @@ This is a lightweight ADR index for decisions that are important enough to expla
 | D032 | target-weight BMI preview | accepted | show the BMI implied by the draft goal weight before submission using the same shared calculation |
 | D033 | dedicated 1:1 subscription extension table | accepted | match the brief's explicit schema relationship while keeping mocked billing state minimal and non-speculative |
 | D034 | client recovery after optimistic-concurrency conflict | accepted | refetch canonical state after a stale write instead of leaving the browser stuck on an obsolete revision |
+| D035 | strict JSON request media type | accepted | state-changing JSON routes should reject JSON-looking `text/plain` bodies and make the HTTP boundary explicit |
+| D036 | CAS write returns its own mutation snapshot | accepted | a successful writer must not report a later concurrent revision from a separate read |
+| D037 | database CHECK backstops for structural invariants | accepted | transport/domain validation should not be the only barrier against impossible persisted scalar/lifecycle/key states |
+| D038 | replay re-establishes idempotent payment side effect | accepted | an idempotency record should imply the successful operation outcome, not merely suppress duplicate insertion |
+| D039 | bootstrap repairs both 1:1 session resources | accepted | legacy/manual partial rows should converge back to the documented assessment+subscription shape |
 
 ## D001 — Next.js modular monolith
 
@@ -210,3 +215,9 @@ The migration backfills every existing session before dropping the old column, p
 The server continues to reject stale PATCH requests with `409 ASSESSMENT_VERSION_CONFLICT`; that concurrency rule is unchanged. The browser now treats the conflict as a recoverable synchronization event: it fetches `GET /api/assessment`, replaces its local revision/answers with canonical persisted state, and resumes at the latest server-derived step. If another tab already completed the assessment, the stale tab follows the completed result instead.
 
 This keeps optimistic concurrency strict while avoiding a poor UX where the user sees a conflict message but remains trapped on state that can never be saved successfully.
+
+## D035–D039 — Boundary/invariant hardening
+
+A third interviewer-style audit moved below type-shape drift and attacked failure atomicity, HTTP semantics, and persistence invariants. Body-bearing mutation routes now accept only `application/json`, returning `415` before parsing other media types. Step CAS writes use PostgreSQL-backed `updateManyAndReturn` so a successful response is tied to its own mutation row rather than a later SELECT. Committed CHECK constraints backstop scalar bounds, nonnegative revision, lifecycle timestamp consistency, payment-key shape, and structural result sanity. Payment replay continues through the idempotent ACTIVE transition instead of returning early on the dedupe record, and bootstrap duplicate-safely repairs missing assessment/subscription children for an existing session.
+
+Cross-field goal/target compatibility intentionally remains outside a database CHECK: editing goal/current weight is allowed to retain an older target as draft data while derived progress moves back to `TARGET_WEIGHT`. That distinction keeps database constraints structural and domain rules semantic.

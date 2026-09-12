@@ -212,7 +212,9 @@ A client reads revision `N` and sends `expectedRevision: N` with an answer write
 
 A stale answer write returns HTTP `409` with `ASSESSMENT_VERSION_CONFLICT` even when the submitted value happens to equal the current value. Silent acceptance would hide a stale-client condition and weaken the concurrency contract.
 
-This prevents a delayed tab or duplicate UI from silently overwriting or acting on more recent server state.
+Successful answer writes use Prisma `updateManyAndReturn`, so the repository returns the exact row produced by that compare-and-swap statement. It deliberately avoids a separate post-write `SELECT`: otherwise a second writer could commit after the first mutation but before that read and make the first request report the later writer's revision/state.
+
+This prevents a delayed tab or duplicate UI from silently overwriting or acting on more recent server state, while also keeping each successful response tied to its own mutation snapshot.
 
 ## 10. Submission semantics
 
@@ -229,6 +231,8 @@ On first valid submit:
 7. return the successful state.
 
 On retry after a successful completion, the existing snapshot is returned before applying stale-revision rejection. This preserves true retry safety after a lost response while keeping first-time submission concurrency-safe.
+
+PostgreSQL also acts as a structural backstop rather than trusting HTTP/domain validation as the only write path. Validated `CHECK` constraints reject out-of-range scalar answers, negative revisions, inconsistent lifecycle timestamps, malformed payment idempotency keys, and structurally impossible result values. Cross-field goal/target compatibility intentionally remains a domain rule because editing an upstream answer may retain an older target as draft data while derived progress moves back to `TARGET_WEIGHT`; encoding that behavior as a database scalar check would make the persistence model destructive or overly coupled to questionnaire policy.
 
 ## 11. Result snapshot rationale
 
