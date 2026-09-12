@@ -8,17 +8,27 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { calculateBmi } from "@/modules/assessment/domain/calculation";
 import {
+  assessmentAnswerPatchForCommand,
   domainStepToRouteStep,
   parseAssessmentStepRequest,
   type AssessmentStepCommand,
 } from "@/modules/assessment/contracts/assessment-step";
 import { Skeleton } from "@/components/ui/skeleton";
-import type {
-  AssessmentAnswers,
-  AssessmentStep,
+import {
+  ACTIVITY_LEVEL_VALUES,
+  ASSESSMENT_STEP_VALUES,
+  COMPLETED_ASSESSMENT_STATUS,
+  GENDER_VALUES,
+  GOAL_VALUES,
+  type ActivityLevel,
+  type AssessmentAnswers,
+  type AssessmentStep,
+  type Gender,
+  type Goal,
 } from "@/modules/assessment/domain/assessment";
 import { ASSESSMENT_INPUT_LIMITS } from "@/modules/assessment/domain/input-limits";
 import {
+  AssessmentBrowserApiError,
   browserAssessmentApi,
   type AssessmentBrowserApi,
   type AssessmentRecoveryDto,
@@ -28,55 +38,81 @@ import { BmiPreview } from "./bmi-preview";
 import { AssessmentShell } from "./assessment-shell";
 import { NumericAnswer } from "./numeric-answer";
 
-const STEP_ORDER: readonly AssessmentStep[] = [
-  "GENDER",
-  "GOAL",
-  "ACTIVITY",
-  "HEIGHT",
-  "WEIGHT",
-  "AGE",
-  "TARGET_WEIGHT",
-];
+const STEP_ORDER = ASSESSMENT_STEP_VALUES;
 
-const optionQuestions = {
+const GENDER_LABELS = {
+  MALE: "Male",
+  FEMALE: "Female",
+  OTHER: "Other",
+} satisfies Record<Gender, string>;
+
+const GOAL_LABELS = {
+  LOSE_WEIGHT: "Lose weight",
+  MAINTAIN: "Maintain my weight",
+  GAIN_WEIGHT: "Gain weight",
+} satisfies Record<Goal, string>;
+
+const ACTIVITY_LEVEL_LABELS = {
+  SEDENTARY: "Mostly sedentary",
+  LIGHT: "Lightly active",
+  MODERATE: "Moderately active",
+  ACTIVE: "Very active",
+  VERY_ACTIVE: "Highly active",
+} satisfies Record<ActivityLevel, string>;
+
+type OptionQuestion = {
+  kind: "option";
+  title: string;
+  description: string;
+  ariaLabel: string;
+  options: readonly { value: string; label: string }[];
+};
+
+type NumericQuestion = {
+  kind: "numeric";
+  title: string;
+  description: string;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+  unit: string;
+};
+
+const questionByStep = {
   GENDER: {
+    kind: "option",
     title: "Which best describes you?",
-    description:
-      "This helps personalize your results.",
+    description: "This helps personalize your results.",
     ariaLabel: "Gender",
-    options: [
-      { value: "MALE", label: "Male" },
-      { value: "FEMALE", label: "Female" },
-      { value: "OTHER", label: "Other" },
-    ],
+    options: GENDER_VALUES.map((value) => ({
+      value,
+      label: GENDER_LABELS[value],
+    })),
   },
   GOAL: {
+    kind: "option",
     title: "What is your main goal?",
     description: "Choose what you'd like to work toward.",
     ariaLabel: "Goal",
-    options: [
-      { value: "LOSE_WEIGHT", label: "Lose weight" },
-      { value: "MAINTAIN", label: "Maintain my weight" },
-      { value: "GAIN_WEIGHT", label: "Gain weight" },
-    ],
+    options: GOAL_VALUES.map((value) => ({
+      value,
+      label: GOAL_LABELS[value],
+    })),
   },
   ACTIVITY: {
+    kind: "option",
     title: "How active are you in a typical week?",
     description:
       "Pick the option that most closely reflects your normal routine.",
     ariaLabel: "Activity level",
-    options: [
-      { value: "SEDENTARY", label: "Mostly sedentary" },
-      { value: "LIGHT", label: "Lightly active" },
-      { value: "MODERATE", label: "Moderately active" },
-      { value: "ACTIVE", label: "Very active" },
-      { value: "VERY_ACTIVE", label: "Highly active" },
-    ],
+    options: ACTIVITY_LEVEL_VALUES.map((value) => ({
+      value,
+      label: ACTIVITY_LEVEL_LABELS[value],
+    })),
   },
-} as const;
-
-const numericQuestions = {
   HEIGHT: {
+    kind: "numeric",
     title: "How tall are you?",
     description: "We'll use this with your current weight to calculate BMI.",
     label: "Height",
@@ -86,6 +122,7 @@ const numericQuestions = {
     unit: "cm",
   },
   WEIGHT: {
+    kind: "numeric",
     title: "What is your current weight?",
     description: "Use your current measurement rather than an estimate.",
     label: "Current weight",
@@ -95,6 +132,7 @@ const numericQuestions = {
     unit: "kg",
   },
   AGE: {
+    kind: "numeric",
     title: "How old are you?",
     description: "Age helps tailor your daily calorie estimate.",
     label: "Age",
@@ -104,6 +142,7 @@ const numericQuestions = {
     unit: "years",
   },
   TARGET_WEIGHT: {
+    kind: "numeric",
     title: "What is your target weight?",
     description:
       "Your target helps us estimate a possible timeline toward your goal.",
@@ -113,17 +152,10 @@ const numericQuestions = {
     step: 0.1,
     unit: "kg",
   },
-} as const;
+} as const satisfies Record<AssessmentStep, OptionQuestion | NumericQuestion>;
 
-type OptionStep = keyof typeof optionQuestions;
-type NumericStep = keyof typeof numericQuestions;
-
-function isOptionStep(step: AssessmentStep): step is OptionStep {
-  return step in optionQuestions;
-}
-
-function isNumericStep(step: AssessmentStep): step is NumericStep {
-  return step in numericQuestions;
+function assertNever(value: never): never {
+  throw new Error(`Unexpected assessment variant: ${JSON.stringify(value)}`);
 }
 
 function valueForStep(
@@ -145,6 +177,8 @@ function valueForStep(
       return answers.age?.toString() ?? "";
     case "TARGET_WEIGHT":
       return answers.targetWeightKg?.toString() ?? "";
+    default:
+      return assertNever(step);
   }
 }
 
@@ -152,22 +186,10 @@ function withStepValue(
   answers: Required<AssessmentAnswers>,
   command: AssessmentStepCommand,
 ): Required<AssessmentAnswers> {
-  switch (command.step) {
-    case "GENDER":
-      return { ...answers, gender: command.value };
-    case "GOAL":
-      return { ...answers, goal: command.value };
-    case "ACTIVITY":
-      return { ...answers, activityLevel: command.value };
-    case "HEIGHT":
-      return { ...answers, heightCm: command.value };
-    case "WEIGHT":
-      return { ...answers, weightKg: command.value };
-    case "AGE":
-      return { ...answers, age: command.value };
-    case "TARGET_WEIGHT":
-      return { ...answers, targetWeightKg: command.value };
-  }
+  return {
+    ...answers,
+    ...assessmentAnswerPatchForCommand(command),
+  };
 }
 
 function parseDraftCommand(
@@ -177,7 +199,7 @@ function parseDraftCommand(
 ): AssessmentStepCommand | null {
   if (!draft) return null;
 
-  const rawValue = isNumericStep(step) ? Number(draft) : draft;
+  const rawValue = questionByStep[step].kind === "numeric" ? Number(draft) : draft;
   if (typeof rawValue === "number" && !Number.isFinite(rawValue)) return null;
 
   const parsed = parseAssessmentStepRequest(domainStepToRouteStep[step], {
@@ -258,7 +280,32 @@ export function AssessmentFunnel({
         await api.submitAssessment(revision);
         onComplete();
       } catch (caught) {
-        setError(errorMessage(caught));
+        const submitError = errorMessage(caught);
+
+        // A submit can commit successfully even if its HTTP response is lost.
+        // Re-read canonical server state before telling the user it failed, so
+        // retry-safe submit semantics are reflected in the browser as well.
+        try {
+          const recovered = await api.getAssessment();
+          if (recovered.status === COMPLETED_ASSESSMENT_STATUS) {
+            onComplete();
+            return;
+          }
+
+          setAssessment(recovered);
+          if (recovered.nextRequiredStep) {
+            setDisplayStep(recovered.nextRequiredStep);
+            setDraftValue(
+              valueForStep(recovered.answers, recovered.nextRequiredStep),
+            );
+          }
+        } catch {
+          // Preserve the original submit failure: the recovery read is best
+          // effort and should not hide the operation the user attempted.
+        }
+
+        setError(submitError);
+      } finally {
         setIsSubmitting(false);
       }
     },
@@ -275,7 +322,7 @@ export function AssessmentFunnel({
         onOrderResolved?.(bootstrap.orderId);
         const recovered = bootstrap.assessment;
 
-        if (recovered.status === "COMPLETED") {
+        if (recovered.status === COMPLETED_ASSESSMENT_STATUS) {
           onComplete();
           return;
         }
@@ -310,6 +357,7 @@ export function AssessmentFunnel({
   const goBack = useCallback(() => {
     if (!assessment || stepIndex <= 0) return;
     const previous = STEP_ORDER[stepIndex - 1];
+    if (!previous) return;
     setDisplayStep(previous);
     setDraftValue(valueForStep(assessment.answers, previous));
     setError(null);
@@ -351,39 +399,44 @@ export function AssessmentFunnel({
       setDisplayStep(saved.nextRequiredStep);
       setDraftValue(valueForStep(answers, saved.nextRequiredStep));
     } catch (caught) {
-      if (
-        caught instanceof Error &&
-        "code" in caught &&
-        caught.code === "ASSESSMENT_VERSION_CONFLICT"
-      ) {
-        try {
-          const recovered = await api.getAssessment();
-          if (recovered.status === "COMPLETED") {
-            onComplete();
-            return;
-          }
+      const originalError = errorMessage(caught);
 
-          setAssessment(recovered);
-          setDisplayStep(recovered.nextRequiredStep);
+      // A PATCH may have committed even when its response was interrupted.
+      // Reconcile with canonical state after any failed write; only advance
+      // automatically when the server revision proves state changed.
+      try {
+        const recovered = await api.getAssessment();
+        if (recovered.status === COMPLETED_ASSESSMENT_STATUS) {
+          onComplete();
+          return;
+        }
+
+        const canonicalAdvanced = recovered.revision !== assessment.revision;
+        setAssessment(recovered);
+
+        if (canonicalAdvanced) {
           if (recovered.nextRequiredStep) {
+            setDisplayStep(recovered.nextRequiredStep);
             setDraftValue(
               valueForStep(recovered.answers, recovered.nextRequiredStep),
             );
             setError(
-              "Your assessment changed in another tab. We refreshed the latest saved progress.",
+              caught instanceof AssessmentBrowserApiError &&
+                caught.code === "ASSESSMENT_VERSION_CONFLICT"
+                ? "Your assessment changed in another tab. We refreshed the latest saved progress."
+                : "We restored the latest saved progress after the connection was interrupted.",
             );
             return;
           }
 
           await finishAssessment(recovered.revision);
           return;
-        } catch (recoveryError) {
-          setError(errorMessage(recoveryError));
-          return;
         }
+      } catch {
+        // Keep the original write failure if recovery itself is unavailable.
       }
 
-      setError(errorMessage(caught));
+      setError(originalError);
     } finally {
       setIsSaving(false);
     }
@@ -410,14 +463,9 @@ export function AssessmentFunnel({
     );
   }
 
-  const optionQuestion = isOptionStep(displayStep)
-    ? optionQuestions[displayStep]
-    : null;
-  const numericQuestion = isNumericStep(displayStep)
-    ? numericQuestions[displayStep]
-    : null;
-  const title = optionQuestion?.title ?? numericQuestion?.title ?? "Assessment";
-  const description = optionQuestion?.description ?? numericQuestion?.description;
+  const question = questionByStep[displayStep];
+  const title = question.title;
+  const description = question.description;
   const parsedDraftCommand = parseDraftCommand(
     displayStep,
     draftValue,
@@ -447,7 +495,7 @@ export function AssessmentFunnel({
       totalSteps={STEP_ORDER.length}
       title={title}
       description={description}
-      onBack={stepIndex > 0 ? goBack : undefined}
+      {...(stepIndex > 0 ? { onBack: goBack } : {})}
       footer={
         <div className="space-y-3">
           {error ? (
@@ -469,24 +517,24 @@ export function AssessmentFunnel({
         </div>
       }
     >
-      {optionQuestion ? (
+      {question.kind === "option" ? (
         <AssessmentOptionGroup
           value={draftValue}
           onValueChange={setDraftValue}
-          options={optionQuestion.options}
-          ariaLabel={optionQuestion.ariaLabel}
+          options={question.options}
+          ariaLabel={question.ariaLabel}
           disabled={isSaving}
         />
-      ) : numericQuestion ? (
+      ) : (
         <div className="space-y-4">
           <NumericAnswer
-            label={numericQuestion.label}
+            label={question.label}
             value={draftValue}
             onChange={setDraftValue}
-            min={numericQuestion.min}
-            max={numericQuestion.max}
-            step={numericQuestion.step}
-            unit={numericQuestion.unit}
+            min={question.min}
+            max={question.max}
+            step={question.step}
+            unit={question.unit}
             disabled={isSaving}
           />
           {bmiPreview && bmiPreviewContext ? (
@@ -497,7 +545,7 @@ export function AssessmentFunnel({
             />
           ) : null}
         </div>
-      ) : null}
+      )}
     </AssessmentShell>
   );
 }

@@ -1,4 +1,9 @@
 import type { PrismaClient } from "../../../generated/prisma/client";
+import {
+  ACTIVE_SUBSCRIPTION_STATUS,
+  FREE_SUBSCRIPTION_STATUS,
+} from "../../session/domain/session";
+import { SUCCESSFUL_PAYMENT_STATUS } from "../domain/payment";
 import type {
   ApplyPaymentResult,
   PaymentRepository,
@@ -25,7 +30,7 @@ export class PrismaPaymentRepository implements PaymentRepository {
         data: {
           sessionId: input.sessionId,
           idempotencyKey: input.idempotencyKey,
-          status: "SUCCEEDED",
+          status: SUCCESSFUL_PAYMENT_STATUS,
         },
         skipDuplicates: true,
       });
@@ -38,10 +43,10 @@ export class PrismaPaymentRepository implements PaymentRepository {
       const activation = await tx.subscription.updateMany({
         where: {
           sessionId: input.sessionId,
-          status: "FREE",
+          status: FREE_SUBSCRIPTION_STATUS,
         },
         data: {
-          status: "ACTIVE",
+          status: ACTIVE_SUBSCRIPTION_STATUS,
           activatedAt,
         },
       });
@@ -58,7 +63,7 @@ export class PrismaPaymentRepository implements PaymentRepository {
           await tx.subscription.create({
             data: {
               sessionId: input.sessionId,
-              status: "ACTIVE",
+              status: ACTIVE_SUBSCRIPTION_STATUS,
               activatedAt,
             },
           });

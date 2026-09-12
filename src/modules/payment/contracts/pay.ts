@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+import { ACTIVE_SUBSCRIPTION_STATUS } from "../../session/domain/session";
+import { SUCCESSFUL_PAYMENT_STATUS } from "../domain/payment";
+
 export const payRequestSchema = z
   .object({
     idempotencyKey: z
@@ -13,8 +16,8 @@ export const payRequestSchema = z
 
 export const payResponseSchema = z
   .object({
-    status: z.literal("SUCCEEDED"),
-    subscriptionStatus: z.literal("ACTIVE"),
+    status: z.literal(SUCCESSFUL_PAYMENT_STATUS),
+    subscriptionStatus: z.literal(ACTIVE_SUBSCRIPTION_STATUS),
     replayed: z.boolean(),
   })
   .strict();

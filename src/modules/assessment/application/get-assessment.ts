@@ -1,15 +1,28 @@
-import { getNextRequiredStep } from "../domain/assessment";
+import {
+  COMPLETED_ASSESSMENT_STATUS,
+  getNextRequiredStep,
+  type AssessmentAggregateState,
+} from "../domain/assessment";
 import type { AssessmentRepository, AssessmentState } from "./assessment-repository";
+
+export type AssessmentRecoverySource = Omit<AssessmentAggregateState, "id">;
+
+export function projectAssessmentRecovery(assessment: AssessmentRecoverySource) {
+  return {
+    status: assessment.status,
+    nextRequiredStep:
+      assessment.status === COMPLETED_ASSESSMENT_STATUS
+        ? null
+        : getNextRequiredStep(assessment.answers),
+    revision: assessment.revision,
+    answers: assessment.answers,
+  };
+}
 
 export type GetAssessmentResult =
   | {
       ok: true;
-      assessment: {
-        status: "IN_PROGRESS" | "COMPLETED";
-        nextRequiredStep: ReturnType<typeof getNextRequiredStep>;
-        revision: number;
-        answers: AssessmentState["answers"];
-      };
+      assessment: ReturnType<typeof projectAssessmentRecovery>;
     }
   | {
       ok: false;
@@ -20,7 +33,8 @@ export async function getAssessment(
   sessionId: string,
   repository: AssessmentRepository,
 ): Promise<GetAssessmentResult> {
-  const assessment = await repository.findBySessionId(sessionId);
+  const assessment: AssessmentState | null =
+    await repository.findBySessionId(sessionId);
 
   if (!assessment) {
     return { ok: false, code: "ASSESSMENT_NOT_FOUND" };
@@ -28,14 +42,6 @@ export async function getAssessment(
 
   return {
     ok: true,
-    assessment: {
-      status: assessment.status,
-      nextRequiredStep:
-        assessment.status === "COMPLETED"
-          ? null
-          : getNextRequiredStep(assessment.answers),
-      revision: assessment.revision,
-      answers: assessment.answers,
-    },
+    assessment: projectAssessmentRecovery(assessment),
   };
 }

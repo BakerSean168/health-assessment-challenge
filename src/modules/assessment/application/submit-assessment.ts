@@ -1,5 +1,8 @@
 import { calculateAssessmentResult } from "../domain/calculation";
-import type { AssessmentStep } from "../domain/assessment";
+import {
+  COMPLETED_ASSESSMENT_STATUS,
+  type AssessmentStep,
+} from "../domain/assessment";
 import { validateAssessmentReadyForSubmission } from "../domain/submission";
 import type { AssessmentSubmissionRepository } from "./submission-repository";
 
@@ -29,7 +32,7 @@ export async function submitAssessment(
     return { ok: false, code: "ASSESSMENT_NOT_FOUND" };
   }
 
-  if (state.assessment.status === "COMPLETED") {
+  if (state.assessment.status === COMPLETED_ASSESSMENT_STATUS) {
     if (!state.hasResult) {
       throw new Error("Completed assessment is missing its canonical result snapshot.");
     }

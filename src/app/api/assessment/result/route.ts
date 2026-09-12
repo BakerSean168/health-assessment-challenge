@@ -1,15 +1,13 @@
 import { NextRequest } from "next/server";
-import { z } from "zod";
-
 import { apiError } from "@/lib/api-error";
 import { privateJson } from "@/lib/api-response";
 import { getPrismaClient } from "@/lib/db";
 import { getAssessmentResult } from "@/modules/assessment/application/get-assessment-result";
 import { resultDtoSchema } from "@/modules/assessment/contracts/assessment-api";
 import { PrismaAssessmentResultRepository } from "@/modules/assessment/infrastructure/prisma-assessment-result-repository";
+import { sessionIdSchema } from "@/modules/session/contracts/session-id";
 import { SESSION_COOKIE_NAME } from "@/modules/session/http/session-cookie";
 
-const sessionIdSchema = z.uuid();
 
 export async function GET(request: NextRequest) {
   const sessionId = sessionIdSchema.safeParse(
@@ -17,10 +15,9 @@ export async function GET(request: NextRequest) {
   );
 
   if (!sessionId.success) {
-    return apiError(
-      401,
-      "SESSION_REQUIRED",
+    return apiError("SESSION_REQUIRED",
       "Start an assessment session before loading a result.",
+      {},
     );
   }
 
@@ -30,7 +27,7 @@ export async function GET(request: NextRequest) {
   );
 
   if (!result.ok) {
-    return apiError(404, result.code, "The assessment result was not found.");
+    return apiError(result.code, "The assessment result was not found.", {});
   }
 
   return privateJson(resultDtoSchema.parse(result.result));

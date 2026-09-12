@@ -1,4 +1,5 @@
 import {
+  COMPLETED_ASSESSMENT_STATUS,
   getNextRequiredStep,
   isTargetWeightCompatible,
   validateStepWrite,
@@ -43,7 +44,7 @@ export async function saveAssessmentStep(
     return { ok: false, code: "ASSESSMENT_NOT_FOUND" };
   }
 
-  if (current.status === "COMPLETED") {
+  if (current.status === COMPLETED_ASSESSMENT_STATUS) {
     return { ok: false, code: "ASSESSMENT_ALREADY_COMPLETED" };
   }
 

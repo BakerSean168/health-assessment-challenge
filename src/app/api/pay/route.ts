@@ -1,6 +1,4 @@
 import { NextRequest } from "next/server";
-import { z } from "zod";
-
 import { apiError } from "@/lib/api-error";
 import { privateJson } from "@/lib/api-response";
 import { getPrismaClient } from "@/lib/db";
@@ -10,9 +8,9 @@ import {
   payResponseSchema,
 } from "@/modules/payment/contracts/pay";
 import { PrismaPaymentRepository } from "@/modules/payment/infrastructure/prisma-payment-repository";
+import { sessionIdSchema } from "@/modules/session/contracts/session-id";
 import { SESSION_COOKIE_NAME } from "@/modules/session/http/session-cookie";
 
-const sessionIdSchema = z.uuid();
 
 export async function POST(request: NextRequest) {
   const sessionId = sessionIdSchema.safeParse(
@@ -20,10 +18,9 @@ export async function POST(request: NextRequest) {
   );
 
   if (!sessionId.success) {
-    return apiError(
-      401,
-      "SESSION_REQUIRED",
+    return apiError("SESSION_REQUIRED",
       "Start an assessment before unlocking your results.",
+      {},
     );
   }
 
@@ -31,12 +28,12 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return apiError(400, "PAYMENT_INVALID", "The payment request must be JSON.");
+    return apiError("PAYMENT_INVALID", "The payment request must be JSON.", {});
   }
 
   const parsed = payRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError(400, "PAYMENT_INVALID", "The payment request is invalid.", {
+    return apiError("PAYMENT_INVALID", "The payment request is invalid.", {
       issues: parsed.error.issues.map((issue) => ({
         path: issue.path.join("."),
         message: issue.message,
@@ -53,7 +50,7 @@ export async function POST(request: NextRequest) {
   );
 
   if (!result.ok) {
-    return apiError(404, result.code, "The session was not found.");
+    return apiError(result.code, "The session was not found.", {});
   }
 
   return privateJson(

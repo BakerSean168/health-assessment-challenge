@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { parseAssessmentStepRequest } from "./assessment-step";
+import {
+  domainStepToRouteStep,
+  parseAssessmentStepRequest,
+} from "./assessment-step";
 
 function expectAccepted(stepKey: string, value: unknown) {
   const parsed = parseAssessmentStepRequest(stepKey, {
@@ -19,6 +22,11 @@ function expectRejected(stepKey: string, value: unknown) {
 }
 
 describe("assessment step runtime contracts", () => {
+  it("keeps one unique route key for every domain step", () => {
+    const routeKeys = Object.values(domainStepToRouteStep);
+    expect(new Set(routeKeys).size).toBe(routeKeys.length);
+  });
+
   it("accepts the frozen categorical values", () => {
     for (const gender of ["MALE", "FEMALE", "OTHER"]) {
       expectAccepted("gender", gender);

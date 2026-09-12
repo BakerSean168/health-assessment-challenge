@@ -6,7 +6,10 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import type { AssessmentBrowserApi } from "@/modules/assessment/client/assessment-api";
+import {
+  AssessmentBrowserApiError,
+  type AssessmentBrowserApi,
+} from "@/modules/assessment/client/assessment-api";
 import { AssessmentFunnel } from "./assessment-funnel";
 
 const emptyAnswers = {
@@ -177,6 +180,33 @@ describe("AssessmentFunnel", () => {
   });
 
 
+  it("recovers when a saved answer response is lost", async () => {
+    const user = userEvent.setup();
+    const getAssessment = vi.fn().mockResolvedValue({
+      status: "IN_PROGRESS",
+      nextRequiredStep: "GOAL",
+      revision: 1,
+      answers: { ...emptyAnswers, gender: "MALE" },
+    });
+    const api = createApi({
+      getAssessment,
+      saveStep: vi.fn().mockRejectedValue(new Error("Network response lost.")),
+    });
+
+    render(<AssessmentFunnel api={api} onComplete={vi.fn()} />);
+
+    await user.click(await screen.findByRole("radio", { name: "Male" }));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    await waitFor(() => expect(getAssessment).toHaveBeenCalledOnce());
+    expect(
+      await screen.findByRole("heading", { name: "What is your main goal?" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "restored the latest saved progress",
+    );
+  });
+
   it("refreshes canonical progress after a stale-write conflict instead of leaving the user stuck", async () => {
     const user = userEvent.setup();
     const getAssessment = vi.fn().mockResolvedValue({
@@ -190,9 +220,10 @@ describe("AssessmentFunnel", () => {
       saveStep: vi
         .fn()
         .mockRejectedValue(
-          Object.assign(
-            new Error("The assessment changed since this page loaded."),
-            { code: "ASSESSMENT_VERSION_CONFLICT" },
+          new AssessmentBrowserApiError(
+            "The assessment changed since this page loaded.",
+            "ASSESSMENT_VERSION_CONFLICT",
+            409,
           ),
         ),
     });
@@ -244,6 +275,55 @@ describe("AssessmentFunnel", () => {
     expect(screen.getByText("Target is below the standard range")).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveAttribute("data-bmi-category", "UNDERWEIGHT");
     expect(api.saveStep).not.toHaveBeenCalled();
+  });
+
+  it("recovers when submit commits but its response is lost", async () => {
+    const user = userEvent.setup();
+    const onComplete = vi.fn();
+    const completedAnswers = {
+      gender: "MALE" as const,
+      goal: "LOSE_WEIGHT" as const,
+      activityLevel: "MODERATE" as const,
+      heightCm: 175,
+      weightKg: 80,
+      age: 24,
+      targetWeightKg: 72,
+    };
+    const getAssessment = vi.fn().mockResolvedValue({
+      status: "COMPLETED",
+      nextRequiredStep: null,
+      revision: 8,
+      answers: completedAnswers,
+    });
+    const api = createApi({
+      bootstrapSession: vi.fn().mockResolvedValue({
+        orderId: "11111111-1111-4111-8111-111111111111",
+        subscriptionStatus: "FREE",
+        assessment: {
+          status: "IN_PROGRESS",
+          nextRequiredStep: "TARGET_WEIGHT",
+          revision: 6,
+          answers: { ...completedAnswers, targetWeightKg: null },
+        },
+      }),
+      saveStep: vi.fn().mockResolvedValue({
+        saved: true,
+        revision: 7,
+        nextRequiredStep: null,
+      }),
+      submitAssessment: vi.fn().mockRejectedValue(new Error("Network response lost.")),
+      getAssessment,
+    });
+
+    render(<AssessmentFunnel api={api} onComplete={onComplete} />);
+
+    const input = await screen.findByRole("spinbutton", { name: "Target weight" });
+    await user.type(input, "72");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    await waitFor(() => expect(api.submitAssessment).toHaveBeenCalledWith(7));
+    await waitFor(() => expect(getAssessment).toHaveBeenCalledOnce());
+    await waitFor(() => expect(onComplete).toHaveBeenCalledOnce());
   });
 
   it("submits with the newly returned revision after the final saved answer", async () => {

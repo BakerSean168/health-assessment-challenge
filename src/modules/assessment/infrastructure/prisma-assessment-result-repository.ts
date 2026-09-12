@@ -1,3 +1,4 @@
+import { FREE_SUBSCRIPTION_STATUS } from "../../session/domain/session";
 import type { PrismaClient } from "../../../generated/prisma/client";
 import type {
   AssessmentResultRepository,
@@ -36,7 +37,7 @@ export class PrismaAssessmentResultRepository
     return {
       // Fail closed if a manually-created/corrupt session somehow lacks the
       // expected 1:1 subscription row.
-      subscriptionStatus: session.subscription?.status ?? "FREE",
+      subscriptionStatus: session.subscription?.status ?? FREE_SUBSCRIPTION_STATUS,
       result: session.assessment.result,
     };
   }

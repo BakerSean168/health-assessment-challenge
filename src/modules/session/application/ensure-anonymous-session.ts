@@ -1,9 +1,7 @@
-import { z } from "zod";
-
+import { sessionIdSchema } from "../contracts/session-id";
 import type { AnonymousSessionAggregate } from "../domain/session";
 import type { AnonymousSessionRepository } from "./session-repository";
 
-const sessionIdSchema = z.uuid();
 
 export interface EnsureAnonymousSessionInput {
   existingSessionId?: string;

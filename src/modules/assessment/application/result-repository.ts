@@ -1,7 +1,8 @@
+import type { SubscriptionStatus } from "../../session/domain/session";
 import type { AssessmentResultSnapshot } from "../domain/result-projection";
 
 export interface ResultReadModel {
-  subscriptionStatus: "FREE" | "ACTIVE";
+  subscriptionStatus: SubscriptionStatus;
   result: AssessmentResultSnapshot;
 }
 
