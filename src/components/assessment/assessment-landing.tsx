@@ -1,7 +1,5 @@
-import Link from "next/link";
-import { ArrowRight, CheckCircle2, Clock3, Sparkles, Target } from "lucide-react";
+import { CheckCircle2, Clock3, Sparkles, Target } from "lucide-react";
 
-import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -10,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { AssessmentStartLink } from "./assessment-start-link";
 
 export function AssessmentLanding() {
   return (
@@ -42,13 +41,7 @@ export function AssessmentLanding() {
             </span>
           </div>
 
-          <Link
-            href="/assessment"
-            className={buttonVariants({ size: "lg", className: "h-11 px-5" })}
-          >
-            Start my assessment
-            <ArrowRight data-icon="inline-end" aria-hidden="true" />
-          </Link>
+          <AssessmentStartLink />
 
           <p className="max-w-xl text-xs leading-5 text-muted-foreground">
             For general wellness information only. Results are estimates and are

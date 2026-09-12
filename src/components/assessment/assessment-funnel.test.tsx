@@ -23,7 +23,26 @@ function createApi(
   overrides: Partial<AssessmentBrowserApi> = {},
 ): AssessmentBrowserApi {
   return {
-    bootstrapSession: vi.fn().mockResolvedValue(undefined),
+    prewarmSession: vi.fn().mockResolvedValue({
+      orderId: "11111111-1111-4111-8111-111111111111",
+      subscriptionStatus: "FREE",
+      assessment: {
+        status: "IN_PROGRESS",
+        nextRequiredStep: "GENDER",
+        revision: 0,
+        answers: { ...emptyAnswers },
+      },
+    }),
+    bootstrapSession: vi.fn().mockResolvedValue({
+      orderId: "11111111-1111-4111-8111-111111111111",
+      subscriptionStatus: "FREE",
+      assessment: {
+        status: "IN_PROGRESS",
+        nextRequiredStep: "GENDER",
+        revision: 0,
+        answers: { ...emptyAnswers },
+      },
+    }),
     getAssessment: vi.fn().mockResolvedValue({
       status: "IN_PROGRESS",
       nextRequiredStep: "GENDER",
@@ -71,11 +90,15 @@ describe("AssessmentFunnel", () => {
   it("restores the server-derived resumable step and lets the user revisit a saved answer", async () => {
     const user = userEvent.setup();
     const api = createApi({
-      getAssessment: vi.fn().mockResolvedValue({
-        status: "IN_PROGRESS",
-        nextRequiredStep: "GOAL",
-        revision: 1,
-        answers: { ...emptyAnswers, gender: "MALE" },
+      bootstrapSession: vi.fn().mockResolvedValue({
+        orderId: "11111111-1111-4111-8111-111111111111",
+        subscriptionStatus: "FREE",
+        assessment: {
+          status: "IN_PROGRESS",
+          nextRequiredStep: "GOAL",
+          revision: 1,
+          answers: { ...emptyAnswers, gender: "MALE" },
+        },
       }),
     });
 
@@ -95,16 +118,20 @@ describe("AssessmentFunnel", () => {
   it("shows a live BMI preview as soon as a valid current weight is entered", async () => {
     const user = userEvent.setup();
     const api = createApi({
-      getAssessment: vi.fn().mockResolvedValue({
-        status: "IN_PROGRESS",
-        nextRequiredStep: "WEIGHT",
-        revision: 4,
-        answers: {
-          ...emptyAnswers,
-          gender: "MALE",
-          goal: "LOSE_WEIGHT",
-          activityLevel: "MODERATE",
-          heightCm: 175,
+      bootstrapSession: vi.fn().mockResolvedValue({
+        orderId: "11111111-1111-4111-8111-111111111111",
+        subscriptionStatus: "FREE",
+        assessment: {
+          status: "IN_PROGRESS",
+          nextRequiredStep: "WEIGHT",
+          revision: 4,
+          answers: {
+            ...emptyAnswers,
+            gender: "MALE",
+            goal: "LOSE_WEIGHT",
+            activityLevel: "MODERATE",
+            heightCm: 175,
+          },
         },
       }),
     });
@@ -155,18 +182,22 @@ describe("AssessmentFunnel", () => {
     const user = userEvent.setup();
     const onComplete = vi.fn();
     const api = createApi({
-      getAssessment: vi.fn().mockResolvedValue({
-        status: "IN_PROGRESS",
-        nextRequiredStep: "TARGET_WEIGHT",
-        revision: 6,
-        answers: {
-          gender: "MALE",
-          goal: "LOSE_WEIGHT",
-          activityLevel: "MODERATE",
-          heightCm: 175,
-          weightKg: 80,
-          age: 24,
-          targetWeightKg: null,
+      bootstrapSession: vi.fn().mockResolvedValue({
+        orderId: "11111111-1111-4111-8111-111111111111",
+        subscriptionStatus: "FREE",
+        assessment: {
+          status: "IN_PROGRESS",
+          nextRequiredStep: "TARGET_WEIGHT",
+          revision: 6,
+          answers: {
+            gender: "MALE",
+            goal: "LOSE_WEIGHT",
+            activityLevel: "MODERATE",
+            heightCm: 175,
+            weightKg: 80,
+            age: 24,
+            targetWeightKg: null,
+          },
         },
       }),
       saveStep: vi.fn().mockResolvedValue({

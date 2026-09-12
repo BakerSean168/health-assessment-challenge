@@ -42,14 +42,27 @@ describe("POST /api/session", () => {
     );
 
     expect(response.status).toBe(201);
-    await expect(response.json()).resolves.toEqual({
+    const body = await response.json();
+    expect(body).toMatchObject({
       subscriptionStatus: "FREE",
       assessment: {
         status: "IN_PROGRESS",
         nextRequiredStep: "GENDER",
         revision: 0,
+        answers: {
+          gender: null,
+          goal: null,
+          activityLevel: null,
+          heightCm: null,
+          weightKg: null,
+          age: null,
+          targetWeightKg: null,
+        },
       },
     });
+    expect(body.orderId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
 
     const setCookie = response.headers.get("set-cookie");
     expect(setCookie).toBeTruthy();
@@ -75,6 +88,7 @@ describe("POST /api/session", () => {
       new NextRequest("http://localhost/api/session", { method: "POST" }),
     );
     const sessionId = extractCookieValue(first.headers.get("set-cookie")!);
+    const firstBody = await first.json();
 
     const second = await POST(
       new NextRequest("http://localhost/api/session", {
@@ -86,17 +100,49 @@ describe("POST /api/session", () => {
     );
 
     expect(second.status).toBe(200);
-    await expect(second.json()).resolves.toEqual({
+    const secondBody = await second.json();
+    expect(secondBody).toEqual({
+      orderId: firstBody.orderId,
       subscriptionStatus: "FREE",
       assessment: {
         status: "IN_PROGRESS",
         nextRequiredStep: "GENDER",
         revision: 0,
+        answers: {
+          gender: null,
+          goal: null,
+          activityLevel: null,
+          heightCm: null,
+          weightKg: null,
+          age: null,
+          targetWeightKg: null,
+        },
       },
     });
 
     await expect(prisma.anonymousSession.count()).resolves.toBe(1);
     await expect(prisma.assessment.count()).resolves.toBe(1);
+  });
+
+
+  it("does not treat an order query parameter as session authority", async () => {
+    const first = await POST(
+      new NextRequest("http://localhost/api/session", { method: "POST" }),
+    );
+    const firstBody = await first.json();
+
+    const second = await POST(
+      new NextRequest(
+        `http://localhost/api/session?order=${firstBody.orderId}`,
+        { method: "POST" },
+      ),
+    );
+    const secondBody = await second.json();
+
+    expect(second.status).toBe(201);
+    expect(secondBody.orderId).not.toBe(firstBody.orderId);
+    await expect(prisma.anonymousSession.count()).resolves.toBe(2);
+    await expect(prisma.assessment.count()).resolves.toBe(2);
   });
 
   it("replaces an unknown session cookie instead of trusting client-selected identity", async () => {

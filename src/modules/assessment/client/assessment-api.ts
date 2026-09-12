@@ -17,6 +17,12 @@ export interface AssessmentRecoveryDto {
   answers: Required<AssessmentAnswers>;
 }
 
+export interface SessionBootstrapDto {
+  orderId: string;
+  subscriptionStatus: "FREE" | "ACTIVE";
+  assessment: AssessmentRecoveryDto;
+}
+
 export interface SaveAssessmentStepDto {
   saved: true;
   revision: number;
@@ -29,7 +35,8 @@ export interface SubmitAssessmentDto {
 }
 
 export interface AssessmentBrowserApi {
-  bootstrapSession(): Promise<void>;
+  prewarmSession(): Promise<SessionBootstrapDto>;
+  bootstrapSession(): Promise<SessionBootstrapDto>;
   getAssessment(): Promise<AssessmentRecoveryDto>;
   saveStep(
     step: AssessmentStep,
@@ -51,9 +58,51 @@ const routeKeyByStep: Record<AssessmentStep, string> = {
 
 export { BrowserApiError as AssessmentBrowserApiError };
 
+let prewarmedSession: Promise<SessionBootstrapDto> | null = null;
+let prewarmedAt = 0;
+const SESSION_PREWARM_TTL_MS = 30_000;
+
+function requestSessionBootstrap() {
+  return requestJson<SessionBootstrapDto>("/api/session", { method: "POST" });
+}
+
+function createPrewarm() {
+  prewarmedAt = Date.now();
+  const request = requestSessionBootstrap().catch((error) => {
+    if (prewarmedSession === request) {
+      prewarmedSession = null;
+      prewarmedAt = 0;
+    }
+    throw error;
+  });
+  prewarmedSession = request;
+  return request;
+}
+
 export const browserAssessmentApi: AssessmentBrowserApi = {
-  async bootstrapSession() {
-    await requestJson("/api/session", { method: "POST" });
+  prewarmSession() {
+    if (
+      prewarmedSession &&
+      Date.now() - prewarmedAt <= SESSION_PREWARM_TTL_MS
+    ) {
+      return prewarmedSession;
+    }
+    return createPrewarm();
+  },
+
+  bootstrapSession() {
+    if (
+      prewarmedSession &&
+      Date.now() - prewarmedAt <= SESSION_PREWARM_TTL_MS
+    ) {
+      const request = prewarmedSession;
+      prewarmedSession = null;
+      prewarmedAt = 0;
+      return request;
+    }
+    prewarmedSession = null;
+    prewarmedAt = 0;
+    return requestSessionBootstrap();
   },
 
   getAssessment() {

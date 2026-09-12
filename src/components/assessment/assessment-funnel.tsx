@@ -231,11 +231,13 @@ function SubmittingAssessment() {
 interface AssessmentFunnelProps {
   api?: AssessmentBrowserApi;
   onComplete: () => void;
+  onOrderResolved?: (orderId: string) => void;
 }
 
 export function AssessmentFunnel({
   api = browserAssessmentApi,
   onComplete,
+  onOrderResolved,
 }: AssessmentFunnelProps) {
   const [assessment, setAssessment] = useState<AssessmentRecoveryDto | null>(null);
   const [displayStep, setDisplayStep] = useState<AssessmentStep | null>(null);
@@ -264,9 +266,10 @@ export function AssessmentFunnel({
 
     async function load() {
       try {
-        await api.bootstrapSession();
-        const recovered = await api.getAssessment();
+        const bootstrap = await api.bootstrapSession();
         if (cancelled) return;
+        onOrderResolved?.(bootstrap.orderId);
+        const recovered = bootstrap.assessment;
 
         if (recovered.status === "COMPLETED") {
           onComplete();
@@ -293,7 +296,7 @@ export function AssessmentFunnel({
     return () => {
       cancelled = true;
     };
-  }, [api, finishAssessment, onComplete]);
+  }, [api, finishAssessment, onComplete, onOrderResolved]);
 
   const stepIndex = useMemo(
     () => (displayStep ? STEP_ORDER.indexOf(displayStep) : -1),

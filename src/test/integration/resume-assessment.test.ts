@@ -126,10 +126,22 @@ describe("assessment recovery", () => {
 
     expect(response.status).toBe(200);
     const body = await response.json();
+    expect(body.orderId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
     expect(body.assessment).toEqual({
       status: "IN_PROGRESS",
       nextRequiredStep: "GOAL",
       revision: 1,
+      answers: {
+        gender: "MALE",
+        goal: null,
+        activityLevel: null,
+        heightCm: null,
+        weightKg: null,
+        age: null,
+        targetWeightKg: null,
+      },
     });
   });
 

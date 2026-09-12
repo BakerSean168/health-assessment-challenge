@@ -5,8 +5,17 @@ export async function completeDefaultAssessment(
   page: Page,
   options: { reloadBeforeAge?: boolean } = {},
 ) {
-  await page.goto("/assessment");
+  await page.goto("/");
 
+  const start = page.getByRole("link", { name: "Start my assessment" });
+  await expect(start).toBeVisible();
+  await expect(start).toHaveAttribute(
+    "href",
+    /\/assessment\?order=[0-9a-f-]{36}$/i,
+  );
+  await start.click();
+
+  await expect(page).toHaveURL(/\/assessment\?order=[0-9a-f-]{36}$/i);
   await expect(
     page.getByRole("heading", { name: "Which best describes you?" }),
   ).toBeVisible();
@@ -28,7 +37,7 @@ export async function completeDefaultAssessment(
   await page.getByRole("spinbutton", { name: "Current weight" }).fill("75");
   await expect(page.getByText("Your BMI", { exact: true })).toBeVisible();
   await expect(page.getByText("24.5", { exact: true })).toBeVisible();
-  await expect(page.getByText("Normal range", { exact: true })).toBeVisible();
+  await expect(page.getByText("Within the standard range", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Continue" }).click();
 
   await expect(page.getByRole("heading", { name: "How old are you?" })).toBeVisible();
@@ -46,7 +55,7 @@ export async function completeDefaultAssessment(
   await page.getByRole("spinbutton", { name: "Target weight" }).fill("68");
   await page.getByRole("button", { name: "Continue" }).click();
 
-  await expect(page).toHaveURL(/\/result$/);
+  await expect(page).toHaveURL(/\/result\?order=[0-9a-f-]{36}$/i);
   await expect(
     page.getByRole("heading", { name: "Your wellness profile" }),
   ).toBeVisible();

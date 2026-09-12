@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
 
   const response = privateJson(
     {
+      orderId: session.assessment.id,
       subscriptionStatus: session.subscriptionStatus,
       assessment: {
         status: session.assessment.status,
@@ -33,6 +34,15 @@ export async function POST(request: NextRequest) {
             ? getNextRequiredStep(session.assessment)
             : null,
         revision: session.assessment.revision,
+        answers: {
+          gender: session.assessment.gender,
+          goal: session.assessment.goal,
+          activityLevel: session.assessment.activityLevel,
+          heightCm: session.assessment.heightCm,
+          weightKg: session.assessment.weightKg,
+          age: session.assessment.age,
+          targetWeightKg: session.assessment.targetWeightKg,
+        },
       },
     },
     { status: created ? 201 : 200 },
