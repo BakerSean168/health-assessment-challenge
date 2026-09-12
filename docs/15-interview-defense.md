@@ -34,11 +34,11 @@ This document is not another architecture specification. It is a compact defense
 
 **Evidence:** `Assessment.sessionId @unique` in `prisma/schema.prisma`.
 
-### 5. Why no dedicated Subscription table?
+### 5. Why is Subscription a separate 1:1 table if billing is only mocked?
 
-**Answer:** The implemented access model has only one binary fact: `FREE | ACTIVE`. There is no plan, expiry, renewal, cancellation, provider customer, or billing cycle. A table containing only `sessionId + status` would add indirection without modeling a real lifecycle. `PaymentEvent` records the idempotent transition evidence. A dedicated Subscription entity becomes justified when those concepts actually exist.
+**Answer:** The challenge explicitly asks the schema to show subscription information as a relation, so the final model makes that boundary concrete without pretending to have a full billing domain. `Subscription.sessionId` is both PK and FK, and the row currently stores only `FREE | ACTIVE`, `activatedAt`, and timestamps. `PaymentEvent` separately records idempotent mock-payment attempts. Real plans, expiry, renewal, cancellation, or provider identifiers should be added only when those requirements exist.
 
-**Evidence:** `AnonymousSession.subscriptionStatus`, `PaymentEvent`.
+**Evidence:** `Subscription` and `PaymentEvent` in `prisma/schema.prisma`; `PrismaPaymentRepository`.
 
 ### 6. Is a random session UUID really authentication?
 
@@ -50,7 +50,9 @@ This document is not another architecture specification. It is a compact defense
 
 **Answer:** Refresh recovery and multiple tabs can hold stale copies of the same assessment. Each aggregate mutation carries `expectedRevision`. The repository performs a database compare-and-swap update constrained by `sessionId + IN_PROGRESS + revision`. If another writer wins after the preliminary read, the mutation affects zero rows and the request becomes `409 ASSESSMENT_VERSION_CONFLICT`, so stale data cannot silently overwrite newer answers.
 
-**Evidence:** `PrismaAssessmentRepository.saveStep()`, `optimistic-concurrency.test.ts`.
+The browser also handles this conflict as a recovery path: on `ASSESSMENT_VERSION_CONFLICT` it refetches canonical assessment state and moves the UI to the latest server-derived step instead of leaving the user stuck on a stale revision.
+
+**Evidence:** `PrismaAssessmentRepository.saveStep()`, `optimistic-concurrency.test.ts`, `assessment-funnel.test.tsx`.
 
 ### 8. Isn't the preliminary read before the write racy?
 

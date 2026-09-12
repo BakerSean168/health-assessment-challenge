@@ -236,7 +236,7 @@ If the assessment is still in progress and `expectedRevision` is stale, return `
     "code": "ASSESSMENT_INCOMPLETE",
     "message": "Complete all required assessment steps before submitting.",
     "details": {
-      "requiredSteps": ["AGE", "TARGET_WEIGHT"]
+      "missingSteps": ["AGE", "TARGET_WEIGHT"]
     }
   }
 }

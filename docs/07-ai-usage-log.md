@@ -394,6 +394,26 @@ The first implementation run showed two component-level defects that backend tes
 
 The browser can restore, edit, incrementally persist, and complete all seven semantic steps while the server remains authoritative for progress and revision state.
 
+### 2026-09-12 — Final brief-alignment closure
+
+**Context**
+
+A final requirement-by-requirement audit compared the shipped repository against the original challenge wording rather than trusting the repository's own PASS matrix. Two meaningful gaps remained: the brief explicitly asked the schema to show subscription information as a related table, while access state still lived on `AnonymousSession`; and stale-write protection was correct on the server but the browser only displayed the conflict instead of recovering.
+
+**Developer decision**
+
+The persistence model was normalized to a minimal 1:1 `Subscription` extension keyed directly by `sessionId`, with a backfill migration that preserves every existing FREE/ACTIVE state before removing the old column. No speculative plan/renewal/provider fields were added. The browser now refetches canonical assessment state after `ASSESSMENT_VERSION_CONFLICT`. Current/target BMI warnings were also aligned with the requested product language: normal stays green while all outside-range categories use the stronger warning treatment, without claiming that BMI alone is a diagnosis.
+
+A repeated BetterMe private-window check confirmed the existing identity decision rather than invalidating it: copying an `order` URL without the original browser cookie starts a new flow. The existing route-level integration test already proves that a foreign order UUID cannot authorize another assessment, so an additional browser test was rejected as redundant coverage rather than added for test-count theater.
+
+**Evidence**
+
+The migration is exercised against real PostgreSQL, payment/session/result integration tests assert the new relation, the stale-conflict component test proves automatic recovery, and the existing order-authority integration test remains the direct security contract. Documentation/API examples were reconciled with the actual `missingSteps` field and current test counts.
+
+**Outcome**
+
+The final schema now directly matches the brief's user/data/subscription relationship while preserving the existing closed loop and avoiding unnecessary billing complexity.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title

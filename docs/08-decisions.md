@@ -35,6 +35,9 @@ This is a lightweight ADR index for decisions that are important enough to expla
 | D029 | product-facing UI, reviewer-facing engineering evidence | accepted | let the public funnel behave like a real product; keep persistence/snapshot/TDD/server narration in repository evidence |
 | D030 | live client BMI preview from the shared pure calculation | accepted | provide immediate user value on the weight step without duplicating or replacing the server-side result snapshot |
 | D031 | cookie authority + opaque URL order correlation with landing prewarm | accepted | mirror the useful BetterMe identity split without turning a URL UUID into a bearer credential, while removing an avoidable sequential bootstrap on CTA navigation |
+| D032 | target-weight BMI preview | accepted | show the BMI implied by the draft goal weight before submission using the same shared calculation |
+| D033 | dedicated 1:1 subscription extension table | accepted | match the brief's explicit schema relationship while keeping mocked billing state minimal and non-speculative |
+| D034 | client recovery after optimistic-concurrency conflict | accepted | refetch canonical state after a stale write instead of leaving the browser stuck on an obsolete revision |
 
 ## D001 — Next.js modular monolith
 
@@ -179,7 +182,7 @@ This corrects an earlier reviewer-first interpretation that over-optimized the l
 
 Once height is already saved, the current-weight step calculates BMI immediately after the draft weight becomes valid. The preview imports the same pure `calculateBmi()` domain function used by submission, so the browser does not carry a second formula or threshold table. This is presentation feedback only: it does not persist a result and does not replace the canonical server-side snapshot created on submission.
 
-The preview also maps the existing four BMI categories to distinct product states: normal uses a positive state, overweight uses a caution state, and underweight/obese use stronger attention states. Copy deliberately avoids calling BMI alone “dangerous” because it is a screening measure rather than a diagnosis.
+The preview maps BMI into two clear product severities: normal uses a positive green state, while any value outside the standard range uses a stronger destructive/red warning state. The copy still avoids calling BMI alone “dangerous” because it is a screening measure rather than a diagnosis; stronger visual salience does not turn the metric into a medical conclusion.
 
 Assessment numeric fields retain `type=number` and mobile `inputMode`, but suppress browser-native spinner controls through local styling so height/current-weight/age/target-weight entry remains visually consistent with the product surface. Each numeric label row shows the accepted range (for example `120–230 cm`) without reverting to developer-oriented “accepted range” helper copy below the field.
 
@@ -187,11 +190,23 @@ Assessment numeric fields retain `type=number` and mobile `inputMode`, but suppr
 
 The public assessment UUID is surfaced as `?order=<uuid>` for flow correlation and reviewer-visible identity, but it never selects or authorizes server data. Ownership remains the HttpOnly `health_assessment_session` cookie. Supplying an old or foreign `order` without the owning cookie creates/resolves the current browser's own session and the page replaces the URL with that session's order. This avoids an IDOR-shaped design where a copied URL becomes sufficient authentication.
 
-This is intentionally inspired by, not identical to, the observed BetterMe flow. Live inspection showed BetterMe issues a separate `session_uuid` cookie and later adds the questionnaire UUID to `order` after questionnaire creation; a clean browser with the same order URL did not recover the prior state. Our three-day implementation keeps its simpler one-session/one-assessment aggregate, so the landing page prewarms that aggregate and the assessment route consumes the prefetched bootstrap. A 30-second one-shot client handoff prevents duplicate sequential bootstrap requests during normal CTA navigation while a normal request remains the fallback.
+This is intentionally inspired by the observed BetterMe identity split. Repeated live checks, including copying an existing order URL into a clean private window, showed that the URL UUID alone does not restore the prior questionnaire; the separate browser cookie is also required. Our implementation follows the same security shape: the cookie is authority and `order` is correlation. The landing page prewarms the one-session/one-assessment aggregate, and a 30-second one-shot client handoff prevents duplicate sequential bootstrap requests during normal CTA navigation while a normal request remains the fallback. The session-route integration test already proves that a foreign `order` without the owning cookie cannot select another assessment, so a third browser E2E is intentionally not added merely to duplicate that security contract.
 
 
 ## D032 — Target-weight BMI is previewed as projected wellness feedback
 
 The final target-weight step reuses the saved height and the same pure `calculateBmi()` function to show the BMI that the entered target would imply before submission. The preview is explicitly labeled `Target BMI` so it is not confused with the user's current BMI, and it remains presentation-only: no result snapshot is written until the normal submit transaction completes.
 
-The four existing BMI categories reuse the same visual severity language as the current-weight preview, with target-specific copy. Normal targets use a positive state, overweight uses caution, and underweight/obese use stronger warning states that suggest reconsidering the target or discussing the goal with a healthcare professional. The warning does not hard-block submission solely because BMI is outside the standard range; the existing scalar and goal-direction domain rules remain the authoritative write constraints.
+The four existing BMI categories reuse the same visual severity language as the current-weight preview, with target-specific copy. Normal targets use a positive green state; underweight, overweight, and obese targets all use the stronger destructive/red warning state, while wording stays proportional and avoids treating BMI as a diagnosis. The warning does not hard-block submission solely because BMI is outside the standard range; the existing scalar and goal-direction domain rules remain the authoritative write constraints.
+
+## D033 — Dedicated 1:1 subscription extension table
+
+The final persistence model promotes access state from an `AnonymousSession` column into a dedicated `Subscription` table because the challenge explicitly asks the schema to show user/session, assessment data, and subscription information as related records. `Subscription.sessionId` is both primary key and foreign key, so the relation is exactly 1:1 without introducing a second meaningless identifier.
+
+The migration backfills every existing session before dropping the old column, preserving FREE/ACTIVE state for production and the seeded evaluator session. Fresh session creation writes assessment and subscription rows together. Payment-event insertion and FREE→ACTIVE activation remain transactional. The table intentionally does not invent plans, expiry, renewal, cancellation, or provider identifiers that the mock-payment scope does not own. Missing subscription data fails closed to FREE at read boundaries.
+
+## D034 — Recover the browser after a stale optimistic write
+
+The server continues to reject stale PATCH requests with `409 ASSESSMENT_VERSION_CONFLICT`; that concurrency rule is unchanged. The browser now treats the conflict as a recoverable synchronization event: it fetches `GET /api/assessment`, replaces its local revision/answers with canonical persisted state, and resumes at the latest server-derived step. If another tab already completed the assessment, the stale tab follows the completed result instead.
+
+This keeps optimistic concurrency strict while avoiding a poor UX where the user sees a conflict message but remains trapped on state that can never be saved successfully.

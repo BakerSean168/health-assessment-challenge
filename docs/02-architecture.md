@@ -273,15 +273,8 @@ The minimum security posture is:
 - free result serialization omits locked values entirely;
 - no secrets committed to the repository.
 
-## 15. Observability for the challenge
+## 15. Observability boundary for the challenge
 
-Do not introduce a heavy observability stack. Use structured server logs for key lifecycle events:
+A dedicated observability stack is intentionally outside this three-day scope. Runtime/container request logs are sufficient for deployment smoke diagnosis, while correctness evidence for lifecycle events comes from deterministic tests and persisted state rather than bespoke log assertions.
 
-- session created;
-- assessment step saved;
-- version conflict;
-- assessment completed;
-- payment applied/replayed;
-- result projection selected.
-
-Logs must not expose cookie/session secrets or unnecessary health-form values.
+If this moves toward production, the next observability step would be privacy-safe structured lifecycle events for session creation, step saves/conflicts, completion, payment replay, and result projection. Those events must not contain the session cookie or unnecessary health-form values.
