@@ -1,3 +1,6 @@
+import { ERROR_CODE } from "@/contracts/error-code";
+import { assertNever } from "@/lib/assert-never";
+
 import {
   COMPLETED_ASSESSMENT_STATUS,
   getNextRequiredStep,
@@ -17,20 +20,24 @@ export type SaveAssessmentStepResult =
     }
   | {
       ok: false;
-      code: "ASSESSMENT_NOT_FOUND" | "ASSESSMENT_VERSION_CONFLICT";
+      code: typeof ERROR_CODE.ASSESSMENT_NOT_FOUND;
     }
   | {
       ok: false;
-      code: "STEP_OUT_OF_ORDER";
+      code: typeof ERROR_CODE.ASSESSMENT_VERSION_CONFLICT;
+    }
+  | {
+      ok: false;
+      code: typeof ERROR_CODE.STEP_OUT_OF_ORDER;
       nextRequiredStep: ReturnType<typeof getNextRequiredStep>;
     }
   | {
       ok: false;
-      code: "ASSESSMENT_ALREADY_COMPLETED";
+      code: typeof ERROR_CODE.ASSESSMENT_ALREADY_COMPLETED;
     }
   | {
       ok: false;
-      code: "STEP_VALUE_INCONSISTENT";
+      code: typeof ERROR_CODE.STEP_VALUE_INCONSISTENT;
       nextRequiredStep: "TARGET_WEIGHT";
     };
 
@@ -41,22 +48,22 @@ export async function saveAssessmentStep(
   const current = await repository.findBySessionId(input.sessionId);
 
   if (!current) {
-    return { ok: false, code: "ASSESSMENT_NOT_FOUND" };
+    return { ok: false, code: ERROR_CODE.ASSESSMENT_NOT_FOUND };
   }
 
   if (current.status === COMPLETED_ASSESSMENT_STATUS) {
-    return { ok: false, code: "ASSESSMENT_ALREADY_COMPLETED" };
+    return { ok: false, code: ERROR_CODE.ASSESSMENT_ALREADY_COMPLETED };
   }
 
   if (current.revision !== input.expectedRevision) {
-    return { ok: false, code: "ASSESSMENT_VERSION_CONFLICT" };
+    return { ok: false, code: ERROR_CODE.ASSESSMENT_VERSION_CONFLICT };
   }
 
   const policy = validateStepWrite(current.answers, input.step);
   if (!policy.allowed) {
     return {
       ok: false,
-      code: "STEP_OUT_OF_ORDER",
+      code: ERROR_CODE.STEP_OUT_OF_ORDER,
       nextRequiredStep: policy.nextRequiredStep,
     };
   }
@@ -70,24 +77,25 @@ export async function saveAssessmentStep(
   ) {
     return {
       ok: false,
-      code: "STEP_VALUE_INCONSISTENT",
+      code: ERROR_CODE.STEP_VALUE_INCONSISTENT,
       nextRequiredStep: "TARGET_WEIGHT",
     };
   }
 
   const persisted = await repository.saveStep(input);
 
-  if (persisted.kind === "not_found") {
-    return { ok: false, code: "ASSESSMENT_NOT_FOUND" };
+  switch (persisted.kind) {
+    case "saved":
+      return {
+        ok: true,
+        revision: persisted.assessment.revision,
+        nextRequiredStep: getNextRequiredStep(persisted.assessment.answers),
+      };
+    case "not_found":
+      return { ok: false, code: ERROR_CODE.ASSESSMENT_NOT_FOUND };
+    case "conflict":
+      return { ok: false, code: ERROR_CODE.ASSESSMENT_VERSION_CONFLICT };
+    default:
+      return assertNever(persisted, "assessment step persistence result");
   }
-
-  if (persisted.kind === "conflict") {
-    return { ok: false, code: "ASSESSMENT_VERSION_CONFLICT" };
-  }
-
-  return {
-    ok: true,
-    revision: persisted.assessment.revision,
-    nextRequiredStep: getNextRequiredStep(persisted.assessment.answers),
-  };
 }
