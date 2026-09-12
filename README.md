@@ -180,7 +180,7 @@ erDiagram
       uuid id PK
     }
     SUBSCRIPTION {
-      uuid session_id PK_FK
+      uuid session_id PK, FK
       enum status
       timestamp activated_at
     }
