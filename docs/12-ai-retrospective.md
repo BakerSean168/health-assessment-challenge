@@ -28,12 +28,14 @@ The highest leverage came from quickly enumerating edge cases and turning them i
 5. **Personalized-response caching and semantic target writes.** A final interviewer-style code review found that session-scoped JSON had no explicit no-store policy, and a scalar-valid but goal-inconsistent target could be persisted while the funnel stayed on the same step. Failing integration assertions were added first; responses are now `private, no-store`, and inconsistent target candidates return `422 STEP_VALUE_INCONSISTENT` without mutating revision.
 6. **Persisted-data trust and remote test isolation.** A technical-interview pressure test found that domain completion treated any non-null scalar already in PostgreSQL as valid, even when it violated the HTTP contract range. RED domain/submission tests proved the gap; domain validity now rechecks the shared bounds. The same pass removed unnecessary local PostgreSQL bootstrap from `E2E_BASE_URL` runs so deployed-environment tests depend only on the deployed system.
 7. **Reviewer evidence leaked into product copy.** The implementation over-applied the “make evidence easy to review” goal and put persistence, snapshot, access-boundary, deterministic-demo, and server-transition narration directly into the live funnel. The user rejected that presentation. RED-first component expectations were changed to require end-user value language; the live copy now reads as a wellness product while technical proof remains in README/docs/tests.
+8. **The first type-safety audit was incomplete.** The repository already had a `contracts/` directory, and the initial review incorrectly treated that as stronger evidence than the actual call graph: browser response DTOs were still duplicated and `fetch().json()` was trusted through a generic assertion. After that miss was challenged, a second source-of-truth audit deliberately searched for the same class of problem elsewhere. It found route-local error/status contracts, duplicated step/UI/persistence mappings, weak compiler defaults, missing Prisma/domain alignment checks, toolchain-version drift risk, and ambiguous lost-response recovery. The correction was not another documentation claim: each boundary gained executable type/runtime/test evidence.
+9. **Server retry safety was not automatically browser retry safety.** Submit was idempotent on the server and step writes were concurrency-safe, but an HTTP response could be lost after commit and leave React with stale revision/state. The browser now reconciles canonical state after ambiguous PATCH/submit failures; tests explicitly simulate “commit succeeded, response lost” for both paths.
 
 ## Evidence used to accept changes
 
 At delivery time the repository has:
 
-- 74 Vitest unit/component tests;
+- 82 Vitest unit/component tests;
 - 36 PostgreSQL integration tests against committed migrations;
 - two Playwright browser flows covering FREE and paid journeys;
 - GitHub Actions gates for lint, route-aware typecheck, tests, production build, and immutable container publication;

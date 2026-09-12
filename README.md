@@ -138,9 +138,9 @@ HTTP handlers stay thin. Domain calculations do not depend on React, Prisma, coo
 
 ### Shared API contracts
 
-Request/response shapes are owned by the `contracts/` layer rather than re-declared separately in Route Handlers and browser clients. Zod schemas are the runtime source of truth and TypeScript DTOs are inferred with `z.infer`; the server validates outgoing success payloads with the same schemas that the browser validates on receipt. Assessment-step commands are a discriminated union, so a step and its value type cannot be paired incorrectly at compile time (`AGE -> number`, `GENDER -> Gender`, etc.).
+Request/response shapes are owned by executable contracts rather than re-declared separately in Route Handlers and browser clients. Zod schemas are the runtime source of truth and TypeScript DTOs are inferred with `z.infer`; the server validates outgoing success payloads with the same schemas that the browser validates on receipt. Error codes, code-specific detail payloads, and their HTTP status mapping are likewise one discriminated contract instead of three independent route conventions.
 
-Domain literal sets such as gender, goal, activity, assessment step/status, BMI category, and subscription status are exported once as `as const` tuples, with both domain types and boundary schemas derived from those values. This prevents a frontend enum, backend enum, and runtime validator from drifting into three separate truths.
+Domain literal sets such as gender, goal, activity, assessment step/status, BMI category, subscription status, and payment status are exported once as `as const` tuples. Assessment-step commands are inferred from a discriminated Zod union, and the same command-to-answer mapping is reused by React state and Prisma writes. Compile-only alignment checks make domain enums/answer fields/result snapshots agree with generated Prisma types and make application projections agree with public DTOs. TypeScript also enables `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitReturns`, unused-symbol checks, and switch fallthrough checks so these guarantees are not weakened by permissive compiler defaults.
 
 ### Actual persistence model
 
@@ -232,7 +232,7 @@ pnpm test:all
 
 | Layer | Current evidence | Why this layer exists |
 |---|---|---|
-| Unit/component | 74 tests | Pure calculation boundaries, step policy, FREE redaction, production Prisma lifecycle, and product-component behavior should fail fast without infrastructure noise |
+| Unit/component | 82 tests | Pure calculation boundaries, step policy, FREE redaction, production Prisma lifecycle, and product-component behavior should fail fast without infrastructure noise |
 | PostgreSQL integration | 36 tests | Persistence, recovery, ordering, optimistic concurrency, malformed/injection-shaped input, atomic submit, result authorization, and payment idempotency depend on real database/HTTP-boundary semantics |
 | Playwright | 2 browser journeys | The two highest-value user paths prove cookies, Next routes, refresh recovery, FREE result, paywall, simulated payment, and ACTIVE result work together |
 | GitHub Actions | 4 jobs | A clean runner proves lint/typecheck/tests/build and immutable application/migration image publication are reproducible |

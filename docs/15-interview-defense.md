@@ -88,9 +88,9 @@ The browser also handles this conflict as a recovery path: on `ASSESSMENT_VERSIO
 
 ### 14. How do frontend and backend avoid API type drift?
 
-**Answer:** Public request/response shapes live in the shared `contracts/` layer. Zod schemas are the runtime source of truth and TypeScript DTOs are inferred from them; Route Handlers validate outgoing success bodies and browser clients validate received success bodies with the same schema. Domain enum-like values are declared once as `as const` tuples and reused by the contracts. Step writes use a discriminated command union, so the step determines the legal value type at compile time.
+**Answer:** Public request/response shapes are executable Zod contracts and DTO types are inferred from them; Route Handlers validate outgoing success bodies and browser clients validate received bodies with the same schemas. The error envelope is also a discriminated contract, including code-specific details and one error-code-to-HTTP-status map. Domain literal values are declared once, step commands are inferred from one discriminated schema, and exhaustive maps tie the step set to routing, UI, domain policy, and persistence. Compile-only fixtures additionally prove application DTO projections and generated Prisma enums/fields remain aligned without making the domain import Prisma. Stronger TypeScript flags (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitReturns`, etc.) turn accidental drift into build failures.
 
-**Evidence:** `src/modules/assessment/contracts/assessment-api.ts`, `assessment-step.ts`, `src/lib/browser-api.ts`, and their contract/typecheck tests.
+**Evidence:** `src/modules/assessment/contracts/`, `src/contracts/api-error.ts`, `src/modules/assessment/infrastructure/prisma-domain-alignment.typecheck.ts`, `src/lib/browser-api.ts`, and their contract/typecheck tests.
 
 ### 15. Are HTTP Zod checks the only protection against invalid values?
 
