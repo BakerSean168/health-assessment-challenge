@@ -1,10 +1,10 @@
-# System architecture
+# 系统架构
 
-## 1. Architectural style
+## 1. 架构风格
 
-The project uses a small modular monolith built with Next.js.
+本项目采用基于 Next.js 构建的小型模块化单体架构。
 
-This is a deliberate time-box decision: one repository, one application deployment, one CI pipeline, and one database connection reduce integration overhead while still allowing clear boundaries between transport, application, domain, and persistence logic.
+这是一个经过慎重考量的时效性决策：单一代码仓库、单一应用部署、单一 CI 流水线和单一数据库连接，在降低集成开销的同时，仍然保持传输层、应用层、领域层和持久化层之间清晰的边界。
 
 ```mermaid
 flowchart TD
@@ -17,9 +17,9 @@ flowchart TD
     APP --> SESSION[Session / cookie boundary]
 ```
 
-## 2. Dependency direction
+## 2. 依赖方向
 
-Dependencies point inward:
+依赖指向内部：
 
 ```text
 app / HTTP adapters
@@ -30,16 +30,16 @@ infrastructure
         -> repository ports
 ```
 
-The domain layer must not import:
+领域层不得导入：
 
-- Next.js;
-- React;
-- Prisma;
-- cookies;
-- environment variables;
-- wall-clock time directly.
+- Next.js；
+- React；
+- Prisma；
+- cookies；
+- 环境变量；
+- 直接使用系统时钟时间。
 
-## 3. Implemented source layout
+## 3. 已实现的源码目录结构
 
 ```text
 src/
@@ -76,17 +76,17 @@ src/
     └── e2e/
 ```
 
-## 4. UI system and component ownership
+## 4. UI 体系与组件归属
 
-The presentation layer uses **Tailwind CSS + shadcn/ui with Base UI primitives**.
+表现层使用 **Tailwind CSS + shadcn/ui（基于 Base UI 原语）**。
 
-shadcn/ui is treated as local source code for shared UI primitives, not as a black-box dependency. The project follows a library-first rule:
+shadcn/ui 被视为共享 UI 原语的本地源码，而非黑盒依赖。项目遵循库优先规则：
 
-1. check whether a suitable shadcn/ui component already exists;
-2. add the Base UI-backed shadcn component through the CLI;
-3. customize its local implementation or variants when product needs require it;
-4. compose assessment-specific components from those primitives;
-5. hand-roll a new primitive only when the library does not provide a suitable semantic/accessibility baseline.
+1. 检查是否已有合适的 shadcn/ui 组件；
+2. 通过 CLI 添加基于 Base UI 的 shadcn 组件；
+3. 在产品需求要求时，自定义其本地实现或变体；
+4. 从这些原语组合出评估专用组件；
+5. 仅在库未提供合适的语义/无障碍基础时，才手动实现新的原语。
 
 ```text
 Base UI primitive
@@ -95,19 +95,19 @@ Base UI primitive
                   -> assessment-specific composition
 ```
 
-Examples:
+示例：
 
-- use shadcn `Button` rather than defining a second generic button system;
-- use shadcn `Progress` for the funnel progress indicator;
-- use shadcn `RadioGroup` when the question semantics are a single selection;
-- use shadcn `Dialog` for the simulated-payment/paywall interaction when a dialog is appropriate;
-- build `AssessmentOptionCard` as a product composition on top of shared primitives rather than recreating keyboard/focus behavior manually.
+- 使用 shadcn `Button` 而非定义第二套通用按钮系统；
+- 使用 shadcn `Progress` 作为漏斗进度指示器；
+- 当题目语义为单选时，使用 shadcn `RadioGroup`；
+- 当对话框适用于模拟支付/付费墙交互时，使用 shadcn `Dialog`；
+- 在共享原语之上构建 `AssessmentOptionCard` 作为产品组合，而非手动重新实现键盘/焦点行为。
 
-This policy exists to preserve accessibility behavior, interaction consistency, design tokens, and reviewability while still allowing the BetterMe-inspired funnel to have its own visual identity.
+制定此策略的目的是保留无障碍行为、交互一致性、设计令牌和可审查性，同时仍然允许受 BetterMe 启发的漏斗拥有自己的视觉风格。
 
-## 5. Request lifecycle
+## 5. 请求生命周期
 
-Example: saving a weight step.
+示例：保存体重步骤。
 
 ```mermaid
 sequenceDiagram
@@ -132,9 +132,9 @@ sequenceDiagram
     R-->>B: 200 or stable error contract
 ```
 
-## 6. Shared contracts and runtime trust
+## 6. 共享契约与运行时信任
 
-The HTTP boundary uses executable contracts as the single API source of truth. Runtime schemas are defined with Zod and DTO types are inferred from those schemas; browser code does not hand-maintain parallel response interfaces. Success payloads, error envelopes, error-detail variants, and error-code-to-status mapping are all validated rather than trusted by assertion.
+HTTP 边界使用可执行契约作为唯一的 API 事实来源。运行时 schema 通过 Zod 定义，DTO 类型从这些 schema 推断；浏览器代码不手动维护并行的响应接口。成功载荷、错误信封、错误详情变体和错误码到状态码的映射均经过验证而非通过断言信任。
 
 ```text
 domain literal tuples (`as const`)
@@ -147,37 +147,37 @@ Route Handlers   browser API clients
 (output parse)   (response parse)
 ```
 
-This deliberately avoids the weak pattern `fetch(...).json() as SomeDto`. A successful HTTP status is not enough: the browser accepts data only after the shared response schema validates it. Compile-only alignment fixtures also compare domain values/fields with generated Prisma types and application projection return types with public DTOs. Contract drift therefore fails in typecheck where possible and fails closed at runtime at the network boundary.
+这有意避免了 `fetch(...).json() as SomeDto` 这种脆弱模式。仅 HTTP 状态码成功是不够的：浏览器仅在接受共享响应 schema 验证通过后才接受数据。编译期对齐固件还将领域值/字段与生成的 Prisma 类型进行比较，以及将应用投影返回类型与公共 DTO 进行比较。因此契约漂移在类型检查阶段失败（如果可能），在网络边界处以运行时关闭失败。
 
-Assessment step/value coupling is represented by one discriminated Zod command union. The inferred command itself carries `{ step, value, expectedRevision }`, so `AGE` cannot be paired with `"MALE"` or `GENDER` with a number. The step order, route-key map, domain validity map, UI question map, and command-to-answer persistence patch are all exhaustively tied to `AssessmentStep`; changing the step set must update each required projection or typecheck/tests fail. The React funnel creates the same command through the shared parser before calling the browser adapter, and the server parses the request with that contract.
+评估步骤/值的耦合由一个可区分的 Zod 命令联合类型表示。推断的命令本身包含 `{ step, value, expectedRevision }`，因此 `AGE` 不能与 `"MALE"` 配对，`GENDER` 也不能与数字配对。步骤顺序、路由键映射、领域有效性映射、UI 题目映射和命令到答案持久化补丁均穷举式地关联到 `AssessmentStep`；更改步骤集必须更新每个所需的投影，否则类型检查/测试将失败。React 漏斗在调用浏览器适配器之前通过共享解析器创建相同的命令，服务端使用该契约解析请求。
 
-## 7. State ownership
+## 7. 状态归属
 
-### Server-owned state
+### 服务端拥有的状态
 
-- anonymous session identity;
-- subscription status;
-- assessment answers;
-- assessment lifecycle status;
-- optimistic concurrency revision;
-- result snapshot;
-- payment-event idempotency record.
+- 匿名会话标识；
+- 订阅状态；
+- 评估答案；
+- 评估生命周期状态；
+- 乐观并发修订版本；
+- 结果快照；
+- 支付事件幂等记录。
 
-### Client-owned state
+### 客户端拥有的状态
 
-Only transient presentation state belongs solely in the browser, for example:
+仅临时展示状态属于浏览器，例如：
 
-- input focus;
-- temporary form text before submit;
-- animation/transition state;
-- local loading/error display state;
-- `ANALYZING`, `WELLNESS_PROFILE`, `PROJECTION`, and paywall view transitions.
+- 输入焦点；
+- 提交前的临时表单文本；
+- 动画/过渡状态；
+- 本地加载/错误展示状态；
+- `ANALYZING`、`WELLNESS_PROFILE`、`PROJECTION` 和付费墙视图过渡。
 
-The browser is never authoritative for subscription or completed assessment state. Resumable answer progress is not stored as a second mutable server field either: it is derived from persisted answers plus domain validation.
+浏览器永远不作为订阅或已完成评估状态的权威来源。可恢复的答案进度也不会作为第二个可变服务端字段存储：它从已持久化的答案加上领域验证推导而来。
 
-## 8. Assessment answer progression
+## 8. 评估答案递进
 
-The persisted domain has seven answer steps. `ANALYZING`, wellness-profile, projection, result, and paywall screens are UI/result states and are not persisted assessment steps.
+持久化的领域包含七个答案步骤。`ANALYZING`、健康档案、投影、结果和付费墙界面是 UI/结果状态，不是持久化的评估步骤。
 
 ```mermaid
 stateDiagram-v2
@@ -192,51 +192,51 @@ stateDiagram-v2
     READY_TO_SUBMIT --> COMPLETED: POST /submit
 ```
 
-`READY_TO_SUBMIT` is derived, not stored. The server computes `nextRequiredStep` by scanning the ordered step definitions and validating each persisted answer in its current context.
+`READY_TO_SUBMIT` 是推导状态，不被持久化。服务端通过扫描有序步骤定义并验证每个持久化答案在其当前上下文中的有效性来计算 `nextRequiredStep`。
 
-Rules:
+规则：
 
-- saving the next legal unresolved step is allowed;
-- editing an already answered earlier step is allowed while the assessment is in progress;
-- changing an earlier answer revalidates dependent later answers; for example, changing `goal` or `weightKg` can make an existing `targetWeightKg` invalid and therefore make `TARGET_WEIGHT` the next required step again;
-- later valid answers are retained rather than erased merely because the resolver moved backward;
-- skipping an unresolved prerequisite is rejected;
-- completed assessments reject answer mutations unless a future explicit restart use case is introduced;
-- transition resolution uses semantic step keys, not UI array indexes or a persisted current-step pointer.
+- 保存下一个合法的未解决步骤是允许的；
+- 在评估进行中，允许编辑已回答过的早期步骤；
+- 更改早期答案会对后续依赖答案重新验证；例如，更改 `goal` 或 `weightKg` 可能使现有的 `targetWeightKg` 失效，从而使 `TARGET_WEIGHT` 再次成为下一个必需步骤；
+- 后续的有效答案会被保留，而不是仅因为解析器回退而被擦除；
+- 跳过未解决的前置步骤会被拒绝；
+- 已完成的评估会拒绝答案变更，除非引入了未来的显式重启用例；
+- 过渡解析使用语义步骤键，而非 UI 数组索引或持久化的当前步骤指针。
 
-## 9. Concurrency model
+## 9. 并发模型
 
-`Assessment.revision` implements optimistic concurrency control for aggregate mutations.
+`Assessment.revision` 为聚合变更实现乐观并发控制。
 
-A client reads revision `N` and sends `expectedRevision: N` with an answer write (and with first-time submission). The mutation succeeds only if the persisted revision is still `N`, then increments it to `N + 1`.
+客户端读取修订版本 `N`，并在答案写入时（以及首次提交时）发送 `expectedRevision: N`。仅当持久化的修订版本仍为 `N` 时变更才成功，然后将其递增到 `N + 1`。
 
-A stale answer write returns HTTP `409` with `ASSESSMENT_VERSION_CONFLICT` even when the submitted value happens to equal the current value. Silent acceptance would hide a stale-client condition and weaken the concurrency contract.
+即使提交的值恰好等于当前值，过时的答案写入也会返回 HTTP `409` 和 `ASSESSMENT_VERSION_CONFLICT`。静默接受会隐藏过时客户端状况并削弱并发契约。
 
-Successful answer writes use Prisma `updateManyAndReturn`, so the repository returns the exact row produced by that compare-and-swap statement. It deliberately avoids a separate post-write `SELECT`: otherwise a second writer could commit after the first mutation but before that read and make the first request report the later writer's revision/state.
+成功的答案写入使用 Prisma `updateManyAndReturn`，因此仓库返回由该比较并交换语句产生的精确行。它有意避免在写入后单独执行 `SELECT`：否则第二个写入者可能在第一个变更之后、该读取之前提交，使第一个请求报告后来写入者的修订版本/状态。
 
-This prevents a delayed tab or duplicate UI from silently overwriting or acting on more recent server state, while also keeping each successful response tied to its own mutation snapshot.
+这可以防止延迟的标签页或重复的 UI 静默覆盖或基于更新的服务器状态执行操作，同时确保每次成功的响应都与其自身的变更快照绑定。
 
-## 10. Submission semantics
+## 10. 提交语义
 
-`POST /api/assessment/submit` is semantically idempotent.
+`POST /api/assessment/submit` 在语义上是幂等的。
 
-On first valid submit:
+首次有效提交时：
 
-1. verify session ownership;
-2. verify that `expectedRevision` still matches the in-progress aggregate;
-3. derive and verify that there is no remaining required/invalid step;
-4. run the selected calculation policy with an injected reference date;
-5. create a result snapshot and mark the assessment completed in one transaction;
-6. increment the aggregate revision;
-7. return the successful state.
+1. 验证会话所有权；
+2. 验证 `expectedRevision` 仍与进行中的聚合匹配；
+3. 推导并验证不存在剩余的必需/无效步骤；
+4. 使用注入的参考日期运行所选计算策略；
+5. 在一个事务中创建结果快照并将评估标记为已完成；
+6. 递增聚合修订版本；
+7. 返回成功状态。
 
-On retry after a successful completion, the existing snapshot is returned before applying stale-revision rejection. This preserves true retry safety after a lost response while keeping first-time submission concurrency-safe.
+在成功完成后重试时，在应用过时修订版本拒绝之前返回现有快照。这在保持首次提交并发安全的同时，保留了丢失响应后的真实重试安全性。
 
-PostgreSQL also acts as a structural backstop rather than trusting HTTP/domain validation as the only write path. Validated `CHECK` constraints reject out-of-range scalar answers, negative revisions, inconsistent lifecycle timestamps, malformed payment idempotency keys, and structurally impossible result values. Cross-field goal/target compatibility intentionally remains a domain rule because editing an upstream answer may retain an older target as draft data while derived progress moves back to `TARGET_WEIGHT`; encoding that behavior as a database scalar check would make the persistence model destructive or overly coupled to questionnaire policy.
+PostgreSQL 还作为结构性后备，而非仅信任 HTTP/领域验证作为唯一的写入路径。经过验证的 `CHECK` 约束拒绝超出范围的标量答案、负修订版本、不一致的生命周期时间戳、格式错误的支付幂等键以及结构上不可能的结果值。跨字段的目标/预期兼容性有意保持为领域规则，因为编辑上游答案可能保留较旧的目标作为草稿数据，而推导进度回退到 `TARGET_WEIGHT`；将该行为编码为数据库标量检查会使持久化模型具有破坏性或与问卷策略过度耦合。
 
-## 11. Result snapshot rationale
+## 11. 结果快照原理
 
-Results are persisted rather than recalculated on every read.
+结果被持久化，而非在每次读取时重新计算。
 
 ```text
 Assessment answers
@@ -247,11 +247,11 @@ Assessment answers
       Result snapshot
 ```
 
-This makes a completed assessment reproducible and allows future calculation-policy changes without mutating historical results.
+这使得已完成的评估可复现，并允许未来的计算策略变更而不影响历史结果。
 
-## 12. Authorization model
+## 12. 授权模型
 
-Authorization happens before serialization.
+授权发生在序列化之前。
 
 ```mermaid
 flowchart LR
@@ -260,17 +260,17 @@ flowchart LR
     P -->|ACTIVE| A[FullResultDTO]
 ```
 
-A free DTO does not contain premium values. CSS blur is presentation only and is not considered an access-control mechanism.
+免费版 DTO 不包含高级值。CSS 模糊仅是展示层效果，不被视为访问控制机制。
 
-## 13. Payment simulation
+## 13. 支付模拟
 
-The challenge uses a simulated payment endpoint rather than a provider integration.
+本挑战使用模拟支付端点而非真实支付提供商集成。
 
-A client/demo `idempotencyKey` is stored in `PaymentEvent` with a uniqueness constraint scoped to the anonymous session. Replaying the same key returns the already-applied outcome and does not repeat subscription side effects. The name is intentional: this endpoint simulates payment behavior and does not pretend to receive a real payment-provider transaction ID.
+客户端/演示的 `idempotencyKey` 存储在 `PaymentEvent` 中，并带有作用于匿名会话的唯一性约束。重放相同的键会返回已应用的结果，不会重复执行订阅副作用。命名是有意为之的：此端点模拟支付行为，而非假装接收真实的支付提供商交易 ID。
 
-## 14. Error model
+## 14. 错误模型
 
-All API failures use a stable envelope:
+所有 API 失败使用稳定的信封格式：
 
 ```json
 {
@@ -282,24 +282,24 @@ All API failures use a stable envelope:
 }
 ```
 
-Stable `code` values are for client logic and tests. Human-readable `message` is not used as a programmatic discriminator.
+稳定的 `code` 值用于客户端逻辑和测试。人类可读的 `message` 不用作程序化的判别依据。
 
-## 15. Security boundaries
+## 15. 安全边界
 
-The minimum security posture is:
+最低安全要求为：
 
-- anonymous identity in an HttpOnly cookie;
-- secure cookie in production;
-- SameSite protection appropriate for same-origin flow;
-- all assessment queries scoped to the current session;
-- no user-controlled `sessionId` authorization shortcut;
-- subscription state mutated only by server payment logic;
-- Zod validation for network input;
-- free result serialization omits locked values entirely;
-- no secrets committed to the repository.
+- 在 HttpOnly cookie 中的匿名身份；
+- 生产环境中使用安全 cookie；
+- 适用于同源流程的 SameSite 保护；
+- 所有评估查询限定在当前会话范围内；
+- 无用户控制的 `sessionId` 授权快捷方式；
+- 订阅状态仅由服务端支付逻辑变更；
+- 使用 Zod 对网络输入进行验证；
+- 免费结果序列化完全排除锁定值；
+- 不向代码仓库提交密钥。
 
-## 16. Observability boundary for the challenge
+## 16. 挑战的可观测性边界
 
-A dedicated observability stack is intentionally outside this three-day scope. Runtime/container request logs are sufficient for deployment smoke diagnosis, while correctness evidence for lifecycle events comes from deterministic tests and persisted state rather than bespoke log assertions.
+专门的可观测性技术栈有意不在此三天范围内。运行时/容器请求日志足以进行部署冒烟诊断，而生命周期事件的正确性证据来自确定性测试和持久化状态，而非定制化日志断言。
 
-If this moves toward production, the next observability step would be privacy-safe structured lifecycle events for session creation, step saves/conflicts, completion, payment replay, and result projection. Those events must not contain the session cookie or unnecessary health-form values.
+如果需要推进到生产环境，下一个可观测性步骤将是为会话创建、步骤保存/冲突、完成、支付重放和结果投影提供隐私安全的结构化生命周期事件。这些事件不得包含会话 cookie 或不必要的健康表单值。

@@ -1,96 +1,96 @@
-# TDD strategy and test matrix
+# TDD 策略与测试矩阵
 
-## 1. Development model
+## 1. 开发模型
 
-The implementation uses outside-in TDD with small vertical slices.
+本项目采用由外向内（outside-in）的 TDD 方法，以小型垂直切片为单位推进。
 
 ```text
-Acceptance criterion
+验收标准
       |
       v
-RED: executable failing behavior
+RED：可执行的失败行为
       |
       v
-GREEN: smallest implementation that satisfies it
+GREEN：满足该行为的最小实现
       |
       v
-REFACTOR: improve names/boundaries without changing behavior
+REFACTOR：在不改变行为的前提下改善命名/边界
       |
       v
-Commit the slice and its evidence
+提交该切片及其佐证
 ```
 
-The purpose is not to maximize test count. The purpose is to make each non-trivial behavior explicit before implementation and to keep AI-generated changes constrained by executable expectations.
+目标不是最大化测试数量。目标是在实现之前让每一个非平凡行为都显式化，并通过可执行的期望来约束 AI 生成的变更。
 
-## 2. Test layers
+## 2. 测试层次
 
-### Unit tests
+### 单元测试
 
-Use for pure logic with no database/network dependency:
+用于无数据库/网络依赖的纯逻辑：
 
-- BMI calculation and classification;
-- recommended-intake policy;
-- target-date policy;
-- next-required-step resolver derived from persisted answers;
-- cross-field validity after editing earlier answers;
-- result-access projection;
-- error/policy helpers when they contain meaningful behavior.
+- BMI 计算与分类；
+- 推荐摄入量策略；
+- 目标日期策略；
+- 基于已保存答案推导的下一步必需步骤解析器；
+- 编辑先前答案后的跨字段有效性校验；
+- 结果访问投影；
+- 包含有意义行为的错误/策略辅助函数。
 
-### Integration tests
+### 集成测试
 
-Use for the core of the challenge:
+用于本挑战的核心功能：
 
-- session lifecycle;
-- Prisma persistence;
-- step saving;
-- resume state;
-- ordering;
-- optimistic concurrency;
-- submit transaction;
-- result snapshot;
-- free/active result behavior;
-- payment idempotency.
+- 会话生命周期；
+- Prisma 持久化；
+- 步骤保存；
+- 恢复状态；
+- 排序；
+- 乐观并发；
+- 提交事务；
+- 结果快照；
+- 免费/激活结果行为；
+- 支付幂等性。
 
-### End-to-end tests
+### 端到端测试
 
-Keep browser tests intentionally small:
+有意将浏览器测试控制在较小规模：
 
-1. new visitor -> complete assessment -> free result with locked premium fields;
-2. new visitor -> complete assessment -> pay -> full result unlocked.
+1. 新访客 -> 完成评估 -> 获得免费结果，高级字段处于锁定状态；
+2. 新访客 -> 完成评估 -> 支付 -> 解锁完整结果。
 
-## 3. Behavior matrix
+## 3. 行为矩阵
 
-Behavior IDs use the `Bxx` prefix so they cannot be confused with executable implementation tasks (`Txx`) in `06-implementation-plan.md`.
+行为 ID 使用 `Bxx` 前缀，以免与 `06-implementation-plan.md` 中的可执行实现任务（`Txx`）混淆。
 
-| ID | Behavior | Layer | RED condition | Done when |
+| ID | 行为 | 层次 | RED 条件 | 完成标准 |
 |---|---|---|---|---|
-| B01 | create/reuse anonymous session | integration | no session implementation | same browser identity reuses session |
-| B02 | persist first answer | integration | assessment cannot save gender | DB contains answer + revision advances |
-| B03 | resume after refresh | integration/unit | GET loses saved state | answers restored + next required step derived |
-| B04 | reject skipped step | integration/unit | target step accepted too early | stable `STEP_OUT_OF_ORDER` |
-| B05 | cross-field target consistency | integration/unit | invalid direct target is saved or upstream edit leaves progress falsely complete | direct inconsistent candidate is rejected; upstream edit derives `TARGET_WEIGHT` without unnecessary data loss |
-| B06 | reject stale write | integration | two writers overwrite/accept stale duplicate | stale revision returns `409`, even for same-value retry |
-| B07 | calculate BMI | unit | function absent | fixed examples + boundaries pass |
-| B08 | calculate intake | unit | policy absent | frozen policy cases pass |
-| B09 | estimate target date | unit | policy absent | deterministic reference-date cases pass |
-| B10 | reject incomplete/stale submit | integration | partial or stale assessment completes | missing-step or version-conflict error returned |
-| B11 | create result snapshot | integration | complete submit has no atomic result | one persisted versioned result + completed aggregate |
-| B12 | retry submit safely | integration | second submit duplicates/recalculates or fails only because revision advanced | existing result returned |
-| B13 | free result projection | unit/integration | premium values leak | values omitted from response |
-| B14 | activate subscription | integration | `/pay` has no effect | session becomes `ACTIVE` |
-| B15 | replay payment safely | integration | duplicate payment repeats effect | unique event + replay response |
-| B16 | active result projection | integration | active user still sees locked shape | full DTO returned |
-| B17 | complete free browser flow | e2e | UI not wired | assessment -> preview passes |
-| B18 | complete paid browser flow | e2e | pay/unlock not wired | preview -> pay -> full result passes |
-| B19 | reject malformed/injection-shaped input | integration/contracts | HTTP boundary accepts missing, object, or injection-shaped scalar input | `400 VALIDATION_ERROR` and no persisted mutation |
+| B01 | 创建/复用匿名会话 | 集成 | 无会话实现 | 相同浏览器身份复用同一会话 |
+| B02 | 持久化首次答案 | 集成 | 评估无法保存性别 | 数据库包含答案 + 修订号递增 |
+| B03 | 刷新后恢复 | 集成/单元 | GET 丢失已保存状态 | 答案恢复 + 推导出下一步必需步骤 |
+| B04 | 拒绝跳步 | 集成/单元 | 目标步骤过早被接受 | 稳定返回 `STEP_OUT_OF_ORDER` |
+| B05 | 跨字段目标一致性 | 集成/单元 | 无效直接目标被保存，或上游编辑导致进度虚假完成 | 拒绝不一致的直接候选目标；上游编辑推导出 `TARGET_WEIGHT` 而不产生不必要的数据丢失 |
+| B06 | 拒绝过期写入 | 集成 | 两个写入者覆盖/接受过期重复数据 | 过期修订返回 `409`，即使重试值相同也不例外 |
+| B07 | 计算 BMI | 单元 | 函数不存在 | 固定示例 + 边界值通过 |
+| B08 | 计算摄入量 | 单元 | 策略不存在 | 冻结策略用例通过 |
+| B09 | 估算目标日期 | 单元 | 策略不存在 | 基于确定性参考日期的用例通过 |
+| B10 | 拒绝不完整/过期提交 | 集成 | 部分或过期评估被完成 | 返回缺少步骤或版本冲突错误 |
+| B11 | 创建结果快照 | 集成 | 完整提交未生成原子结果 | 持久化一个版本化的结果 + 完成聚合 |
+| B12 | 安全重试提交 | 集成 | 第二次提交重复/重新计算或仅因修订号递增而失败 | 返回已有结果 |
+| B13 | 免费结果投影 | 单元/集成 | 高级字段值泄露 | 响应中省略相应值 |
+| B14 | 激活订阅 | 集成 | `/pay` 无效果 | 会话变为 `ACTIVE` |
+| B15 | 安全重放支付 | 集成 | 重复支付重复执行效果 | 唯一事件 + 重放响应 |
+| B16 | 激活结果投影 | 集成 | 激活用户仍看到锁定形态 | 返回完整 DTO |
+| B17 | 完成免费浏览器流程 | 端到端 | UI 未接通 | 评估 -> 预览通过 |
+| B18 | 完成付费浏览器流程 | 端到端 | 支付/解锁未接通 | 预览 -> 支付 -> 完整结果通过 |
+| B19 | 拒绝格式错误/注入型输入 | 集成/契约 | HTTP 边界接受了缺失、对象或注入型标量输入 | 返回 `400 VALIDATION_ERROR` 且不持久化任何变更 |
 
-## 4. Example RED-first slice
+## 4. 示例 RED 优先切片
 
-### Acceptance criterion
+### 验收标准
 
-> When two clients hold revision 4 and one saves first, the second must not overwrite the newer value.
+> 当两个客户端同时持有修订号 4 时，若其中一个率先保存，另一个不得覆盖更新后的值。
 
-### RED test concept
+### RED 测试概念
 
 ```ts
 const a = await loadAssessment();
@@ -109,59 +109,59 @@ expect(staleWrite.body.error.code).toBe(
 );
 ```
 
-Only after this behavior is executable do we implement `revision`-conditioned persistence.
+只有在该行为可执行之后，我们才会实现基于 `revision` 条件的持久化。
 
-## 5. Deterministic calculations
+## 5. 确定性计算
 
-Tests must not depend directly on today's date.
+测试不得直接依赖当前日期。
 
-Bad:
+反面示例：
 
 ```ts
-estimateGoalDate(input); // internally reads new Date()
+estimateGoalDate(input); // 内部读取 new Date()
 ```
 
-Preferred:
+推荐做法：
 
 ```ts
 estimateGoalDate(input, new Date("2026-09-10T00:00:00Z"));
 ```
 
-The same inputs therefore produce the same expected result in CI tomorrow.
+这样相同的输入在明天的 CI 中也能产生相同的预期结果。
 
-## 6. Database testing
+## 6. 数据库测试
 
-Integration tests should use a real PostgreSQL-compatible test database rather than mocking Prisma behavior that is central to the challenge.
+集成测试应使用真实的 PostgreSQL 兼容测试数据库，而非模拟对挑战核心至关重要的 Prisma 行为。
 
-The implemented strategy uses a disposable PostgreSQL 17 Compose service locally and a PostgreSQL service container in GitHub Actions. Each top-level database-backed suite resets aggregate roots before execution so E2E and integration runs cannot leak state into one another.
+已实现的策略在本地使用可销毁的 PostgreSQL 17 Compose 服务，在 GitHub Actions 中使用 PostgreSQL 服务容器。每个顶层数据库支撑的测试套件在执行前都会重置聚合根，确保端到端和集成运行之间不会泄漏状态。
 
-Each integration test must isolate state through transactions, cleanup, or unique fixtures so ordering does not affect results.
+每个集成测试必须通过事务、清理或唯一夹具来隔离状态，确保执行顺序不影响结果。
 
-## 7. What not to over-test
+## 7. 不应过度测试的内容
 
-Avoid tests that merely snapshot implementation noise:
+避免仅对实现噪音进行快照的测试：
 
-- framework-generated markup;
-- private helper call counts;
-- exact log strings;
-- Tailwind class names;
-- implementation-specific repository internals.
+- 框架生成的标记；
+- 私有辅助函数调用次数；
+- 精确的日志字符串；
+- Tailwind 类名；
+- 与实现相关的仓库内部细节。
 
-Tests should survive refactoring when user-visible or domain behavior has not changed.
+当用户可见或领域行为未发生改变时，测试应当经得起重构。
 
-## 8. AI-assisted TDD protocol
+## 8. AI 辅助 TDD 协议
 
-AI can propose scenarios and implementation, but it does not get to silently redefine behavior.
+AI 可以提出场景和实现方案，但不允许悄无声息地重新定义行为。
 
-For each slice:
+对于每个切片：
 
-1. write/approve the acceptance criterion;
-2. let AI propose edge cases;
-3. reject or amend incorrect scenarios;
-4. commit the failing test;
-5. implement the smallest passing change;
-6. review the diff against the criterion;
-7. refactor only while all tests remain green;
-8. log notable AI disagreements in `07-ai-usage-log.md`.
+1. 编写/批准验收标准；
+2. 让 AI 提出边界情况；
+3. 拒绝或修正不正确的场景；
+4. 提交失败的测试；
+5. 实现最小的通过变更；
+6. 对照标准审查差异；
+7. 仅在所有测试保持绿色的前提下进行重构；
+8. 在 `07-ai-usage-log.md` 中记录重要的 AI 分歧。
 
-This makes AI usage reviewable rather than a generic claim that "AI helped write the project."
+这使得 AI 的使用可审查，而非笼统地声称"AI 帮忙写了这个项目"。

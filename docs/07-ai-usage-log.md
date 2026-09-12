@@ -1,670 +1,669 @@
-# AI usage log
+# AI 使用日志
 
-## Purpose
+## 目的
 
-This file records meaningful AI-assisted engineering decisions during the challenge. It is intentionally more specific than a generic statement such as "AI was used to help code."
+本文件记录挑战过程中有意义的 AI 辅助工程决策。它比"AI 用于辅助编码"之类的泛泛声明更加具体。
 
-For each noteworthy interaction, record what AI proposed, what evidence constrained the decision, what was accepted/rejected, and why.
+对于每次值得记录的交互，需记录 AI 提出了什么、哪些证据约束了决策、接受了什么/拒绝了什么以及原因。
 
-## Working protocol
+## 工作协议
 
-1. Start from an acceptance criterion or explicit design question.
-2. Ask AI for alternatives, edge cases, or implementation help.
-3. Review the proposal against the challenge scope and existing tests.
-4. Prefer writing/approving the failing test before accepting implementation.
-5. Record disagreements or important corrections here.
+1. 从验收标准或明确的设计问题出发。
+2. 向 AI 询问替代方案、边界情况或实现帮助。
+3. 根据挑战范围和已有测试对提案进行评审。
+4. 优先编写/批准失败测试，再接受实现方案。
+5. 在此记录分歧或重要纠正。
 
-## Entries
+## 条目
 
-### 2026-09-10 — Architecture planning
+### 2026-09-10 — 架构规划
 
-**Context**
+**背景**
 
-Before implementation, the challenge brief and the BetterMe-style reference funnel were analyzed together.
+在实现之前，挑战简报和 BetterMe 风格的参考漏斗一起进行了分析。
 
-**AI contribution**
+**AI 贡献**
 
-AI helped compress the long reference funnel into technical phases and proposed an architecture containing anonymous session state, incremental persistence, semantic step keys, optimistic concurrency, result snapshots, server-side access projection, and idempotent simulated payment.
+AI 帮助将冗长的参考漏斗压缩为技术阶段，并提出了一套架构方案，包含匿名会话状态、增量持久化、语义步骤键、乐观并发、结果快照、服务端访问投影和幂等模拟支付。
 
-**Developer decision**
+**开发者决策**
 
-Accepted the general architecture, with the explicit constraint that it remain a small modular monolith rather than introducing Redis, queues, microservices, CQRS, or other infrastructure that does not earn its cost in a three-day challenge.
+接受了整体架构方案，但明确约束其保持为小型模块化单体架构，不引入 Redis、消息队列、微服务、CQRS 或在三天挑战中无法证明其成本合理性的其他基础设施。
 
-**Evidence / rationale**
+**证据/依据**
 
-The challenge emphasizes state recovery, correctness, permissions, testing, and AI efficiency. The selected architecture maps directly to those behaviors while keeping the implementation reviewable.
+挑战强调状态恢复、正确性、权限、测试和 AI 效率。所选架构直接映射到这些行为，同时使实现可审查。
 
-### 2026-09-10 — TDD as the implementation method
+### 2026-09-10 — TDD 作为实现方法
 
-**Context**
+**背景**
 
-Initial planning treated tests as an important project area, but the development order was not yet explicitly test-first.
+初始规划将测试视为重要的项目领域，但开发顺序尚未明确为测试优先。
 
-**Developer correction**
+**开发者纠正**
 
-The implementation method was changed to outside-in TDD with vertical slices.
+实现方法改为由外向内的 TDD，采用垂直切片方式。
 
-**Decision**
+**决策**
 
-Each non-trivial behavior will begin with an acceptance criterion and failing test, followed by minimal implementation and refactoring.
+每个非平凡行为都将从验收标准和失败测试开始，随后是最小实现和重构。
 
-**Why this matters**
+**重要性**
 
-This prevents AI-generated implementation from defining behavior implicitly and turns the challenge requirements into executable evidence throughout development rather than adding tests at the end.
+这可以防止 AI 生成的实现隐式定义行为，并将挑战需求在整个开发过程中转化为可执行证据，而不是在最后才添加测试。
 
-### 2026-09-10 — Domain model v0.2 freeze
+### 2026-09-10 — 领域模型 v0.2 冻结
 
-**Context**
+**背景**
 
-The first architecture draft was reviewed immediately before Prisma implementation. Several fields represented convenient implementation ideas rather than necessary domain facts.
+第一版架构草案在 Prisma 实现之前进行了评审。一些字段代表的是便捷的实现思路而非必要的领域事实。
 
-**AI proposal reviewed**
+**已评审的 AI 提案**
 
-The earlier draft persisted `currentStepKey`, included `ANALYSIS` in the assessment-step enum, left the session-to-assessment relationship as potentially one-to-many, used Prisma `Decimal` for physical measurements, and named the simulated payment key `paymentId`.
+早期草案持久化了 `currentStepKey`，在评估步骤枚举中包含了 `ANALYSIS`，将会话与评估的关系保留为可能的一对多，使用 Prisma `Decimal` 存储体测数据，并将模拟支付键命名为 `paymentId`。
 
-**Developer review / correction**
+**开发者评审/纠正**
 
-The model was tightened before code was allowed to depend on it:
+在代码允许依赖该模型之前，模型被收紧：
 
-- removed persisted `currentStepKey`; `nextRequiredStep` is derived from answer validity;
-- removed `ANALYSIS` and other presentation screens from domain step identity;
-- froze one assessment per anonymous session for v1;
-- made target weight required rather than adding an unrequested branch;
-- defined cross-field revalidation after earlier edits;
-- kept stale PATCH behavior strict under optimistic concurrency;
-- required first-time submit to participate in revision control while preserving successful-submit retry semantics;
-- renamed simulated `paymentId` to session-scoped `idempotencyKey`;
-- changed physical measurements/results from Prisma `Decimal` to regular floating-point representation with explicit domain rounding.
+- 移除了持久化的 `currentStepKey`；`nextRequiredStep` 从答案有效性推导而来；
+- 从领域步骤标识中移除了 `ANALYSIS` 及其他展示屏幕；
+- 为 v1 版本冻结为每个匿名会话对应一个评估；
+- 将目标体重设为必填项，而非添加未请求的分支；
+- 定义了早期编辑后的跨字段重新验证；
+- 在乐观并发下保持过期 PATCH 行为的严格性；
+- 要求首次提交参与版本控制，同时保留成功提交的重试语义；
+- 将模拟 `paymentId` 重命名为会话范围的 `idempotencyKey`；
+- 将体测数据/结果从 Prisma `Decimal` 改为带有显式领域舍入的常规浮点表示。
 
-**Evidence**
+**证据**
 
-The deciding principle was to persist independent facts once and derive dependent state. The challenge needs reliable resume/concurrency/payment behavior, but it does not require assessment history, a real payment provider, or financial numeric precision.
+决定性原则是持久化独立事实一次，推导依赖状态。挑战需要可靠的恢复/并发/支付行为，但不需要评估历史、真实支付提供者或金融数字精度。
 
-**Outcome**
+**结果**
 
-`scope`, reference audit, architecture, domain/data model, API contract, TDD strategy, implementation plan, decision log, and README were synchronized to domain model v0.2 before T01 bootstrap.
+`scope`、参考审计、架构、领域/数据模型、API 契约、TDD 策略、实现计划、决策日志和 README 在 T01 引导之前同步到了领域模型 v0.2。
 
-### 2026-09-10 — UI primitive strategy
+### 2026-09-10 — UI 基础组件策略
 
-**Context**
+**背景**
 
-The initial architecture had not frozen a UI component library and could have led to locally rebuilding generic controls during funnel implementation.
+初始架构尚未冻结 UI 组件库，可能导致在漏斗实现过程中本地重建通用控件。
 
-**Developer decision**
+**开发者决策**
 
-Use shadcn/ui with the Base UI component base and prefer existing library components whenever they fit. Local customization and product-level composition are encouraged, but a second hand-built primitive set should not be created in parallel.
+使用 shadcn/ui，基于 Base UI 组件库，优先使用已有库组件。鼓励本地定制和产品级组合，但不应并行创建第二套手工构建的基础组件。
 
-**Evidence / rationale**
+**证据/依据**
 
-The challenge benefits from a consistent accessible UI baseline, while shadcn's local-source model still permits product-specific styling. Reusing established primitives reduces duplicated keyboard/focus/state work and keeps the three-day implementation focused on the assessed behavior.
+挑战受益于一致的可访问 UI 基线，而 shadcn 的本地源模型仍然允许产品特定的样式。复用已建立的基础组件可以减少重复的键盘/焦点/状态工作，使三天实现聚焦于被评估的行为。
 
-**Outcome**
+**结果**
 
-The stack, architecture, implementation plan, and dedicated UI component policy were updated before project bootstrap.
+技术栈、架构、实现计划和专用 UI 组件策略在项目引导之前已更新。
 
-### 2026-09-10 — T01 toolchain bootstrap
+### 2026-09-10 — T01 工具链引导
 
-**Context**
+**背景**
 
-Implementation began after the domain and UI-component policies were frozen.
+在领域和 UI 组件策略冻结后开始实现。
 
-**AI-assisted execution**
+**AI 辅助执行**
 
-The project was scaffolded with the current Next.js App Router template, then shadcn/ui was initialized explicitly with Base UI and the Nova preset. A shadcn `Button` was added as the first shared primitive to verify the library-first policy in the actual repository.
+使用当前 Next.js App Router 模板搭建项目脚手架，然后使用 Base UI 和 Nova 预设显式初始化 shadcn/ui。添加了 shadcn `Button` 作为第一个共享基础组件，以在实际仓库中验证库优先策略。
 
-**TDD evidence**
+**TDD 证据**
 
-`src/test/bootstrap.test.ts` was written before Vitest was installed. Running `pnpm test` failed because the runner did not exist (RED). Vitest was then installed/configured and the same test passed (GREEN).
+`src/test/bootstrap.test.ts` 在安装 Vitest 之前编写。运行 `pnpm test` 失败，因为测试运行器不存在（RED）。随后安装/配置了 Vitest，同一测试通过（GREEN）。
 
-**Developer/review correction**
+**开发者/评审纠正**
 
-The first dependency verification exposed an unmet Vitest peer requirement because create-next-app had selected `@types/node` 20 while the runtime is Node 24. The types package was deliberately aligned to `@types/node` 24 and `pnpm peers check` was required to be clean before accepting the bootstrap.
+第一次依赖验证暴露了未满足的 Vitest 同行依赖要求，因为 create-next-app 选择了 `@types/node` 20，而运行时是 Node 24。类型包被刻意对齐到 `@types/node` 24，并且 `pnpm peers check` 必须在验收前保持干净。
 
-**Outcome**
+**结果**
 
-`pnpm test`, `pnpm typecheck`, `pnpm lint`, and `pnpm build` all pass. The shadcn project reports `base` as its component base and `base-nova` as its style preset.
+`pnpm test`、`pnpm typecheck`、`pnpm lint` 和 `pnpm build` 均通过。shadcn 项目报告 `base` 为其组件基础，`base-nova` 为其样式预设。
 
-### 2026-09-10 — T02 real PostgreSQL integration foundation
+### 2026-09-10 — T02 真实 PostgreSQL 集成基础
 
-**Context**
+**背景**
 
-The next vertical slice needed executable proof that persistence and migrations work against PostgreSQL rather than a mocked ORM.
+下一个垂直切片需要可执行证据，证明持久化和迁移在 PostgreSQL 上可以工作，而不是使用模拟 ORM。
 
-**TDD evidence**
+**TDD 证据**
 
-An integration test importing the not-yet-existing database adapter was written first and failed with a module-resolution error (RED). The implementation then introduced Prisma 7, the PostgreSQL driver adapter, a disposable PostgreSQL 17 service, the first migration, and a Prisma client factory. The same test then persisted and reloaded an anonymous session (GREEN).
+首先编写了导入尚不存在的数据库适配器的集成测试，因模块解析错误而失败（RED）。随后实现了 Prisma 7、PostgreSQL 驱动适配器、可丢弃的 PostgreSQL 17 服务、首次迁移和 Prisma 客户端工厂。同一测试随后持久化并重新加载了一个匿名会话（GREEN）。
 
-**Review corrections**
+**评审纠正**
 
-Two bootstrap issues were caught before acceptance: Vitest/Node type versions were aligned earlier, and the pnpm supply-chain gate required explicit approval of Prisma/esbuild lifecycle build scripts rather than bypassing script security globally. An attempted ESLint 10 upgrade was rejected because transitive Next.js ESLint plugins still declare ESLint 9 peer ranges; the generated ESLint 9 line was retained until that ecosystem constraint changes.
+在验收前发现了两个引导问题：Vitest/Node 类型版本已提前对齐，pnpm 供应链门控需要显式批准 Prisma/esbuild 生命周期构建脚本，而非全局绕过脚本安全。尝试的 ESLint 10 升级被拒绝，因为传递性的 Next.js ESLint 插件仍声明 ESLint 9 同行范围；生成的 ESLint 9 行被保留，直到该生态系统约束改变。
 
-**Outcome**
+**结果**
 
-The test database can be destroyed, recreated, migrated from zero, and exercised by the integration suite. A fresh dependency install regenerates the ignored Prisma client through `postinstall`, while production credentials remain outside the repository.
+测试数据库可以被销毁、重建、从零迁移，并被集成测试套件使用。全新的依赖安装会通过 `postinstall` 重新生成被忽略的 Prisma 客户端，而生产凭据保持在仓库之外。
 
-### 2026-09-10 — T03 anonymous session vertical slice
+### 2026-09-10 — T03 匿名会话垂直切片
 
-**Context**
+**背景**
 
-The first behavior-bearing backend slice needed to establish anonymous browser identity without introducing a full authentication system.
+第一个承载行为的后端切片需要在不引入完整认证系统的情况下建立匿名浏览器身份。
 
-**TDD evidence**
+**TDD 证据**
 
-A route-level integration test was written first for three observable behaviors: fresh session creation, cookie-based reuse, and rejection of a client-selected unknown session identifier. It initially failed because the session route did not exist.
+首先编写了针对三个可观察行为的路由级集成测试：创建新会话、基于 Cookie 的复用，以及拒绝客户端选择的未知会话标识符。最初因为会话路由不存在而失败。
 
-**Implementation/review choices**
+**实现/评审选择**
 
-The slice uses a repository port, a Prisma adapter, and a small application use case rather than putting Prisma queries directly in the Route Handler. The cookie value is UUID-validated before lookup, the route does not serialize the raw session ID, and a minimal 1:1 `Assessment` shell is created with the session because the API contract promises that bootstrap ensures an assessment exists.
+该切片使用仓库端口、Prisma 适配器和一个小型应用用例，而非将 Prisma 查询直接放在 Route Handler 中。Cookie 值在查找前经过 UUID 验证，路由不序列化原始会话 ID，并且为会话创建了一个最小的 1:1 `Assessment` 框架，因为 API 契约承诺引导确保评估存在。
 
-The code follows the installed Next.js 16 documentation rather than older synchronous-cookie examples: Route Handlers use `NextRequest`/`NextResponse`, which also keeps this HTTP boundary directly testable without relying on global request context.
+代码遵循已安装的 Next.js 16 文档，而非旧的同步 Cookie 示例：Route Handler 使用 `NextRequest`/`NextResponse`，这也使得此 HTTP 边界无需依赖全局请求上下文即可直接测试。
 
-**Outcome**
+**结果**
 
-The three integration cases pass against PostgreSQL, and the session/assessment ownership boundary now exists for T04 answer persistence.
+三个集成用例在 PostgreSQL 上通过，会话/评估所有权边界现在已存在，可用于 T04 答案持久化。
 
-### 2026-09-10 — T04 first answer persistence
+### 2026-09-10 — T04 首次答案持久化
 
-**Context**
+**背景**
 
-The first assessment mutation needed to persist `GENDER`, advance the optimistic aggregate revision, and establish the shape that later answer steps will reuse.
+第一个评估变更需要持久化 `GENDER`，推进乐观聚合版本，并建立后续答案步骤将复用的结构。
 
-**TDD evidence**
+**TDD 证据**
 
-The route-level integration test was written before the dynamic step Route Handler existed and failed on module resolution. During GREEN work, a hard-coded `GOAL` response was recognized as inconsistent with the frozen domain decision that progress must be derived, so a separate RED unit test was added for `getNextRequiredStep()` before implementing the resolver.
+路由级集成测试在动态步骤 Route Handler 存在之前编写，因模块解析而失败。在 GREEN 工作期间，发现硬编码的 `GOAL` 响应与冻结的领域决策不一致（进度必须由推导得出），因此在实现解析器之前，为 `getNextRequiredStep()` 添加了单独的 RED 单元测试。
 
-A later ownership test deliberately sent a valid UUID that did not own an assessment. It failed because the first repository API collapsed both "not found" and "stale revision" into the same null/409 outcome. The persistence contract was changed to a discriminated `saved | not_found | conflict` result so the application/HTTP boundary can map the states correctly.
+后来的所有权测试故意发送了一个有效但不属于任何评估的 UUID。失败原因是第一个仓库 API 将"未找到"和"过期版本"折叠为相同的 null/409 结果。持久化契约被改为可区分的 `saved | not_found | conflict` 结果，以便应用/HTTP 边界可以正确映射这些状态。
 
-**Outcome**
+**结果**
 
-Gender persistence, runtime validation, revision increment, derived next-step behavior, missing-session handling, and unknown-assessment handling are all executable against PostgreSQL. No generic multi-step abstraction was introduced before the second step proves which parts actually generalize.
+性别持久化、运行时验证、版本递增、推导的下一步行为、缺失会话处理和未知评估处理均可在 PostgreSQL 上执行。在第二个步骤证明哪些部分真正可以泛化之前，未引入通用的多步骤抽象。
 
-### 2026-09-10 — T05 server-derived recovery
+### 2026-09-10 — T05 服务端推导的恢复
 
-**Context**
+**背景**
 
-Once the first answer was persisted, the system needed to prove that refresh/revisit state comes from PostgreSQL rather than client-only state or a duplicated progress pointer.
+首次答案持久化后，系统需要证明刷新/重新访问的状态来自 PostgreSQL，而非仅客户端状态或重复的进度指针。
 
-**TDD evidence**
+**TDD 证据**
 
-The recovery integration suite was added before `GET /api/assessment` existed and failed on module resolution. It also exercised `POST /api/session` after saving gender and expected `GOAL`, revealing that the bootstrap response still contained the temporary hard-coded `GENDER` used before answer persistence existed.
+恢复集成测试套件在 `GET /api/assessment` 存在之前添加，因模块解析而失败。它还在保存性别后执行了 `POST /api/session` 并期望 `GOAL`，暴露了引导响应仍包含答案持久化存在之前使用的临时硬编码 `GENDER`。
 
-**Developer/review decision**
+**开发者/评审决策**
 
-Both recovery and bootstrap now project progress through the domain `getNextRequiredStep()` function. No `currentStepKey` column was introduced. The persistence read model exposes stored facts, and the application layer derives the resumable state.
+恢复和引导现在都通过领域 `getNextRequiredStep()` 函数推导进度。未引入 `currentStepKey` 列。持久化读模型暴露存储的事实，应用层推导可恢复的状态。
 
-**Outcome**
+**结果**
 
-Saved gender, revision, and semantic progress survive a new request; invalid/unknown session identities remain bounded by stable 401/404 behavior.
+保存的性别、版本和语义进度在新请求后仍然保留；无效/未知的会话身份仍然受稳定的 401/404 行为约束。
 
-### 2026-09-10 — T06 generalize only after the second step set
+### 2026-09-10 — T06 在第二组步骤后才泛化
 
-**Context**
+**背景**
 
-T04 deliberately implemented only gender instead of guessing a generic questionnaire framework. T06 introduced the remaining six answer types, making it possible to see what actually generalized.
+T04 故意只实现了性别，而非猜测一个通用问卷框架。T06 引入了剩余六种答案类型，使得可以看到哪些部分真正泛化了。
 
-**TDD evidence**
+**TDD 证据**
 
-A runtime-contract test suite was written first for category values, inclusive boundaries, invalid numeric values, unknown step keys, and strict rejection of extra client fields. It failed because no shared parser existed. A separate PostgreSQL integration test attempted the seven-answer sequence and failed at `goal` because the route still supported only gender.
+首先编写了运行时契约测试套件，覆盖类别值、包含边界、无效数值、未知步骤键和对额外客户端字段的严格拒绝。因不存在共享解析器而失败。单独的 PostgreSQL 集成测试尝试了七步答案序列，在 `goal` 处失败，因为路由当时仍只支持性别。
 
-**Developer/review decision**
+**开发者/评审决策**
 
-Only then was the first-step-specific path refactored into a typed `AssessmentStepCommand` union, a shared `saveAssessmentStep` use case, and an explicit Prisma mutation mapper. The Route Handler delegates parsing and business behavior rather than accumulating a giant switch. Scalar validation bounds (age 18–100 integer, height 120–230 cm, weight/target 25–300 kg) are recorded as challenge implementation choices; no claim is made that the source brief supplied them.
+直到那时才将特定于第一步的路径重构为类型化的 `AssessmentStepCommand` 联合类型、共享的 `saveAssessmentStep` 用例和显式的 Prisma 变更映射器。Route Handler 委托解析和业务行为，而非累积一个巨大的 switch。标量验证边界（年龄 18-100 整数、身高 120-230 cm、体重/目标 25-300 kg）记录为挑战实现选择；不声称原始简报提供了这些值。
 
-**Outcome**
+**结果**
 
-All seven fields persist incrementally, each successful mutation advances revision exactly once, the complete answer state is recoverable, and the domain resolver reaches ready-to-submit (`nextRequiredStep: null`). Cross-field target-weight semantics remain for the dedicated state-policy slice rather than being smuggled into scalar validation.
+所有七个字段增量持久化，每次成功的变更精确推进一次版本，完整的答案状态可恢复，领域解析器到达可提交状态（`nextRequiredStep: null`）。跨字段目标体重语义保留给专用的状态策略切片，而非被偷渡到标量验证中。
 
-### 2026-09-10 — T07 reject an incorrect test, not correct behavior
+### 2026-09-10 — T07 拒绝不正确的测试，而非纠正正确的行为
 
-**Context**
+**背景**
 
-The server-side step policy needed to distinguish a real skipped unresolved step from editing a value that is already present, while also revalidating target weight after upstream edits.
+服务端步骤策略需要区分真正的跳过未解决步骤与编辑已存在的值，同时在上游编辑后重新验证目标体重。
 
-**TDD evidence**
+**TDD 证据**
 
-The initial RED suite correctly exposed two missing production behaviors: later unresolved steps were accepted, and target weight was validated only by presence. However, one generated unit fixture for "skip HEIGHT" accidentally retained `heightCm` from a complete fixture. Under the agreed policy, an already-present answer is editable, so production code correctly returned `allowed: true`.
+初始 RED 套件正确暴露了两个缺失的生产行为：后续未解决的步骤被接受，目标体重仅通过存在性进行验证。然而，一个生成的"跳过 HEIGHT"单元测试夹具意外地从完整夹具中保留了 `heightCm`。根据已商定的策略，已存在的答案是可编辑的，因此生产代码正确返回了 `allowed: true`。
 
-**Developer review / rejection**
+**开发者评审/拒绝**
 
-The failing test was rejected as incorrectly specified. The fixture was changed to make `heightCm` genuinely unresolved rather than weakening the production rule to make a bad test green. This is the clearest example so far of TDD constraining AI while still requiring human review of the tests themselves.
+失败的测试被拒绝为规范不正确。夹具被修改为使 `heightCm` 真正未解决，而非削弱生产规则以使错误测试变绿。这是目前 TDD 约束 AI 的最清晰案例，同时仍需要人工审查测试本身。
 
-**Outcome**
+**结果**
 
-The final policy rejects unresolved skips, permits edits, and revalidates target weight contextually (`LOSE_WEIGHT`: target lower; `GAIN_WEIGHT`: target higher; `MAINTAIN`: target equal). The API returns stable `STEP_OUT_OF_ORDER` details and leaves revision unchanged on rejection.
+最终策略拒绝未解决的跳过，允许编辑，并根据上下文重新验证目标体重（`LOSE_WEIGHT`：目标更低；`GAIN_WEIGHT`：目标更高；`MAINTAIN`：目标相等）。API 返回稳定的 `STEP_OUT_OF_ORDER` 详情，并在拒绝时保持版本不变。
 
-### 2026-09-10 — T08 acceptance test was already green
+### 2026-09-10 — T08 验收测试已经是绿色
 
-**Context**
+**背景**
 
-The dedicated optimistic-concurrency slice needed to prove the architecture claim with real concurrent PostgreSQL writes, including the strict same-value stale retry rule.
+专用的乐观并发切片需要通过真实的并发 PostgreSQL 写入来证明架构声明，包括严格的同值过期重试规则。
 
-**Test result**
+**测试结果**
 
-The new acceptance test launched two gender writes concurrently with the same expected revision. It passed immediately: one writer won, the other received `409`, and the aggregate revision advanced once. A stale retry carrying the already-persisted value also returned `409` as designed.
+新的验收测试同时启动了两个性别写入，期望相同的版本。立即通过：一个写入器获胜，另一个收到 `409`，聚合版本只推进了一次。携带已持久化值的过期重试也按设计返回了 `409`。
 
-**Developer decision**
+**开发者决策**
 
-No production change was made just to manufacture a TDD RED phase. The behavior had already been implemented incrementally by earlier slices. The test is retained as executable characterization/acceptance evidence. This is preferable to changing correct code for process theater.
+未进行任何生产变更来人为制造 TDD RED 阶段。该行为已由之前的切片增量实现。测试作为可执行的特性描述/验收证据被保留。这比为了流程形式而修改正确代码更可取。
 
-**Outcome**
+**结果**
 
-The concurrency contract is now directly tested against PostgreSQL rather than inferred from the presence of a `revision` field.
+并发契约现在直接在 PostgreSQL 上测试，而非从 `revision` 字段的存在推断。
 
-### 2026-09-10 — T09 calculation policy before calculation code
+### 2026-09-10 — T09 计算策略先于计算代码
 
-**Context**
+**背景**
 
-The source challenge names three outputs but does not define the intake or target-date algorithms. Implementing a plausible formula directly in code would silently invent requirements and make later tests merely mirror the implementation.
+源挑战命名了三个输出，但未定义摄入或目标日期算法。直接在代码中实现一个看似合理的公式会悄悄发明需求，使后续测试仅仅镜像实现。
 
-**Research/review**
+**研究/评审**
 
-CDC BMI category guidance, the published Mifflin–St Jeor equation, and NIDDK's Body Weight Planner were reviewed as external context. The NIDDK planner is a dynamic physiological model; reproducing it is outside this three-day challenge.
+作为外部背景，评审了 CDC BMI 类别指南、已发布的 Mifflin-St Jeor 公式和 NIDDK 的体重规划器。NIDDK 规划器是一个动态生理模型；复制它超出了这个三天挑战的范围。
 
-**Developer decision**
+**开发者决策**
 
-A separate `demo-v1` calculation policy was frozen first. Recognizable external formulas/thresholds are distinguished from project constants such as activity multipliers, ±300 calorie adjustment, the `OTHER` midpoint fallback, and the deliberately static 0.5 kg/week projection. All limitations are explicit and the output is not presented as medical advice.
+首先冻结了一个单独的 `demo-v1` 计算策略。可识别的外部公式/阈值与项目常量（如活动乘数、±300 卡路里调整、`OTHER` 中点回退和刻意静态的 0.5 kg/周预测）区分开来。所有限制都是明确的，输出不以医疗建议呈现。
 
-**Outcome**
+**结果**
 
-`10-calculation-policy.md` now contains exact formulas, rounding/date semantics, external references, and required RED vectors. T10 can therefore write tests from the policy rather than from production code.
+`10-calculation-policy.md` 现在包含精确公式、舍入/日期语义、外部参考和必需的 RED 向量。因此 T10 可以从策略而非生产代码编写测试。
 
-### 2026-09-10 — T10 calculations implemented from policy, not vice versa
+### 2026-09-10 — T10 从策略实现计算，而非反向
 
-**Context**
+**背景**
 
-The exact `demo-v1` calculation policy had already been frozen in T09, including test vectors and rounding/date semantics.
+精确的 `demo-v1` 计算策略已在 T09 冻结，包括测试向量和舍入/日期语义。
 
-**TDD evidence**
+**TDD 证据**
 
-A 22-case unit suite was written before `calculation.ts` existed and failed on module resolution. The suite covers BMI threshold boundaries, the deliberate raw-before-rounding classification rule, all Mifflin gender branches including the documented `OTHER` midpoint, all activity multipliers, all goal adjustments, the 1000 kcal lower guard, target-date lose/gain/maintain cases, partial-week ceiling, and UTC normalization.
+在 `calculation.ts` 存在之前编写了 22 个用例的单元套件，因模块解析而失败。套件覆盖 BMI 阈值边界、刻意的先原始后舍入分类规则、所有 Mifflin 性别分支（包括文档化的 `OTHER` 中点）、所有活动乘数、所有目标调整、1000 kcal 下限保护、目标日期减重/增重/维持用例、部分周上限和 UTC 标准化。
 
-**Outcome**
+**结果**
 
-The resulting production functions are pure and have no framework, database, environment, cookie, or wall-clock dependency. Test expectations came from the prior policy document, avoiding the anti-pattern of writing implementation first and tests that simply reproduce it afterward.
+生成的生产函数是纯函数，不依赖框架、数据库、环境、Cookie 或系统时钟。测试期望值来自先前的策略文档，避免了先写实现再写仅仅复制它的测试的反模式。
 
-### 2026-09-11 — T11 result snapshot migration caught by integration test
+### 2026-09-11 — T11 结果快照迁移被集成测试捕获
 
-**Context**
+**背景**
 
-Submission is the first multi-write aggregate transition: validate a complete draft, calculate a versioned result, mark the assessment completed, and create the canonical snapshot atomically.
+提交是第一个多写聚合转换：验证完整草稿、计算版本化结果、标记评估完成，并原子性地创建规范快照。
 
-**TDD evidence**
+**TDD 证据**
 
-Domain and integration tests were written before the submission modules existed. The route suite covers incomplete submit, successful snapshot creation, retry idempotency, and stale first-time submission.
+领域和集成测试在提交模块存在之前编写。路由套件覆盖不完整提交、成功的快照创建、重试幂等性和过期首次提交。
 
-**Implementation/review correction**
+**实现/评审纠正**
 
-The first scripted Prisma-schema edit added `BmiCategory` but failed to insert the `AssessmentResult` model because a textual replacement anchor did not match the formatted schema. Prisma therefore generated a syntactically valid but incomplete migration, and the integration suite failed at runtime because `prisma.assessmentResult` was absent. The incomplete migration had not been committed, so it was removed; the disposable PostgreSQL database was destroyed/recreated from committed migrations; the schema was rewritten explicitly; and a corrected migration was generated. The generated client was then inspected to verify the `assessmentResult` accessor before rerunning the suite.
+第一次脚本化的 Prisma 架构编辑添加了 `BmiCategory`，但未能插入 `AssessmentResult` 模型，因为文本替换锚点与格式化后的架构不匹配。因此 Prisma 生成了语法有效但不完整的迁移，集成套件在运行时失败，因为 `prisma.assessmentResult` 不存在。未提交的不完整迁移被移除；可丢弃的 PostgreSQL 数据库从提交的迁移被销毁/重建；架构被显式重写；生成了修正的迁移。然后检查了生成的客户端以验证 `assessmentResult` 访问器，再重新运行套件。
 
-**Outcome**
+**结果**
 
-First submit is revision-safe and transactional, retries reuse exactly one stored snapshot, and a stale first-time submit cannot create a result. The incident is retained as evidence that AI/scripted edits are not trusted without executable database verification.
+首次提交是版本安全且事务性的，重试精确复用一个已存储的快照，过期首次提交无法创建结果。此事件作为证据保留，证明 AI/脚本化的编辑在没有可执行数据库验证的情况下不被信任。
 
-### 2026-09-11 — T12 prove locked values are absent, not blurred
+### 2026-09-11 — T12 证明锁定值不存在，而非模糊处理
 
-**Context**
+**背景**
 
-The challenge distinguishes free and subscribed results. A visually blurred premium value would still leak the data to the browser and would not be authorization.
+挑战区分免费和已付费结果。视觉上模糊的高级值仍会向浏览器泄露数据，且不构成授权。
 
-**TDD evidence**
+**TDD 证据**
 
-The free-result tests were written before implementation. In addition to exact DTO shape, both domain and integration coverage serialize the response and assert that the real calorie value and target date do not occur in the JSON at all.
+免费结果测试在实现之前编写。除了精确的 DTO 结构外，领域和集成覆盖都序列化响应并断言真实的卡路里值和目标日期完全不在 JSON 中出现。
 
-**Developer decision**
+**开发者决策**
 
-The domain creates a dedicated free projection rather than returning the persistence model and asking React to hide selected properties. The result route is session-scoped and returns `RESULT_NOT_FOUND` until a canonical snapshot exists.
+领域创建了专门的免费投影，而非返回持久化模型并要求 React 隐藏选定属性。结果路由是会话范围的，在规范快照存在之前返回 `RESULT_NOT_FOUND`。
 
-**Outcome**
+**结果**
 
-The access boundary is executable: FREE receives public BMI plus locked markers, with premium values omitted before serialization.
+访问边界是可执行的：FREE 接收公开的 BMI 加锁定标记，高级值在序列化之前被省略。
 
-### 2026-09-11 — T13 idempotency at the database boundary
+### 2026-09-11 — T13 在数据库边界的幂等性
 
-**Context**
+**背景**
 
-The simulated `/pay` endpoint must make retry safety real rather than relying on the UI to avoid double clicks.
+模拟 `/pay` 端点必须使重试安全成为现实，而非依赖 UI 来避免双击。
 
-**TDD evidence**
+**TDD 证据**
 
-Tests were written first for activation, sequential replay, two concurrent requests carrying the same key, the same key used by two different sessions, invalid input, and missing/unknown session identity.
+首先编写了针对激活、顺序重放、两个携带相同键的并发请求、两个不同会话使用相同键、无效输入和缺失/未知会话身份的测试。
 
-**Developer decision**
+**开发者决策**
 
-The identifier is named `idempotencyKey`, not `paymentId`, because there is no external provider. Composite database uniqueness scopes it to a session. The repository uses a transaction and `createMany(..., skipDuplicates: true)` so the database decides which concurrent request owns the side effect rather than implementing a race-prone read-then-create check in application code.
+标识符命名为 `idempotencyKey`，而非 `paymentId`，因为不存在外部提供者。复合数据库唯一性将其范围限定为会话。仓库使用事务和 `createMany(..., skipDuplicates: true)`，由数据库决定哪个并发请求拥有副作用，而非在应用代码中实现存在竞争的读取后创建检查。
 
-**Outcome**
+**结果**
 
-The concurrent test produces one persisted event and exactly one `replayed: false` / one `replayed: true` response. Subscription becomes `ACTIVE` once.
+并发测试产生一个已持久化事件和精确一个 `replayed: false` / 一个 `replayed: true` 响应。订阅一次性变为 `ACTIVE`。
 
-### 2026-09-11 — T14 unlock access without recalculation
+### 2026-09-11 — T14 无需重新计算即可解锁访问
 
-**Context**
+**背景**
 
-After simulated payment, the product must reveal the already-generated result rather than run a second hidden calculation.
+模拟支付后，产品必须揭示已生成的结果，而非运行第二次隐藏计算。
 
-**TDD evidence**
+**TDD 证据**
 
-The ACTIVE integration fixture deliberately stores `recommendedDailyCalories=1990` and `estimatedGoalDate=2030-01-02`, values that do not match the fixture's assessment inputs under `demo-v1`. Before implementation the endpoint still returned the FREE shape. After payment, the final test requires those exact stored values, the same result row ID, and the same creation timestamp.
+ACTIVE 集成夹具特意存储了 `recommendedDailyCalories=1990` 和 `estimatedGoalDate=2030-01-02`，这些值与夹具的评估输入在 `demo-v1` 下不匹配。实现之前端点仍返回 FREE 结构。支付后，最终测试要求这些精确存储的值、相同的结果行 ID 和相同的创建时间戳。
 
-**Developer decision**
+**开发者决策**
 
-Access projection is a pure domain concern over `(snapshot, subscriptionStatus)`. Payment mutates only subscription state. `GET /result` reads the canonical snapshot and selects FREE or ACTIVE serialization; it never calls calculation code.
+访问投影是对 `(snapshot, subscriptionStatus)` 的纯领域关注点。支付仅变更订阅状态。`GET /result` 读取规范快照并选择 FREE 或 ACTIVE 序列化；它从不调用计算代码。
 
-**Outcome**
+**结果**
 
-The complete backend loop now works: progressive draft -> transactional snapshot -> safe FREE projection -> idempotent pay -> full projection of the same snapshot.
+完整的后端循环现在可以工作：渐进式草稿 -> 事务性快照 -> 安全的 FREE 投影 -> 幂等支付 -> 同一快照的完整投影。
 
-### 2026-09-11 — T15 component-library policy exercised in real UI code
+### 2026-09-11 — T15 组件库策略在真实 UI 代码中执行
 
-**Context**
+**背景**
 
-The first product UI slice was the point where the earlier library-first rule could either remain documentation or become an enforceable implementation habit.
+第一个产品 UI 切片是早期库优先规则可以保持为文档或成为可执行实现习惯的关键点。
 
-**TDD evidence**
+**TDD 证据**
 
-A component test was written before `AssessmentShell` existed and described accessible heading, progress, step context, and optional back interaction.
+在 `AssessmentShell` 存在之前编写了组件测试，描述了可访问的标题、进度、步骤上下文和可选的返回交互。
 
-**Developer decision**
+**开发者决策**
 
-Common controls were added from shadcn's Base UI-backed registry instead of recreated locally. `AssessmentShell` is intentionally a product composition of `Card`, `Progress`, and `Button`; it does not introduce a second button/progress/card primitive system. Testing Library assertions target roles, labels, and behavior rather than generated DOM/class details owned by shadcn/Base UI.
+通用控件从 shadcn 的 Base UI 支持的注册表中添加，而非本地重建。`AssessmentShell` 有意地是 `Card`、`Progress` 和 `Button` 的产品组合；它不引入第二套按钮/进度/卡片基础组件系统。Testing Library 断言针对角色、标签和行为，而非 shadcn/Base UI 拥有的生成 DOM/class 细节。
 
-**Outcome**
+**结果**
 
-The repository now has a consistent accessible UI foundation ready for the persisted funnel, while the low-level primitives remain the shadcn-managed local source requested for this challenge.
+仓库现在拥有了一致的可访问 UI 基础，为持久化漏斗做好准备，而底层基础组件仍保持为本次挑战所需的 shadcn 管理的本地源。
 
-### 2026-09-11 — T16 persisted funnel and UI-library consistency
+### 2026-09-11 — T16 持久化漏斗和 UI 库一致性
 
-**Context**
+**背景**
 
-The first end-user flow needed to connect the seven persisted backend steps to React without making client state authoritative or rebuilding common controls outside the chosen component system.
+第一个终端用户流程需要将七个持久化的后端步骤连接到 React，而不使客户端状态成为权威数据或在所选组件系统之外重建通用控件。
 
-**TDD evidence**
+**TDD 证据**
 
-`assessment-funnel.test.tsx` was written before the browser API adapter and funnel components existed. It specifies save-before-navigation, recovery/back with a persisted value, visible save failure without navigation, and final submit using the revision returned by the final PATCH.
+`assessment-funnel.test.tsx` 在浏览器 API 适配器和漏斗组件存在之前编写。它指定了保存后导航、使用持久化值的恢复/返回、可见的保存失败（不导航）以及使用最终 PATCH 返回的版本进行最终提交。
 
-**Review corrections**
+**评审纠正**
 
-The first implementation run showed two component-level defects that backend tests could not reveal: test DOM from earlier cases was not being cleaned up under the current Vitest configuration, and the Base UI RadioGroup changed from uncontrolled to controlled when the first value arrived. A conditional Testing Library cleanup hook and a stable controlled `value` resolved them. We also moved assessment scalar bounds into a shared domain constant so the UI input constraints and Zod contracts cannot drift independently.
+第一次实现运行显示了两个后端测试无法暴露的组件级缺陷：早期用例的测试 DOM 在当前 Vitest 配置下未被清理，Base UI RadioGroup 在第一个值到达时从非受控变为受控。条件性的 Testing Library 清理钩子和稳定的受控 `value` 解决了这些问题。我们还将评估标量边界移入共享领域常量，使 UI 输入约束和 Zod 契约无法独立漂移。
 
-**Component policy outcome**
+**组件策略结果**
 
-`AssessmentOptionGroup` composes shadcn/Base UI `RadioGroup`, `NumericAnswer` composes shadcn `Input`/`Label`, and the funnel uses existing `Button`, `Alert`, `Card`, and `Skeleton` components. No parallel generic input/button/radio library was introduced.
+`AssessmentOptionGroup` 组合 shadcn/Base UI `RadioGroup`，`NumericAnswer` 组合 shadcn `Input`/`Label`，漏斗使用现有的 `Button`、`Alert`、`Card` 和 `Skeleton` 组件。未引入并行的通用输入/按钮/单选库。
 
-**Outcome**
+**结果**
 
-The browser can restore, edit, incrementally persist, and complete all seven semantic steps while the server remains authoritative for progress and revision state.
+浏览器可以恢复、编辑、增量持久化并完成所有七个语义步骤，同时服务器保持对进度和版本状态的权威性。
 
-### 2026-09-12 — Final brief-alignment closure
+### 2026-09-12 — 最终简报对齐收尾
 
-**Context**
+**背景**
 
-A final requirement-by-requirement audit compared the shipped repository against the original challenge wording rather than trusting the repository's own PASS matrix. Two meaningful gaps remained: the brief explicitly asked the schema to show subscription information as a related table, while access state still lived on `AnonymousSession`; and stale-write protection was correct on the server but the browser only displayed the conflict instead of recovering.
+最终的逐需求审计将已交付的仓库与原始挑战措辞进行了比较，而非信任仓库自身的 PASS 矩阵。仍存在两个有意义的差距：简报明确要求架构以关联表的形式显示订阅信息，而访问状态仍存在于 `AnonymousSession` 上；过期写保护在服务器端是正确的，但浏览器仅显示冲突而非恢复。
 
-**Developer decision**
+**开发者决策**
 
-The persistence model was normalized to a minimal 1:1 `Subscription` extension keyed directly by `sessionId`, with a backfill migration that preserves every existing FREE/ACTIVE state before removing the old column. No speculative plan/renewal/provider fields were added. The browser now refetches canonical assessment state after `ASSESSMENT_VERSION_CONFLICT`. Current/target BMI warnings were also aligned with the requested product language: normal stays green while all outside-range categories use the stronger warning treatment, without claiming that BMI alone is a diagnosis.
+持久化模型被规范化为最小的 1:1 `Subscription` 扩展，直接以 `sessionId` 为键，回填迁移保留每个现有的 FREE/ACTIVE 状态后再移除旧列。未添加推测性的 plan/renewal/provider 字段。浏览器现在在 `ASSESSMENT_VERSION_CONFLICT` 之后重新获取规范评估状态。当前/目标 BMI 警告也与请求的产品语言对齐：正常保持绿色，所有超出范围的类别使用更强的警告处理，不声称 BMI 单独是诊断依据。
 
-A repeated BetterMe private-window check confirmed the existing identity decision rather than invalidating it: copying an `order` URL without the original browser cookie starts a new flow. The existing route-level integration test already proves that a foreign order UUID cannot authorize another assessment, so an additional browser test was rejected as redundant coverage rather than added for test-count theater.
+重复的 BetterMe 隐私窗口检查确认了现有的身份决策而非否定它：复制不含原始浏览器 Cookie 的 `order` URL 会启动新流程。现有的路由级集成测试已证明外部订单 UUID 无法授权另一个评估，因此额外的浏览器测试被拒绝为冗余覆盖，而非为测试数量形式而添加。
 
-**Evidence**
+**证据**
 
-The migration is exercised against real PostgreSQL, payment/session/result integration tests assert the new relation, the stale-conflict component test proves automatic recovery, and the existing order-authority integration test remains the direct security contract. Documentation/API examples were reconciled with the actual `missingSteps` field and current test counts.
+迁移在真实 PostgreSQL 上执行，支付/会话/结果集成测试断言新关系，过期冲突组件测试证明自动恢复，现有的订单授权集成测试仍是直接的安全契约。文档/API 示例与实际的 `missingSteps` 字段和当前测试数量进行了对齐。
 
-**Outcome**
+**结果**
 
-The final schema now directly matches the brief's user/data/subscription relationship while preserving the existing closed loop and avoiding unnecessary billing complexity.
+最终架构现在直接匹配简报的用户/数据/订阅关系，同时保留现有闭环并避免不必要的计费复杂性。
 
-### 2026-09-12 — Shared contracts replaced duplicated browser DTOs
+### 2026-09-12 — 共享契约替换了重复的浏览器 DTO
 
-**Context**
+**背景**
 
-A final type-safety audit found that the repository already had request contracts, but several browser response DTOs were still handwritten in `client/assessment-api.ts` and `client/result-api.ts`. TypeScript therefore described the same HTTP shapes in more than one place, and the generic browser helper trusted successful JSON via a type assertion.
+最终的类型安全审计发现仓库已有请求契约，但多个浏览器响应 DTO 仍在 `client/assessment-api.ts` 和 `client/result-api.ts` 中手写。因此 TypeScript 在多个位置描述了相同的 HTTP 结构，而通用浏览器助手通过类型断言信任成功的 JSON。
 
-**Developer correction**
+**开发者纠正**
 
-The API boundary was consolidated into explicit Zod contracts. Success response DTOs are now inferred from those schemas and imported by browser code; Route Handlers validate outgoing success bodies with the same contracts, while the browser validates successful responses before returning them to React. Domain literal sets are exported once as `as const` tuples and reused by the contracts. Assessment step/value pairing was tightened into a discriminated command union so invalid combinations fail typecheck.
+API 边界被整合为显式 Zod 契约。成功响应 DTO 现在从这些模式推导并由浏览器代码导入；Route Handler 使用相同契约验证出站成功消息体，而浏览器在将成功响应返回给 React 之前进行验证。领域字面量集作为 `as const` 元组导出一次并被契约复用。评估步骤/值配对被收紧为可区分的命令联合类型，使无效组合无法通过类型检查。
 
-**Evidence**
+**证据**
 
-A typecheck fixture proves `AGE` cannot carry a gender string, contract tests reject response-shape drift and FREE-result value leakage, and browser-API tests reject a `200` response whose JSON violates the shared schema. The full unit/component suite increased from 69 to 74 tests.
+类型检查夹具证明 `AGE` 无法携带性别字符串，契约测试拒绝响应结构漂移和 FREE 结果值泄露，浏览器 API 测试拒绝 JSON 违反共享模式的 `200` 响应。完整单元/组件套件从 69 个测试增加到 74 个。
 
-**Outcome**
+**结果**
 
-Frontend and backend now share one executable API contract instead of parallel DTO declarations: runtime schema -> inferred TypeScript type -> server output validation -> browser response validation.
+前端和后端现在共享一个可执行 API 契约，而非并行的 DTO 声明：运行时模式 -> 推导的 TypeScript 类型 -> 服务器输出验证 -> 浏览器响应验证。
 
-### 2026-09-12 — Second source-of-truth audit after the first audit missed obvious drift
+### 2026-09-12 — 第二次真实来源审计，因为第一次审计遗漏了明显的漂移
 
-**Context**
+**背景**
 
-The first contract pass fixed duplicated browser DTOs, but a reviewer challenge correctly pointed out that this should have been discovered earlier and asked for similar omissions rather than another self-declared PASS. A second audit therefore searched mechanically for duplicated literals, schemas, step mappings, error codes/statuses, unsafe assertions, permissive compiler gaps, application/Prisma shape drift, and ambiguous retry paths.
+第一次契约修复了重复的浏览器 DTO，但评审挑战正确指出这应该更早被发现，并要求查找类似的遗漏而非另一次自认的 PASS。因此第二次审计机械地搜索重复的字面量、模式、步骤映射、错误代码/状态、不安全断言、宽松的编译器间隙、应用/Prisma 结构漂移和歧义重试路径。
 
-**Developer correction**
+**开发者纠正**
 
-The second pass found several real members of the same failure class: error codes/details/statuses were still partly route-local; step order, UI configuration, route keys, and persistence field mapping could drift; application/domain/Prisma shapes lacked compile-time alignment; `strict: true` still allowed unchecked indexed access and loose optional properties; the app/migrator repeated the Prisma version; and a lost PATCH/submit response could leave the browser uncertain even though the server mutation had committed. Those were fixed with discriminated error/step contracts, exhaustive maps, Prisma/API typecheck fixtures, stronger TypeScript flags, toolchain alignment tests, least-privilege CI permissions, and canonical-state recovery after ambiguous writes. The result page now also propagates only the order id resolved from the cookie-owned bootstrap rather than re-reading an untrusted incoming query value at completion time.
+第二轮发现了同一失败类别的几个真实成员：错误代码/详情/状态仍部分局限于路由本地；步骤顺序、UI 配置、路由键和持久化字段映射可能漂移；应用/领域/Prisma 结构缺乏编译时对齐；`strict: true` 仍允许未检查的索引访问和宽松的可选属性；应用/迁移器重复了 Prisma 版本；丢失的 PATCH/提交响应可能使浏览器不确定，即使服务器变更已提交。这些通过可区分的错误/步骤契约、穷尽映射、Prisma/API 类型检查夹具、更强的 TypeScript 标志、工具链对齐测试、最小权限 CI 权限和歧义写入后的规范状态恢复得到了修复。结果页现在也仅传播从 Cookie 拥有的引导解析的订单 ID，而非在完成时重新读取不可信的传入查询值。
 
-**Evidence**
+**证据**
 
-The stronger compiler settings immediately exposed a real unchecked `STEP_ORDER[index]` assumption and exact-optional-property construction issues, which were fixed rather than suppressed. Contract tests reject stale `requiredSteps` error details and duplicate route keys; compile fixtures prove command-step coverage, application/API projection alignment, and Prisma/domain enum/field/result alignment. Component tests simulate both a PATCH that committed before its response was lost and a submit that committed before its response was lost. The current fast suite is 82 tests, with the existing 36 real-PostgreSQL integration tests retained.
+更强的编译器设置立即暴露了一个真实的未检查 `STEP_ORDER[index]` 假设和精确可选属性构造问题，这些问题被修复而非被抑制。契约测试拒绝过期的 `requiredSteps` 错误详情和重复路由键；编译夹具证明命令步骤覆盖、应用/API 投影对齐和 Prisma/领域枚举/字段/结果对齐。组件测试模拟了 PATCH 在其响应丢失前已提交和提交在其响应丢失前已提交的两种情况。当前快速套件为 82 个测试，现有的 36 个真实 PostgreSQL 集成测试被保留。
 
-**Outcome**
+**结果**
 
-The repository now treats “single source of truth” as an enforceable property rather than a folder name: one source per boundary, exhaustive projections, and independent compile/runtime/database evidence where two layers must intentionally remain separate. The missed first-pass issue is kept in the retrospective because recognizing and correcting an incomplete AI-assisted review is itself part of the challenge's AI-collaboration criterion.
+仓库现在将"单一真实来源"视为可执行属性而非文件夹名称：每个边界一个来源、穷尽投影，以及在两个层必须有意保持分离时的独立编译/运行时/数据库证据。遗漏的首轮问题保留在回顾中，因为识别和纠正不完整的 AI 辅助审查本身就是挑战 AI 协作标准的一部分。
 
-### 2026-09-12 — Third audit: transaction snapshots, media types, and database backstops
+### 2026-09-12 — 第三轮审计：事务快照、媒体类型和数据库防护
 
-**Context**
+**背景**
 
-After the source-of-truth pass, the review deliberately changed attack surface: transaction return semantics, HTTP write boundaries, persistence invariants, replay side effects, and whether tests proved concurrent outcomes rather than merely sequential retries.
+在真实来源审计之后，评审故意改变了攻击面：事务返回语义、HTTP 写边界、持久化不变量、重放副作用，以及测试是否证明了并发结果而非仅仅顺序重试。
 
-**Developer correction**
+**开发者纠正**
 
-Four RED reproductions exposed real gaps. A CAS PATCH committed and then re-read the row, allowing a later revision to leak into the first response; JSON routes parsed `text/plain`; PostgreSQL accepted negative revisions/out-of-range measurements/inconsistent lifecycle timestamps/malformed payment keys; and payment replay returned early from the idempotency record even if ACTIVE access had been externally lost. The fixes use `updateManyAndReturn`, strict JSON media-type enforcement with `415`, a committed CHECK-constraint migration, and replay-side-effect repair inside the payment transaction. Existing-session bootstrap also repairs both 1:1 children with duplicate-safe inserts.
+四个 RED 复现暴露了真实差距。CAS PATCH 提交后重新读取行，允许后续版本泄露到第一个响应中；JSON 路由解析了 `text/plain`；PostgreSQL 接受负版本/超范围测量/不一致的生命周期时间戳/格式错误的支付键；支付重放即使 ACTIVE 访问已外部丢失也从幂等记录提前返回。修复使用了 `updateManyAndReturn`、带 `415` 的严格 JSON 媒体类型强制、已提交的 CHECK 约束迁移和支付事务内的重放副作用修复。已有会话引导也使用防重复插入修复了两个 1:1 子项。
 
-**Evidence**
+**证据**
 
-`repository-write-snapshot.test.ts` forces a later revision to commit before the first repository call resolves and proves the response still reports revision 1. `media-type-boundary.test.ts` proves `text/plain` writes do not mutate state. `database-invariants.test.ts` executes direct Prisma writes against real PostgreSQL. Payment integration simulates an externally downgraded subscription and proves same-key replay restores ACTIVE. Concurrent submit requests both succeed while one result snapshot/revision transition is persisted.
+`repository-write-snapshot.test.ts` 强制在第一个仓库调用解析前提交后续版本，证明响应仍报告版本 1。`media-type-boundary.test.ts` 证明 `text/plain` 写入不会变更状态。`database-invariants.test.ts` 对真实 PostgreSQL 执行直接 Prisma 写入。支付集成模拟了外部降级的订阅，证明同键重放恢复 ACTIVE。并发提交请求均成功，同时一个结果快照/版本转换被持久化。
 
-**Outcome**
+**结果**
 
-The fast suite is 83 tests and the PostgreSQL suite is 49 tests. This round strengthened invariants below the TypeScript contract layer rather than adding more duplicate shape checks. After merge, all four main-branch CI jobs passed, including immutable image publication. A production preflight found zero rows violating the new constraints, the eighth migration applied cleanly on Aliyun, both public Playwright journeys passed 2/2, a live `text/plain` `/api/pay` probe returned `415 UNSUPPORTED_MEDIA_TYPE`, and the synthetic ACTIVE evaluator projection remained unchanged.
+快速套件为 83 个测试，PostgreSQL 套件为 49 个测试。本轮加强了 TypeScript 契约层以下的不变量，而非添加更多重复的结构检查。合并后，所有四个主分支 CI 作业通过，包括不可变镜像发布。生产预检发现零行违反新约束，第八次迁移在阿里云上顺利应用，两个公共 Playwright 流程 2/2 通过，实时 `text/plain` `/api/pay` 探测返回 `415 UNSUPPORTED_MEDIA_TYPE`，合成 ACTIVE 投影器投影保持不变。
 
-## Entry template
+## 条目模板
 
-### YYYY-MM-DD — Short title
+### YYYY-MM-DD — 简短标题
 
-**Context**
+**背景**
 
-What was being designed or implemented?
+正在设计或实现什么？
 
-**AI proposal**
+**AI 提案**
 
-What did AI recommend or generate?
+AI 推荐或生成了什么？
 
-**Developer review**
+**开发者评审**
 
-What was accepted, changed, or rejected?
+接受了什么、修改了什么或拒绝了什么？
 
-**Evidence**
+**证据**
 
-Which requirement, test, measurement, code constraint, or trade-off informed the decision?
+哪些需求、测试、测量、代码约束或权衡影响了决策？
 
-**Outcome**
+**结果**
 
-What changed in code/docs/tests?
+代码/文档/测试发生了什么变化？
 
-### 2026-09-11 — T17 result/paywall composition
+### 2026-09-11 — T17 结果/付费墙组合
 
-AI-assisted implementation proposed a separate result browser adapter and extracted shared JSON/error transport from the assessment client. The change was accepted because it removes duplicated network/error code while keeping domain/result DTOs independent.
+AI 辅助实现提出了一个单独的结果浏览器适配器，并从评估客户端中提取了共享的 JSON/错误传输层。该变更被接受，因为它消除了重复的网络/错误代码，同时保持领域/结果 DTO 独立。
 
-The payment UI deliberately reuses one idempotency key after a failed response instead of generating a new key for each click. This preserves the server-side idempotency contract when a payment may have succeeded but the response was interrupted. Component tests were written first for FREE redaction, Base UI dialog interaction, ACTIVE unlock via the same result endpoint, and stable retry keys.
+支付 UI 故意在失败响应后复用一个幂等键，而非为每次点击生成新键。当支付可能成功但响应被中断时，这保留了服务器端幂等性契约。组件测试首先编写，覆盖 FREE 脱敏、Base UI 对话框交互、通过同一结果端点的 ACTIVE 解锁和稳定的重试键。
 
-The implementation also rejected the tempting shortcut of rendering premium values and visually blurring them: the UI consumes the server-projected FREE DTO, which contains no calorie/date value to leak.
+实现还拒绝了渲染高级值然后视觉模糊化的诱人捷径：UI 消费服务器投影的 FREE DTO，其中不包含可泄露的卡路里/日期值。
 
-### 2026-09-11 — Dependency upgrade rejected by executable compatibility evidence
+### 2026-09-11 — 依赖升级被可执行兼容性证据拒绝
 
-**Context**
+**背景**
 
-After T17, the dependency set was audited against current stable releases rather than assuming the bootstrap versions should remain forever.
+T17 之后，对依赖集进行了与当前稳定版本的审计，而非假设引导版本应永远保留。
 
-**AI proposal**
+**AI 提案**
 
-Upgrade React/React DOM, Zod, related type packages, and ESLint to their current stable releases, then use the existing quality gates as the acceptance boundary.
+将 React/React DOM、Zod、相关类型包和 ESLint 升级到当前稳定版本，然后使用现有质量门控作为验收边界。
 
-**Developer review and evidence**
+**开发者评审和证据**
 
-React 19.3 and Zod 4.6 passed unit/component tests, real-PostgreSQL integration tests, peer checks, lint, typecheck, and `next build`. ESLint 10 did not: the current `eslint-plugin-react@7.37.5` used by the Next lint stack supports ESLint only through v9 and crashed while loading `react/display-name`. ESLint was rolled back to 9.39.5 instead of disabling rules or patching third-party code to force a version number.
+React 19.3 和 Zod 4.6 通过了单元/组件测试、真实 PostgreSQL 集成测试、同行检查、lint、类型检查和 `next build`。ESLint 10 没有：当前 Next lint 栈使用的 `eslint-plugin-react@7.37.5` 仅支持到 v9，在加载 `react/display-name` 时崩溃。ESLint 被回滚到 9.39.5，而非禁用规则或修补第三方代码以强制版本号。
 
-**Outcome**
+**结果**
 
-The compatible runtime/type upgrades are kept. ESLint 10 is explicitly deferred until the upstream plugin chain supports it. This is a concrete example where an AI-suggested latest-version upgrade was rejected after executable verification.
+兼容的运行时/类型升级被保留。ESLint 10 被明确推迟到上游插件链支持为止。这是一个 AI 建议的最新版本升级在可执行验证后被拒绝的具体案例。
 
-### 2026-09-11 — TypeScript 7 upgrade rejected after lint-stack verification
+### 2026-09-11 — TypeScript 7 升级在 lint 栈验证后被拒绝
 
-**Context**
+**背景**
 
-TypeScript 7.0.2 was tested as a separate toolchain experiment after the compatible runtime dependency refresh.
+在兼容运行时依赖刷新后，TypeScript 7.0.2 作为单独的工具链实验进行了测试。
 
-**Evidence**
+**证据**
 
-The project typechecked successfully and all 52 unit/component plus 32 PostgreSQL integration tests passed under TypeScript 7. However, lint startup failed because the current `typescript-eslint` package used by `eslint-config-next@16.3.4` explicitly reports that it does not support TS 7.0.
+项目成功通过类型检查，所有 52 个单元/组件测试和 32 个 PostgreSQL 集成测试在 TypeScript 7 下通过。然而，lint 启动失败，因为 `eslint-config-next@16.3.4` 使用的当前 `typescript-eslint` 包明确报告不支持 TS 7.0。
 
-**Developer decision**
+**开发者决策**
 
-Roll back to TypeScript 5.9.3. We do not introduce a side-by-side TS6 compiler API or custom lint workaround merely to advertise a newer compiler version.
+回滚到 TypeScript 5.9.3。我们不会仅仅为了宣传更新的编译器版本而引入并行的 TS6 编译器 API 或自定义 lint 变通方案。
 
-**Outcome**
+**结果**
 
-The repository keeps the latest fully supported TypeScript line for its current Next lint stack, and the rejected upgrade is preserved as executable compatibility evidence.
+仓库保留了其当前 Next lint 栈支持的最新完全兼容 TypeScript 线，被拒绝的升级作为可执行兼容性证据被保留。
 
-### 2026-09-11 — T18 first real-browser funnel
+### 2026-09-11 — T18 首次真实浏览器漏斗
 
-**Context**
+**背景**
 
-The assessment had component and PostgreSQL integration coverage, but no browser had yet proven that cookies, Next routes, persisted progress, navigation, and result rendering work together.
+评估已有组件和 PostgreSQL 集成覆盖，但尚未有浏览器证明 Cookie、Next 路由、持久化进度、导航和结果渲染可以协同工作。
 
-**TDD evidence**
+**TDD 证据**
 
-The Playwright test was written first and failed at the first question because the dev server did not have the E2E database environment and the original `127.0.0.1` browser origin crossed Next's dev-resource origin boundary.
+Playwright 测试首先编写，在第一个问题处失败，因为开发服务器没有 E2E 数据库环境，原始的 `127.0.0.1` 浏览器来源跨越了 Next 的开发资源来源边界。
 
-**Developer decision**
+**开发者决策**
 
-Fix the test environment rather than weakening the browser assertion: a Node E2E runner starts the disposable Postgres service, deploys migrations, injects the application database URL, and Playwright uses one `localhost` origin consistently.
+修复测试环境而非削弱浏览器断言：Node E2E 运行器启动可丢弃的 Postgres 服务、部署迁移、注入应用数据库 URL，Playwright 统一使用一个 `localhost` 来源。
 
-**Outcome**
+**结果**
 
-Chromium now completes the seven-step funnel, survives a mid-assessment reload, reaches the redacted FREE result, and survives a result reload without direct database manipulation.
+Chromium 现在完成七步漏斗、在评估中途重新加载后存活、到达脱敏的 FREE 结果，并在无需直接数据库操作的情况下完成结果重新加载存活。
 
-### 2026-09-11 — Browser E2E exposed integration-suite state leakage
+### 2026-09-11 — 浏览器 E2E 暴露了集成套件状态泄露
 
-**Context**
+**背景**
 
-After the first browser flow passed, rerunning the PostgreSQL integration suite found one failure: an assertion using the first assessment row observed a leftover E2E session at revision 0. The product code was correct; the test environment had relied on the database already being empty before the first integration case.
+第一个浏览器流程通过后，重新运行 PostgreSQL 集成套件发现一个失败：一个使用第一行评估的断言观察到了一个遗留的 E2E 会话（版本 0）。产品代码是正确的；测试环境依赖于第一个集成用例之前数据库已经为空。
 
-**Developer review**
+**开发者评审**
 
-The failure was treated as a stop-the-line test-isolation defect rather than dismissed as flaky. A shared test-database reset script now deletes the anonymous-session aggregate roots before both integration and E2E suites. Cascades remove assessments, result snapshots, and payment events. Existing per-test cleanup remains as defense in depth. Playwright report/output directories are also ignored.
+失败被视为停线级的测试隔离缺陷而非不稳定的 flaky 测试。共享的测试数据库重置脚本现在在集成和 E2E 套件之前删除匿名会话聚合根。级联删除评估、结果快照和支付事件。现有的每测试清理作为纵深防御保留。Playwright report/output 目录也被忽略。
 
-**Outcome**
+**结果**
 
-E2E can no longer pollute a later integration run, and each top-level database-backed suite establishes its own clean starting state.
+E2E 不再能污染后续的集成运行，每个顶级的数据库支持套件建立自己的干净起始状态。
 
-### 2026-09-11 — T19 paid browser closed loop
+### 2026-09-11 — T19 付费浏览器闭环
 
-**Context**
+**背景**
 
-T13/T14 integration tests and T17 component tests proved payment and result projection in isolation, but the complete browser-level FREE -> pay -> ACTIVE loop still needed evidence.
+T13/T14 集成测试和 T17 组件测试独立证明了支付和结果投影，但完整的浏览器级 FREE -> 支付 -> ACTIVE 循环仍需证据。
 
-**Developer decision**
+**开发者决策**
 
-Keep the E2E assertion focused on externally visible behavior and reuse one questionnaire helper rather than duplicating seven-step setup in every Playwright spec. The test does not seed or edit the database directly.
+保持 E2E 断言聚焦于外部可见行为，复用一个问卷助手，而非在每个 Playwright 规范中重复七步设置。测试不直接播种或编辑数据库。
 
-**Outcome**
+**结果**
 
-A fresh Chromium context completes the real funnel, opens the Base UI paywall, performs simulated payment, observes the stored premium result, and reloads successfully with ACTIVE access. FREE and paid paths pass together.
+全新的 Chromium 上下文完成真实漏斗、打开 Base UI 付费墙、执行模拟支付、观察已存储的高级结果，并成功以 ACTIVE 访问重新加载。FREE 和付费路径一起通过。
 
-### 2026-09-11 — CI clean checkout exposed generated-route-type dependency
+### 2026-09-11 — CI 干净检出暴露了生成路由类型依赖
 
-**Context**
+**背景**
 
-The first real GitHub Actions run passed PostgreSQL integration and Chromium E2E, but the Quality job failed at `tsc --noEmit` on `LayoutProps<"/">`. Local typecheck had been green because a previous Next build/dev run had already generated `.next/types/routes.d.ts`. A fresh CI checkout correctly had no generated route types.
+首次真实 GitHub Actions 运行通过了 PostgreSQL 集成和 Chromium E2E，但 Quality 作业在 `tsc --noEmit` 的 `LayoutProps<"/">` 处失败。本地类型检查之前通过是因为先前的 Next build/dev 运行已生成 `.next/types/routes.d.ts`。全新的 CI 检出正确地没有生成路由类型。
 
-**Developer decision**
+**开发者决策**
 
-Keep the typed Next 16 `LayoutProps` API rather than replacing it with a weaker hand-written layout prop solely to satisfy CI. The `typecheck` script now runs `next typegen` first, which is the explicit Next.js command for generating route-aware types before invoking TypeScript.
+保留类型化的 Next 16 `LayoutProps` API，而非用较弱的手写布局 prop 替换它仅仅为了满足 CI。`typecheck` 脚本现在首先运行 `next typegen`，这是在调用 TypeScript 之前生成路由感知类型的显式 Next.js 命令。
 
-**Outcome**
+**结果**
 
-`pnpm typecheck` is now reproducible from a clean checkout and no longer depends on a previous `next dev` or `next build` side effect.
+`pnpm typecheck` 现在可从干净检出复现，不再依赖先前的 `next dev` 或 `next build` 副作用。
 
-### 2026-09-11 — Test database exposure caught during deployment preflight
+### 2026-09-11 — 测试数据库暴露在部署预检期间被发现
 
-**Context**
+**背景**
 
-Deployment preflight inspected listening sockets on the shared development VPS and found the disposable PostgreSQL test container published as `0.0.0.0:55432`. Application code only used loopback, so public binding was unnecessary.
+部署预检检查共享开发 VPS 上的监听套接字，发现可丢弃的 PostgreSQL 测试容器以 `0.0.0.0:55432` 发布。应用代码仅使用回环地址，公共绑定是不必要的。
 
-**Developer decision**
+**开发者决策**
 
-Bind the Compose test database explicitly to `127.0.0.1:55432`. Test infrastructure should be reachable by local runners only and should not expand the host's public attack surface.
+将 Compose 测试数据库显式绑定到 `127.0.0.1:55432`。测试基础设施应仅可被本地运行器访问，不应扩大主机的公共攻击面。
 
-**Outcome**
+**结果**
 
-The test database remains fully usable by integration/E2E runners while the host no longer publishes that port on all interfaces.
+测试数据库仍完全可被集成/E2E 运行器使用，而主机不再在所有接口上发布该端口。
 
-### 2026-09-11 — Public Playwright exposed production Prisma pool exhaustion
+### 2026-09-11 — 公共 Playwright 暴露了生产 Prisma 连接池耗尽
 
-**Context**
+**背景**
 
-After DNS and Caddy HTTPS were live, the same FREE and paid Playwright flows were pointed at the public deployment instead of localhost. Both failed at the height step even though curl-based API smoke checks worked. Caddy access logs showed the browser PATCH returning 500, and the application log identified Prisma `P2037`: the dedicated production role had reached its connection limit.
+DNS 和 Caddy HTTPS 上线后，相同的 FREE 和付费 Playwright 流程指向公共部署而非 localhost。两者都在身高步骤失败，即使基于 curl 的 API 冒烟检查正常。Caddy 访问日志显示浏览器 PATCH 返回 500，应用日志识别为 Prisma `P2037`：专用生产角色已达到其连接限制。
 
-**Incorrect implementation assumption**
+**不正确的实现假设**
 
-The existing database helper intentionally bypassed the global cache in `NODE_ENV=production` and created a fresh `PrismaClient`/`PrismaPg` adapter for every `getPrismaClient()` call. With the pg adapter this also meant fresh pools, so ordinary concurrent browser requests could consume the role's 10 connections. The local and CI database suites had not reproduced the production lifecycle.
+现有数据库助手在 `NODE_ENV=production` 下有意绕过全局缓存，为每次 `getPrismaClient()` 调用创建新的 `PrismaClient`/`PrismaPg` 适配器。使用 pg 适配器这也意味着新的连接池，因此普通并发浏览器请求可以消耗角色的 10 个连接。本地和 CI 数据库套件未重现生产生命周期。
 
-**TDD correction**
+**TDD 纠正**
 
-A regression test was first executed under a real child process with `NODE_ENV=production`; it observed two different client instances (`false`) and therefore failed. The implementation was then changed to reuse one `globalThis` application client in every environment and to cap the shared pg pool at four connections. The regression test turned green before redeployment.
+首先在真实子进程中以 `NODE_ENV=production` 执行了回归测试；它观察到两个不同的客户端实例（`false`），因此失败。随后实现被修改为在每个环境中复用一个 `globalThis` 应用客户端，并将共享 pg 池限制为四个连接。回归测试在重新部署前变绿。
 
-**Outcome**
+**结果**
 
-The new immutable image passed the full CI pipeline, was deployed to Aliyun, and the exact public FREE and paid Playwright flows then passed 2/2 over `https://assessment.bakersean.top`. No `P2037` errors appeared after redeployment. This is retained as an example where production-like executable evidence, rather than confidence in generated code, determined the correction.
+新的不可变镜像通过了完整 CI 管线，部署到阿里云，精确的公共 FREE 和付费 Playwright 流程随后在 `https://assessment.bakersean.top` 上 2/2 通过。重新部署后未出现 `P2037` 错误。这作为一个案例被保留，证明类似生产的可执行证据而非对生成代码的信心决定了纠正措施。
 
-### 2026-09-11 — interviewer-perspective final audit
+### 2026-09-11 — 面试官视角的最终审计
 
-The final pass stopped treating "all implementation tasks are done" as equivalent to "the submission is easy to review." The challenge brief was re-read item by item and mapped to executable/repository evidence. This exposed three delivery gaps despite green tests: `test:all` did not include E2E, README did not contain the requested reproducible `/pay` cURL close to the top-level delivery instructions, and illegal-value injection was only implicitly rejected by typed validation rather than named in a route-level integration case. The audit fixed those gaps, reconciled stale planning language, and added a reviewer checklist. It also disabled the unnecessary Next.js powered-by response header.
+最终轮次停止将"所有实现任务已完成"等同于"提交物易于审查"。挑战简报逐项重读，并映射到可执行/仓库证据。这暴露了三个交付差距，尽管测试是绿色的：`test:all` 未包含 E2E、README 未包含请求的可复现 `/pay` cURL（靠近顶层交付说明），非法值注入仅通过类型化验证隐式拒绝而非在路由级集成用例中命名。审计修复了这些差距，对齐了过期的计划语言，并添加了评审者清单。还禁用了不必要的 Next.js powered-by 响应头。
 
-### 2026-09-11 — interviewer-style code review exposed cache and semantic-write gaps
+### 2026-09-11 — 面试官风格代码审查暴露了缓存和语义写差距
 
-A second review ignored feature completeness and inspected request/transaction boundaries as a skeptical interviewer would. Two behavior gaps were turned into failing integration assertions before implementation: personalized result JSON had no explicit `Cache-Control` protection, and a scalar-valid target that contradicted the selected goal was accepted/persisted while derived progress stayed on `TARGET_WEIGHT`. Both assertions failed first. A shared private JSON response helper then made session-scoped success/error responses `private, no-store`, while the assessment application layer now rejects an inconsistent target candidate with `422 STEP_VALUE_INCONSISTENT` before persistence.
+第二次审查忽略了功能完整性，以怀疑的面试官视角检查请求/事务边界。两个行为差距在实现前变成了失败的集成断言：个性化结果 JSON 没有显式 `Cache-Control` 保护，标量验证通过但与所选目标矛盾的目标被接受/持久化而推导进度停留在 `TARGET_WEIGHT`。两个断言首先失败。共享的私有 JSON 响应助手使会话范围的成功/错误响应为 `private, no-store`，而评估应用层现在在持久化前拒绝不一致的目标候选值为 `422 STEP_VALUE_INCONSISTENT`。
 
-The same review found a test-harness reproducibility risk: local Playwright had `reuseExistingServer` enabled and could therefore exercise a stale process on port 3000. The local E2E server now owns `127.0.0.1:3100` with reuse disabled. This was verified while a separate development server remained active on port 3000; Playwright launched its own 3100 server and both browser journeys passed.
+同一审查发现了测试工具可复现性风险：本地 Playwright 启用了 `reuseExistingServer`，因此可能在端口 3000 上运行过期进程。本地 E2E 服务器现在拥有 `127.0.0.1:3100`，复用已禁用。这在独立开发服务器仍在端口 3000 上活跃时验证；Playwright 启动了自己的 3100 服务器，两个浏览器流程都通过了。
 
-### 2026-09-11 — technical-interview pressure test exposed persisted-data trust gap
+### 2026-09-11 — 技术面试压力测试暴露了持久化数据信任差距
 
-A final defense pass asked whether the domain could still prove its invariants if PostgreSQL contained data written outside the normal HTTP route. The existing resolver only checked non-null height/weight/age values, so a manually persisted out-of-range scalar could be treated as submission-ready even though Zod would have rejected it at the network boundary. RED domain/submission tests reproduced the problem. The domain now reuses the frozen scalar limits and integer-age rule, and an integration case proves corrupted stored state cannot create a result snapshot. The same pass simplified remote Playwright execution: `E2E_BASE_URL` no longer starts or resets the local test database.
+最后的防御轮次询问：如果 PostgreSQL 包含通过正常 HTTP 路由之外写入的数据，领域是否仍能证明其不变量？现有解析器仅检查非空的身高/体重/年龄值，因此手动持久化的超范围标量可能被视为可提交，即使 Zod 会在网络边界拒绝它。RED 领域/提交测试复现了该问题。领域现在复用冻结的标量限制和整数年龄规则，集成用例证明损坏的存储状态无法创建结果快照。同一轮次简化了远程 Playwright 执行：`E2E_BASE_URL` 不再启动或重置本地测试数据库。
 
+### 2026-09-11 — 用户产品审查拒绝了生产 UI 中的工程叙述
 
-### 2026-09-11 — user product review rejected engineering narration in the live UI
+**背景**
 
-**Context**
+实现变得越来越面向评审者：着陆页显式宣传"渐进式持久化"、"版本化结果快照"和"真实访问边界"；评估步骤重复保存语义；结果/付费墙描述了确定性快照、模拟支付机制和 FREE -> ACTIVE 服务器转换。这些事实是正确的，但使公共站点读起来像带注释的作业提交，而非完成的产品体验。
 
-The implementation had become increasingly reviewer-oriented: the landing page explicitly advertised “Progressive persistence,” “Versioned result snapshot,” and “Real access boundary”; assessment steps repeated save semantics; the result/paywall described deterministic snapshots, simulated payment mechanics, and the FREE -> ACTIVE server transition. Those facts were correct, but they made the public site read like an annotated take-home submission instead of a completed product experience.
+**用户/开发者纠正**
 
-**User/developer correction**
+用户直接识别了不匹配并拒绝了工程证明应在产品 UI 中可见的假设。面向产品的文案测试首先被修改为要求终端用户价值语言和非实现叙述的存在；这些断言在现有 UI 上失败（RED）。着陆页、漏斗、处理、结果、付费墙和元数据文案随后围绕用户目标重写，同时保留相同的应用行为和 shadcn/Base UI 组合（GREEN）。数字输入中的静态接受范围叙述也被移除；实际的输入/领域约束保持不变。
 
-The user identified the mismatch directly and rejected the assumption that engineering proof should be visible inside the product UI. Product-facing copy tests were changed first to require end-user value language and the absence of implementation narration; those assertions failed against the existing UI (RED). Landing, funnel, processing, result, paywall, and metadata copy were then rewritten around user goals while preserving the same application behavior and shadcn/Base UI composition (GREEN). Static accepted-range narration was also removed from numeric inputs; the actual input/domain constraints remain unchanged.
+**结果**
 
-**Outcome**
+线上应用现在表现得像健康评估，而非解释其如何被工程实现。仓库证据通过 README、架构/API 文档、TDD 证据、决策日志和面试审计保持评审者优先。模拟结账对用户保持诚实，声明无需支付详情且不会扣费，对话框中不暴露幂等/会话状态机制。
 
-The live application now behaves like a wellness assessment rather than explaining how it was engineered. Repository evidence remains reviewer-first through README, architecture/API docs, TDD evidence, decision logs, and interview audits. Mock checkout stays honest with the user-facing statement that no payment details are required and no charge occurs, without exposing idempotency/session-state mechanics in the dialog.
+### 2026-09-12 — 产品 UI 审查：数字输入和即时 BMI 反馈
 
-### 2026-09-12 — Product UI review: numeric entry and immediate BMI feedback
+手动产品流程发现了自动化正确性检查未优先处理的两个细节：浏览器原生数字微调器与单位后缀视觉冲突，当前体重步骤在身高已知后错过了提供即时价值的机会。RED 组件测试首先添加了数字字段展示契约和实时 BMI 行为。实现保留 shadcn/Base UI `Input`，仅抑制其原生微调器 UI，并复用服务器计算路径的相同纯 `calculateBmi()` 函数，而非在 React 中复制 BMI 逻辑。浏览器 E2E 断言现在验证 175 cm / 75 kg 步骤在提交答案前显示 BMI 24.5 / 正常范围。
 
-A manual product pass caught two details that automated correctness checks had not prioritized: browser-native number steppers visually collided with the unit suffix, and the current-weight step missed an opportunity to provide immediate value after height was already known. RED component tests were added first for the numeric-field presentation contract and live BMI behavior. The implementation keeps the shadcn/Base UI `Input`, suppresses only its native spinner chrome, and reuses the same pure `calculateBmi()` function as the server calculation path instead of duplicating BMI logic in React. A browser E2E assertion now verifies the 175 cm / 75 kg step displays BMI 24.5 / Normal range before the answer is submitted.
+### 2026-09-12 — BMI 预览产品状态审查
 
-### 2026-09-12 — BMI preview product-state review
+后续视觉审查要求数字限制保持可见而不恢复开发者风格的辅助文本，且实时 BMI 预览应传达类别含义而非对每个结果渲染相同的中性卡片。RED 组件测试首先添加了内联范围标签和正常/肥胖视觉状态。实现保留共享的 shadcn/Base UI 输入/卡片基础组件，复用现有的 BMI 类别输出，并应用差异化的积极/注意/关注呈现。文案刻意不声称 BMI 值本身"危险"；它保留筛查免责声明，同时使超出范围的值在视觉上明显。
 
-A follow-up visual review requested that numeric limits remain visible without bringing back developer-style helper text, and that the live BMI preview communicate category meaning rather than render every result with the same neutral card. RED component tests were added for the inline range label and normal/obese visual states. The implementation keeps the shared shadcn/Base UI input/card primitives, reuses the existing BMI category output, and applies differentiated positive/caution/attention presentation. The copy intentionally avoids claiming a BMI value is itself “dangerous”; it keeps the screening disclaimer while still making out-of-range values visually obvious.
+### 2026-09-12 — BetterMe 身份机制改变了 URL/预加载设计
 
-### 2026-09-12 — BetterMe identity mechanics changed the URL/preload design
-
-The initial assumption was that BetterMe's `?order=<uuid>` itself restored the questionnaire. Live browser inspection contradicted that assumption: BetterMe first issued a separate `session_uuid` cookie, then created a questionnaire after the first answer and placed the returned questionnaire UUID into `order`; a clean browser context with the same order URL did not recover the prior state. The implementation therefore did not copy “URL UUID as auth.” Instead, the existing HttpOnly cookie remains authoritative, `Assessment.id` becomes an opaque order/correlation value, and an integration test proves an order query parameter alone cannot select another session. The landing CTA now starts bootstrap/route prefetch early, and the assessment page consumes that short-lived prefetched bootstrap to reduce the skeleton delay.
+初始假设是 BetterMe 的 `?order=<uuid>` 本身恢复问卷。实时浏览器检查反驳了该假设：BetterMe 首先发出一个单独的 `session_uuid` Cookie，在第一个答案后创建问卷并将返回的问卷 UUID 放入 `order`；使用相同订单 URL 的干净浏览器上下文无法恢复先前状态。因此实现未复制"URL UUID 作为认证"。现有 HttpOnly Cookie 仍为权威数据，`Assessment.id` 成为不透明的订单/关联值，集成测试证明仅订单查询参数无法选择另一个会话。着陆 CTA 现在提前启动引导/路由预加载，评估页面消费该短期预加载引导以减少骨架屏延迟。

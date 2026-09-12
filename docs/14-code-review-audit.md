@@ -1,81 +1,81 @@
-# Interviewer code-review audit
+# 面试官代码审查审计
 
-## Scope
+## 范围
 
-This pass assumes the reviewer is no longer asking whether the challenge works. It asks whether the implementation boundaries remain convincing under code review: application/repository separation, transaction correctness, HTTP semantics, error taxonomy, personalized-data handling, and test reproducibility.
+本次审查假设评审者不再询问挑战是否正常运行。它询问实现边界在代码审查下是否仍然令人信服：应用/仓库分离、事务正确性、HTTP语义、错误分类、个性化数据处理以及测试可复现性。
 
-## Findings fixed
+## 已修复的问题
 
-| Area | Finding | Why it matters | Resolution |
+| 领域 | 发现 | 重要性 | 解决方案 |
 |---|---|---|---|
-| HTTP caching | Session-scoped GET/result JSON had no explicit cache directive | Personalized FREE/ACTIVE payloads should not rely on Cloudflare/Next defaults to avoid shared-cache reuse | All session API success/error responses use `Cache-Control: private, no-store` |
-| Cross-field validation | A numeric-valid target could contradict the selected goal, be persisted, and return `saved: true` while `nextRequiredStep` stayed `TARGET_WEIGHT` | Successful persistence with no semantic progress is confusing and weakens the aggregate contract | Direct inconsistent candidates return `422 STEP_VALUE_INCONSISTENT`; value/revision remain unchanged |
-| E2E isolation | Local Playwright could reuse any responsive server on port 3000 | A stale developer process can make a clean-checkout test command validate the wrong code/database | Local E2E owns `127.0.0.1:3100` and sets `reuseExistingServer: false` |
-| Persisted scalar invariants | Domain progress/submission previously treated any non-null height/weight/age as valid | HTTP validation is not the only possible source of persisted data; old migrations/manual writes must not produce a result from invalid state | Domain validity now rechecks shared scalar limits and integer age before progress/submission |
-| Remote E2E bootstrap | `E2E_BASE_URL` skipped the local web server but the wrapper still started/reset local PostgreSQL | Public smoke verification should not require unrelated local infrastructure | Remote E2E now runs Playwright directly; local DB/migration/reset only happen for local E2E |
-| Product/reviewer boundary | Live pages narrated persistence, snapshots, server state, and simulated-payment mechanics | A take-home can look less complete when the product explains its implementation to the user | Public copy now stays end-user-facing; engineering proof remains in repository/docs/tests |
-| API contract drift | Success DTOs, error-detail shapes, and status-code choices could be maintained independently | TypeScript assertions can make two drifting network shapes look compatible until runtime | Zod success/error contracts now drive inferred DTOs; browser and server both parse them; error code -> HTTP status is one exhaustive map |
-| Error-branch exhaustiveness | Route/application error handling used repeated string-literal comparisons and trailing generic fallbacks | Adding a new discriminated error could compile yet accidentally inherit unrelated HTTP behavior | One `ERROR_CODE` `as const` vocabulary replaces production error literals; multi-variant results use exhaustive `switch` + shared `assertNever`, with a compile-only check keeping the vocabulary aligned with the executable API error contract |
-| Cross-layer type drift | Step order/UI config, domain/Prisma enums and persisted fields, and calculation input shapes had overlapping handwritten definitions | A field or enum addition could compile in one layer while silently becoming unreachable or mis-persisted in another | Exhaustive `Record` maps plus compile-only API/Prisma alignment checks tie the projections together without coupling domain code to Prisma |
-| Permissive compiler defaults | `strict: true` still left unchecked array access and exact-optional-property gaps | Those gaps hide precisely the kinds of state/config drift the challenge is meant to surface | Added `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitReturns`, fallthrough/unused checks; the first run exposed and fixed a real back-navigation index assumption |
-| Ambiguous write responses | A PATCH or submit could commit successfully while its HTTP response was lost, leaving the browser on stale local state | Retry safety is incomplete if the server is idempotent but the UI cannot reconcile an ambiguous outcome | Failed writes now re-read canonical assessment state; committed PATCH/submit outcomes recover automatically, with component tests for both lost-response paths |
-| CI/toolchain drift | Only the image-publish job needs package write access, and the standalone migrator repeats the Prisma tool version | Excess permissions and migration/app version skew are avoidable release risks | Workflow defaults to read-only and grants `packages: write` only to image publication; a test keeps migrator Prisma/pnpm aligned with the app |
-| JSON media-type boundary | `request.json()` accepted JSON-looking `text/plain` bodies | Body schema validation did not prove the HTTP media type, and browser simple requests could reach state-changing parsers through a weaker path | PATCH/submit/pay require `application/json`; other media types return `415 UNSUPPORTED_MEDIA_TYPE` before parsing |
-| CAS response snapshot | A successful PATCH updated by revision, then performed a separate SELECT to build its response | A second writer could commit between those statements, causing the first response to report the later writer’s revision/state | `updateManyAndReturn` now returns the exact row produced by the CAS statement; a forced interleaving integration test reproduces the old race |
-| Database invariant backstop | Scalar bounds, nonnegative revision, lifecycle timestamps, and key shape were enforced only above PostgreSQL | Direct/legacy/manual writes could create states the application then had to defensively reinterpret | A committed migration adds validated CHECK constraints while deliberately leaving goal/target cross-field draft semantics in the domain |
-| Replay side-effect repair | Duplicate payment events returned `replayed: true` before verifying ACTIVE access still held | Idempotency should represent the operation outcome, not merely the existence of its dedupe record | Replays now idempotently re-establish FREE→ACTIVE within the same transaction; a regression test simulates an externally downgraded subscription |
-| Session 1:1 repair | Bootstrap repaired a missing assessment but not a missing subscription row | The documented 1:1 resource invariant could remain partially broken after legacy/manual corruption | Existing-session bootstrap ensures both child rows with duplicate-safe inserts while read boundaries still fail closed to FREE |
+| HTTP缓存 | 会话作用域的GET/结果JSON没有明确的缓存指令 | 个性化FREE/ACTIVE载荷不应依赖Cloudflare/Next默认设置以避免共享缓存重用 | 所有会话API成功/错误响应均使用`Cache-Control: private, no-store` |
+| 跨字段验证 | 数值有效的目标可能与选定目标矛盾，被持久化并返回`saved: true`，同时`nextRequiredStep`保持`TARGET_WEIGHT` | 成功持久化但没有语义进展令人困惑，削弱了聚合契约 | 不一致的候选值直接返回`422 STEP_VALUE_INCONSISTENT`；值/修订保持不变 |
+| E2E隔离 | 本地Playwright可能重用端口3000上的任何响应服务器 | 过时的开发者进程可能使干净结账的测试命令验证错误的代码/数据库 | 本地E2E拥有`127.0.0.1:3100`并设置`reuseExistingServer: false` |
+| 持久化标量不变量 | 领域进度/提交之前将任何非空的身高/体重/年龄视为有效 | HTTP验证不是持久化数据的唯一可能来源；旧的迁移/手动写入不得从无效状态产生结果 | 领域有效性现在在进度/提交前重新检查共享标量限制和整数年龄 |
+| 远程E2E引导 | `E2E_BASE_URL`跳过了本地Web服务器，但包装器仍启动/重置本地PostgreSQL | 公共冒烟验证不应需要无关的本地基础设施 | 远程E2E现在直接运行Playwright；仅本地E2E进行本地数据库/迁移/重置 |
+| 产品/评审者边界 | 实时页面叙述持久化、快照、服务器状态和模拟支付机制 | 当产品向用户解释其实现时，家庭作业可能看起来不够完整 | 公共副本现在面向最终用户；工程证明保留在仓库/文档/测试中 |
+| API契约漂移 | 成功DTO、错误详细结构和状态码选择可能独立维护 | TypeScript断言可能使两个漂移的网络形状看起来兼容，直到运行时 | Zod成功/错误契约现在驱动推断的DTO；浏览器和服务器都解析它们；错误代码->HTTP状态是一个穷尽的映射 |
+| 错误分支穷尽性 | 路由/应用程序错误处理使用重复的字符串字面量比较和尾随的通用回退 | 添加新的可辨识错误可能编译通过但意外继承无关的HTTP行为 | 一个`ERROR_CODE` `as const`词库替换生产错误字面量；多变体结果使用穷尽`switch` + 共享`assertNever`，编译时检查保持词库与可执行API错误契约对齐 |
+| 跨层类型漂移 | 步骤顺序/UI配置、领域/Prisma枚举和持久化字段以及计算输入形状具有重叠的手写定义 | 字段或枚举添加可能在一层编译通过，同时在另一层无声地变得不可达或错误持久化 | 穷尽`Record`映射加上编译时API/Prisma对齐检查将投影绑定在一起，而不会将领域代码耦合到Prisma |
+| 宽松的编译器默认值 | `strict: true`仍然留下未检查的数组访问和精确可选属性缺口 | 这些缺口恰好隐藏了挑战旨在暴露的状态/配置漂移类型 | 添加`noUncheckedIndexedAccess`、`exactOptionalPropertyTypes`、`noImplicitReturns`、穿透/未使用检查；首次运行暴露并修复了真实的后退导航索引假设 |
+| 模糊的写入响应 | PATCH或提交可能成功提交但其HTTP响应丢失，使浏览器停留在过时的本地状态 | 如果服务器是幂等的但UI无法协调模糊结果，则重试安全性不完整 | 失败的写入现在重新读取规范评估状态；已提交的PATCH/提交结果自动恢复，并为两个丢失响应路径提供组件测试 |
+| CI/工具链漂移 | 只有图像发布作业需要包写入权限，且独立迁移器重复Prisma工具版本 | 多余的权限和迁移/应用程序版本偏差是可避免的发布风险 | 工作流默认为只读，仅向图像发布授予`packages: write`；测试保持迁移器Prisma/pnpm与应用程序对齐 |
+| JSON媒体类型边界 | `request.json()`接受类似JSON的`text/plain`正文 | 正文模式验证未证明HTTP媒体类型，且浏览器简单请求可能通过更弱的路径到达状态更改解析器 | PATCH/提交/支付需要`application/json`；其他媒体类型在解析前返回`415 UNSUPPORTED_MEDIA_TYPE` |
+| CAS响应快照 | 成功的PATCH按修订更新，然后执行单独的SELECT来构建其响应 | 第二个写入者可能在这些语句之间提交，导致第一个响应报告后来写入者的修订/状态 | `updateManyAndReturn`现在返回CAS语句产生的确切行；强制交错集成测试重现了旧的竞争条件 |
+| 数据库不变量保障 | 标量界限、非负修订、生命周期时间戳和键形状仅在PostgreSQL之上强制执行 | 直接/遗留/手动写入可能创建应用程序随后必须防御性重新解释的状态 | 已提交的迁移添加已验证的CHECK约束，同时有意将目标/目标跨字段草稿语义保留在领域中 |
+| 重放副作用修复 | 重复支付事件在验证ACTIVE访问仍有效之前返回`replayed: true` | 幂等性应表示操作结果，而不仅仅是其去重记录的存在 | 重放现在在同一事务内幂等地重新建立FREE→ACTIVE；回归测试模拟外部降级的订阅 |
+| 会话1:1修复 | 引导修复了缺失的评估但没有修复缺失的订阅行 | 文档化的1:1资源不变量在遗留/手动损坏后可能部分保持破坏状态 | 现有会话引导确保使用重复安全插入同时存在两个子行，同时读取边界仍然关闭到FREE |
 
-The first two changes were driven RED-first by integration assertions. The E2E isolation change was verified while a separate development process remained on port 3000; Playwright launched the current checkout on port 3100 and both journeys passed.
+前两个变更由集成断言驱动RED优先。E2E隔离变更在单独的开发进程仍停留在端口3000时验证；Playwright在端口3100上启动当前结账，两个旅程都通过。
 
-## Repository/application boundary review
+## 仓库/应用程序边界审查
 
-The assessment module intentionally exposes small use-case-specific repository ports (`AssessmentRepository`, `AssessmentSubmissionRepository`, `AssessmentResultRepository`) instead of one CRUD-heavy generic repository. That duplication is accepted because the write contracts are materially different: step saves need optimistic compare-and-swap, submit needs atomic completion plus snapshot creation, and result reads need subscription-aware projection input.
+评估模块有意暴露小型用例特定的仓库端口（`AssessmentRepository`、`AssessmentSubmissionRepository`、`AssessmentResultRepository`）而不是一个CRUD重型的通用仓库。这种重复被接受是因为写入契约实质不同：步骤保存需要乐观比较和交换，提交需要原子完成加快照创建，结果读取需要订阅感知的投影输入。
 
-Route Handlers remain transport adapters: cookie/body parsing and HTTP status mapping live there; state/order/calculation rules do not. Prisma-specific shapes and transactions remain under `infrastructure/`.
+路由处理程序保持传输适配器：cookie/正文解析和HTTP状态映射位于那里；状态/顺序/计算规则不在。Prisma特定的形状和事务保留在`infrastructure/`下。
 
-## Transaction review
+## 事务审查
 
-### Step mutation
+### 步骤变更
 
-A preliminary read is used for product policy and expected revision. The actual write uses `UPDATE ... WHERE sessionId/status/revision` semantics through Prisma `updateManyAndReturn`. If another request wins after the read, the compare-and-swap mutation returns no row and the application returns `409 ASSESSMENT_VERSION_CONFLICT`. On success, the returned row is the exact snapshot produced by that SQL statement, avoiding a post-write SELECT race where a later writer could leak its newer revision into the first response. The preliminary read is therefore not treated as the concurrency boundary.
+初步读取用于产品策略和预期修订。实际写入通过Prisma `updateManyAndReturn`使用`UPDATE ... WHERE sessionId/status/revision`语义。如果另一个请求在读取后获胜，比较和交换变更不返回任何行，应用程序返回`409 ASSESSMENT_VERSION_CONFLICT`。成功时，返回的行是该SQL语句产生的确切快照，避免了写入后SELECT竞争，其中后来的写入者可能将其更新的修订泄漏到第一个响应中。因此，初步读取不被视为并发边界。
 
-### Submit
+### 提交
 
-Assessment completion/revision increment and `AssessmentResult` creation happen in one Prisma transaction. The unique `assessmentId` result relationship plus completed-state replay path prevents semantic duplicate snapshots. The existing preliminary read can race, but the transaction's compare-and-swap decides correctness.
+评估完成/修订递增和`AssessmentResult`创建在一个Prisma事务中发生。唯一的`assessmentId`结果关系加完成状态重放路径防止语义重复快照。现有的初步读取可以竞争，但事务的比较和交换决定正确性。
 
-### Payment
+### 支付
 
-Payment event insertion and session activation happen in one transaction. `(sessionId, idempotencyKey)` is unique; concurrent same-key requests are integration-tested so exactly one inserts the event and the other is reported as replayed. Replay still re-applies the idempotent ACTIVE transition, so an existing dedupe record cannot cause the API to claim ACTIVE while the canonical subscription is FREE.
+支付事件插入和会话激活在一个事务中发生。`(sessionId, idempotencyKey)`是唯一的；并发相同键请求经过集成测试，因此只有一个插入事件，另一个报告为重放。重放仍然重新应用幂等ACTIVE转换，因此现有去重记录不能导致API声称ACTIVE而规范订阅为FREE。
 
-## HTTP/error taxonomy review
+## HTTP/错误分类审查
 
-The current mapping is intentional:
+当前映射是有意的：
 
-| Status | Meaning in this API |
+| 状态 | 此API中的含义 |
 |---|---|
-| `400` | malformed JSON or structurally invalid request schema |
-| `401` | no usable anonymous bearer session |
-| `404` | syntactically valid identity but requested session/assessment/result does not exist |
-| `409` | valid request conflicts with aggregate order/lifecycle/revision |
-| `415` | request body media type is not `application/json` |
-| `422` | structurally valid candidate value conflicts with existing domain context |
+| `400` | 格式错误的JSON或结构上无效的请求模式 |
+| `401` | 没有可用的匿名承载会话 |
+| `404` | 语法有效的身份但请求的会话/评估/结果不存在 |
+| `409` | 有效请求与聚合顺序/生命周期/修订冲突 |
+| `415` | 请求正文媒体类型不是`application/json` |
+| `422` | 结构上有效的候选值与现有领域上下文冲突 |
 
-Stable machine-readable error codes remain more important than prose messages for clients/tests.
+稳定的机器可读错误代码比散文消息对客户端/测试更重要。
 
-## Accepted limitations rather than late over-engineering
+## 接受的限制而非后期过度工程
 
-- No generic repository abstraction: current use-case ports are easier to reason about and test.
-- Dedicated subscription storage stays intentionally minimal: the 1:1 row models only FREE/ACTIVE access and activation time; plan/expiry/provider lifecycle remains out of scope.
-- No distributed lock: PostgreSQL constraints/transactions/CAS cover the required single-database consistency boundary.
-- No real payment webhook/signature verification: `/pay` is explicitly simulated by the brief.
-- No broad rate limiting/observability platform: useful production concerns, but lower signal than the required three-day correctness loop.
+- 无通用仓库抽象：当前的用例端口更容易推理和测试。
+- 专用订阅存储有意保持最小化：1:1行仅建模FREE/ACTIVE访问和激活时间；计划/过期/提供者生命周期仍在范围外。
+- 无分布式锁：PostgreSQL约束/事务/CAS覆盖所需的单数据库一致性边界。
+- 无真实支付webhook/签名验证：`/pay`按规范明确模拟。
+- 无广泛速率限制/可观察性平台：有用的生产关注点，但信号低于所需的三天正确性循环。
 
-## Evidence after this review
+## 此审查后的证据
 
-- 83 unit/component tests;
-- 49 real PostgreSQL integration tests;
-- 2 Playwright browser journeys;
-- `pnpm test:all` runs all three layers;
-- lint + route-aware typecheck + production build remain required CI gates;
-- the same public FREE and paid journeys are rerun after deployment.
+- 83个单元/组件测试；
+- 49个真实PostgreSQL集成测试；
+- 2个Playwright浏览器旅程；
+- `pnpm test:all`运行所有三层；
+- lint + 路由感知类型检查 + 生产构建仍然是必需的CI门禁；
+- 相同的公共FREE和付费旅程在部署后重新运行。

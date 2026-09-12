@@ -1,101 +1,101 @@
-# Scope and success criteria
+# 范围和成功标准
 
-## 1. Purpose
+## 1. 目的
 
-This repository implements the engineering core of a progressive health-assessment funnel under a constrained three-day delivery window.
+本仓库在受限的三天交付窗口内实现渐进式健康评估漏斗的核心工程部分。
 
-The brief emphasizes backend engineering rather than visual cloning. The implementation therefore prioritizes persistence, state consistency, deterministic business logic, access control, retry safety, tests, CI, documentation, and deployment evidence.
+需求强调后端工程而非视觉克隆。因此，实现优先考虑持久化、状态一致性、确定性业务逻辑、访问控制、重试安全性、测试、CI、文档和部署证据。
 
-## 2. Source-derived functional scope
+## 2. 源自源码的功能范围
 
-The challenge requires a user to progress through a health assessment containing fields such as gender, goal, age, height, current weight, target weight, and exercise frequency. Progress must be saved incrementally and recoverable after interruption.
+挑战要求用户完成一个健康评估，包含性别、目标、年龄、身高、当前体重、目标体重和运动频率等字段。进度必须增量保存，并在中断后可恢复。
 
-After completion, the server must calculate and persist a result containing at least:
+完成后，服务器必须计算并持久化一个结果，至少包含：
 
-- BMI;
-- recommended intake guidance;
-- an estimated target date.
+- BMI；
+- 推荐摄入量指导；
+- 预计目标日期。
 
-Result access depends on subscription status:
+结果访问取决于订阅状态：
 
-- a free user receives a deliberately restricted result;
-- an active subscriber receives the complete result.
+- 免费用户收到特意限制的结果；
+- 活跃订阅者收到完整结果。
 
-A simulated `/pay` flow changes the subscription state so the same result can be unlocked without integrating a real payment provider.
+模拟的 `/pay` 流程更改订阅状态，以便无需集成真实支付提供商即可解锁相同结果。
 
-Testing must cover more than the happy path, including interrupted/resumed assessment state, repeated or out-of-order submissions, free-versus-active result behavior, payment state changes, invalid input, and boundary conditions.
+测试必须覆盖不仅仅是正常路径，包括中断/恢复的评估状态、重复或乱序提交、免费与活跃结果行为、支付状态更改、无效输入和边界条件。
 
-## 3. Product interpretation
+## 3. 产品解读
 
-The reference BetterMe-style funnel is treated as a product-pattern reference, not a requirement to reproduce all captured screens.
+参考的 BetterMe 风格漏斗被视为产品模式参考，而非重现所有捕获屏幕的需求。
 
-We extract four mechanics:
+我们提取四个机制：
 
-1. **Progressive commitment** — ask for a small amount of information at a time.
-2. **Ask -> derive -> give value** — surface meaningful feedback before the final paywall.
-3. **Personalized projection** — convert current state plus goal into an understandable future outcome.
-4. **Value before paywall** — show enough useful information to establish trust while keeping selected fields server-locked for free users.
+1. **渐进承诺** — 一次询问少量信息。
+2. **询问 -> 推导 -> 提供价值** — 在最终付费墙之前展示有意义的反馈。
+3. **个性化预测** — 将当前状态加目标转化为可理解的未来结果。
+4. **付费墙前的价值** — 展示足够有用的信息以建立信任，同时为免费用户保留选定字段服务器锁定。
 
-## 4. Implemented assessment inputs
+## 4. 已实现的评估输入
 
-The implemented product model contains seven persisted answer groups:
+已实现的产品模型包含七个持久化的答案组：
 
-| Step key | Field | Persistence | Notes |
+| 步骤键 | 字段 | 持久化 | 备注 |
 |---|---|---:|---|
-| `GENDER` | `gender` | yes | categorical |
-| `GOAL` | `goal` | yes | lose / maintain / gain |
-| `ACTIVITY` | `activityLevel` | yes | categorical |
-| `HEIGHT` | `heightCm` | yes | validated numeric |
-| `WEIGHT` | `weightKg` | yes | validated numeric |
-| `AGE` | `age` | yes | validated integer |
-| `TARGET_WEIGHT` | `targetWeightKg` | yes | required in v1; cross-validated against current weight and goal |
+| `GENDER` | `gender` | 是 | 分类变量 |
+| `GOAL` | `goal` | 是 | 减轻 / 维持 / 增加 |
+| `ACTIVITY` | `activityLevel` | 是 | 分类变量 |
+| `HEIGHT` | `heightCm` | 是 | 经验证的数值 |
+| `WEIGHT` | `weightKg` | 是 | 经验证的数值 |
+| `AGE` | `age` | 是 | 经验证的整数 |
+| `TARGET_WEIGHT` | `targetWeightKg` | 是 | 在 v1 中必需；根据当前体重和目标进行交叉验证 |
 
-`ANALYSIS`, `WELLNESS_PROFILE`, `PROJECTION`, and result/paywall views are presentation or derived-result states rather than assessment steps. The server does not persist a `currentStepKey`; the next required answer step is derived from persisted answers and domain validation on every read.
+`ANALYSIS`、`WELLNESS_PROFILE`、`PROJECTION` 和 result/paywall 视图是展示或推导结果状态，而非评估步骤。服务器不持久化 `currentStepKey`；下一个必需的答案步骤从持久化的答案和每次读取时的域验证中推导。
 
-## 5. Definition of done
+## 5. 完成定义
 
-The challenge is considered complete only when all of the following are true:
+只有当以下所有条件都满足时，挑战才视为完成：
 
-- A fresh visitor can start an anonymous assessment.
-- Each answer is persisted server-side as the user progresses.
-- A returning browser session restores saved answers and derives the correct resumable step from server state.
-- Changing an earlier answer revalidates dependent answers and can move the resumable step backward without deleting valid data unnecessarily.
-- Invalid, skipped, and stale writes are rejected using stable error codes.
-- A complete assessment can be submitted exactly once semantically, while retrying the request remains safe.
-- Submission writes a versioned result snapshot.
-- A free response never contains locked premium values.
-- Simulated payment changes subscription state and is safe to replay.
-- An active subscriber receives the complete result from the same result endpoint.
-- Unit and integration tests cover the behavior matrix documented in `05-tdd-strategy.md`.
-- Two high-value Playwright journeys pass.
-- CI runs lint, typecheck, tests, and build.
-- The application is deployed to a public URL.
-- README explains architecture, schema, API, local setup, testing, assumptions, limitations, and AI usage.
+- 新访客可以开始匿名评估。
+- 随着用户进展，每个答案都在服务器端持久化。
+- 返回的浏览器会话恢复保存的答案，并从服务器状态推导正确的可恢复步骤。
+- 更改早期答案会重新验证依赖答案，并且可以向后移动可恢复步骤，而无需不必要地删除有效数据。
+- 使用稳定错误码拒绝无效、跳过和过时的写入。
+- 完整的评估在语义上只能提交一次，同时重试请求保持安全。
+- 提交写入版本化的结果快照。
+- 免费响应永远不包含锁定的高级值。
+- 模拟支付更改订阅状态，并且可以安全重放。
+- 活跃订阅者从相同的结果端点接收完整结果。
+- 单元和集成测试覆盖 `05-tdd-strategy.md` 中记录的行为矩阵。
+- 两个高价值的 Playwright 流程通过。
+- CI 运行 lint、类型检查、测试和构建。
+- 应用部署到公共 URL。
+- README 解释架构、模式、API、本地设置、测试、假设、限制和 AI 使用。
 
-## 6. Non-goals
+## 6. 非目标
 
-The following are explicitly outside the initial challenge scope:
+以下明确超出初始挑战范围：
 
-- real authentication/accounts;
-- real billing or payment-provider webhooks;
-- marketing email collection;
-- analytics attribution;
-- dozens of reference-funnel marketing screens;
-- scratch-card discounts, countdowns, or upsells;
-- real clinical recommendation logic;
-- Redis, queues, microservices, CQRS, or event sourcing without a demonstrated need;
-- pixel-perfect duplication of third-party visual assets.
+- 真实认证/账户；
+- 真实计费或支付提供商 webhook；
+- 营销电子邮件收集；
+- 分析归因；
+- 数十个参考漏斗营销屏幕；
+- 刮卡折扣、倒计时或追加销售；
+- 真实临床建议逻辑；
+- 没有演示需求的 Redis、队列、微服务、CQRS 或事件溯源；
+- 第三方视觉资产的像素级完美复制。
 
-## 7. Quality bar
+## 7. 质量标准
 
-The implementation should optimize for reviewability rather than feature count. A reviewer should be able to answer the following within a few minutes:
+实现应优化可审查性而非功能数量。评审者应在几分钟内能够回答以下问题：
 
-- Where is runtime validation performed?
-- What enforces assessment order?
-- How is state restored?
-- How are stale writes handled?
-- Where are calculations implemented and tested?
-- Why does a free response not leak premium data?
-- Why are submit and payment retries safe?
-- What behavior does each test prove?
-- Which decisions were made by the developer rather than accepted blindly from AI suggestions?
+- 运行时验证在哪里执行？
+- 什么强制评估顺序？
+- 状态如何恢复？
+- 过时的写入如何处理？
+- 计算在哪里实现和测试？
+- 为什么免费响应不泄露高级数据？
+- 为什么提交和支付重试安全？
+- 每个测试证明什么行为？
+- 哪些决策是开发者做出的，而非盲目接受 AI 建议？

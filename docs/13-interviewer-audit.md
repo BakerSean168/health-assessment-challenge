@@ -1,89 +1,89 @@
-# Interviewer-perspective delivery audit
+# 面试官视角的交付审计
 
-## Purpose
+## 目的
 
-This is a final review against the supplied three-day challenge brief, written from the perspective of an interviewer who has limited time and wants fast evidence rather than implementation narration. The audit distinguishes required behavior from deliberate scope choices.
+这是一份针对所提供的三天挑战简报的最终审查，以面试官的视角撰写。面试官时间有限，希望快速获取证据而非实现细节叙述。本审计区分了必要行为与有意识的范围取舍。
 
-## Requirement-to-evidence matrix
+## 需求到证据的对照矩阵
 
-| Brief area | Evidence a reviewer can verify | Status |
+| 简报区域 | 评审者可验证的证据 | 状态 |
 |---|---|---|
-| Professional API design | Six small HTTP endpoints, stable DTO/error codes, thin Route Handlers, full contract in `04-api-contract.md` | PASS |
-| Stable/extensible data model | Explicit relational columns, 1:1 session-assessment, 1:1 session-subscription, immutable result snapshot, payment idempotency events, Mermaid schema | PASS |
-| Incremental persistence | Every accepted answer is persisted before UI progression; revision increments are integration-tested | PASS |
-| Progress recovery | `GET /api/assessment` restores answers; `nextRequiredStep` is derived from persisted facts; public E2E reloads mid-funnel | PASS |
-| State consistency | Server-side step ordering, direct inconsistent target rejection, upstream cross-field revalidation, strict stale-write `409`, real concurrent-writer integration test | PASS |
-| BMI / intake / target date | Versioned `demo-v1` pure calculations with explicit bounds/rounding/reference date and 22 calculation tests | PASS |
-| Persist calculated result | Submit transaction creates one canonical `AssessmentResult` snapshot and completes the aggregate atomically | PASS |
-| FREE vs member access | FREE JSON omits premium values entirely; ACTIVE reads the same stored snapshot with protected fields present | PASS |
-| `/pay` closed loop | Session-scoped idempotency key, replay/concurrent tests, public browser paywall flow, README cURL | PASS |
-| Extreme/missing/illegal input | Inclusive boundary tests plus route-level missing/null/object/injection-shaped payload rejection and goal-inconsistent target rejection with no mutation | PASS |
-| Interrupted/repeated/out-of-order/concurrent behavior | Integration tests cover resume, skip rejection, stale same-value retry, submit retry, concurrent OCC and payment replay | PASS |
-| One-command tests | `pnpm test:all` runs unit/component + PostgreSQL integration + Playwright E2E | PASS |
-| CI | GitHub Actions runs Quality, PostgreSQL integration, Chromium E2E, and immutable container publishing | PASS |
-| Public runnable URL | `https://assessment.bakersean.top`, HTTPS via Cloudflare/Caddy, production smoke and public Playwright pass | PASS |
-| Paid evaluator session | Synthetic ACTIVE session ID is in README and returns full result projection | PASS |
-| Schema diagram | README quick diagram + detailed `03-domain-and-data-model.md`; user/session, assessment data, subscription state, result snapshot, and payment events are explicit relations | PASS |
-| AI-use retrospective | Running log + concise retrospective with accepted/rejected AI proposals and executable evidence | PASS |
-| Frontend completion willingness | Mobile-first single-question pacing, progress indicator, persisted refresh, honest trust copy, visible value before paywall, Base UI accessibility primitives | PASS for brief scope |
+| 专业 API 设计 | 六个小型 HTTP 端点、稳定的 DTO/错误码、精简的 Route Handler、完整契约定义在 `04-api-contract.md` | PASS |
+| 稳定/可扩展的数据模型 | 显式关系列、1:1 会话-评估关系、1:1 会话-订阅关系、不可变结果快照、支付幂等事件、Mermaid 架构图 | PASS |
+| 渐进式持久化 | 每条接受的答案在 UI 推进前即被持久化；修订增量经过集成测试 | PASS |
+| 进度恢复 | `GET /api/assessment` 恢复答案；`nextRequiredStep` 基于已持久化的事实派生；公开的 E2E 在漏斗中途重载 | PASS |
+| 状态一致性 | 服务端步骤排序、直接拒绝不一致的目标、上游跨字段重验证、严格的过时写入 `409`、真实并发写入集成测试 | PASS |
+| BMI / 摄入 / 目标日期 | 版本化 `demo-v1` 纯计算，具有显式边界/四舍五入/参考日期以及 22 个计算测试 | PASS |
+| 持久化计算结果 | 提交事务创建一个规范的 `AssessmentResult` 快照并原子性地完成聚合 | PASS |
+| FREE 与会员访问 | FREE JSON 完全省略高级字段；ACTIVE 读取同一存储快照，包含受保护字段 | PASS |
+| `/pay` 闭环 | 会话级幂等键、重放/并发测试、公开浏览器付费墙流程、README cURL | PASS |
+| 极端/缺失/非法输入 | 包含边界测试，加上路由级的缺失/空值/对象/注入型载荷拒绝以及与目标不一致的目标拒绝，无任何变更 | PASS |
+| 中断/重复/乱序/并发行为 | 集成测试覆盖恢复、跳过拒绝、过时同值重试、提交重试、并发 OCC 和支付重放 | PASS |
+| 一键测试 | `pnpm test:all` 运行单元/组件 + PostgreSQL 集成 + Playwright E2E | PASS |
+| CI | GitHub Actions 运行 Quality、PostgreSQL 集成、Chromium E2E 以及不可变容器发布 | PASS |
+| 公开可运行 URL | `https://assessment.bakersean.top`，通过 Cloudflare/Caddy 提供 HTTPS，生产环境冒烟测试和公开 Playwright 通过 | PASS |
+| 固定 FREE / ACTIVE 评审会话 | README 提供两条使用完全相同评估数据、仅订阅状态不同的固定 session ID，可直接通过 cURL 对比脱敏与完整结果投影 | PASS |
+| 架构图 | README 快速图 + 详细文档 `03-domain-and-data-model.md`；用户/会话、评估数据、订阅状态、结果快照和支付事件均为显式关系 | PASS |
+| AI 使用回顾 | 持续记录 + 简明回顾，包含被接受/拒绝的 AI 提案及可执行证据 | PASS |
+| 前端完成度意愿 | 移动端优先的单题节奏、进度指示器、持久化刷新、诚实的信任文案、付费墙前可见价值、Base UI 无障碍基础组件 | PASS（在简报范围内） |
 
-## Deliberate trade-offs a reviewer may ask about
+## 评审者可能提出的有意取舍
 
-### Why is Subscription a very small 1:1 table?
+### 为什么 Subscription 是一个非常小的 1:1 表？
 
-The brief explicitly asks the schema to show the relationship between user/session data, assessment records, and subscription information. The final model therefore uses `Subscription.sessionId` as its primary/foreign key and stores only the facts the mock flow actually owns: `status`, `activatedAt`, and timestamps. This satisfies the required relational boundary without inventing plan, expiry, provider-customer, renewal, or cancellation concepts that the challenge does not implement.
+简报明确要求架构展示用户/会话数据、评估记录和订阅信息之间的关系。因此最终模型使用 `Subscription.sessionId` 作为主键/外键，仅存储模拟流程实际拥有的事实：`status`、`activatedAt` 和时间戳。这满足了所需的关系边界，而无需发明挑战未实现的套餐、过期、供应商-客户、续费或取消概念。
 
-### Why one assessment per session?
+### 为什么每个会话只允许一次评估？
 
-History/restarts are not required. `Assessment.sessionId` is unique, which makes recovery unambiguous and keeps the time-boxed aggregate small. A future account/history model can change this to 1:N without changing result-snapshot semantics.
+历史记录/重启未被要求。`Assessment.sessionId` 具有唯一性，使恢复无歧义，并保持有时间限制的聚合保持较小规模。未来的账户/历史模型可以将其更改为 1:N，而无需更改结果快照语义。
 
-### Why a static target-date policy?
+### 为什么使用静态目标日期策略？
 
-The challenge requires a deterministic target prediction, not a clinical model. `demo-v1` uses an injected date and documented fixed rate so tests remain reproducible. Engineering-demo details stay in repository documentation; the live UI uses a concise general-wellness/not-medical-advice disclaimer rather than implementation narration.
+挑战要求确定性的目标预测，而非临床模型。`demo-v1` 使用注入的日期和文档化的固定速率，以保持测试可复现。工程演示细节保留在仓库文档中；实时 UI 使用简洁的通用健康声明（非医疗建议），而非实现细节叙述。
 
-### Why only two browser E2E tests?
+### 为什么只有两个浏览器 E2E 测试？
 
-The browser suite is reserved for the two end-to-end behaviors with the highest integration value: FREE and paid journeys. Boundary combinatorics, concurrency, and error semantics live lower in unit/integration tests where failures are faster and more diagnostic.
+浏览器套件保留给两个集成价值最高的端到端行为：FREE 和付费旅程。边界组合、并发和错误语义位于更低层的单元/集成测试中，因为失败更快且更具诊断性。
 
-## Findings discovered during final interviewer audit
+## 最终面试官审计中发现的问题
 
-1. `test:all` previously omitted browser E2E even though the brief asks for a one-command automated test path. It now runs all three test layers.
-2. Runtime validation already rejected malformed values, but the brief explicitly calls out illegal-value injection. A route-level integration test now proves missing, null, object, and injection-shaped numeric payloads return `400 VALIDATION_ERROR` without persistence.
-3. README previously linked to API/schema docs but forced reviewers to hunt for the highest-signal evidence. The first screen now includes a reviewer path, API surface, actual schema, `/pay` cURL, test coverage rationale, and intentional exclusions.
-4. Public responses exposed `X-Powered-By: Next.js`. This is not a functional requirement, but the production config now disables that unnecessary framework disclosure.
-5. Final docs still contained a few bootstrap-era words such as "planned" and an obsolete future-tense database-test note. Those were reconciled to the implementation that actually shipped.
-6. A lightweight desktop/mobile browser audit found no horizontal overflow, console errors, page errors, or failed network requests on the landing, assessment entry, and paid-result surfaces. A local app icon was added so the submission does not fall back to a missing favicon request.
-7. The live UI had accumulated reviewer-facing implementation narration (persistence, versioned snapshots, access boundaries, server transition details). A product-surface pass moved that evidence back to README/docs/tests and rewrote landing, questionnaire, processing, result, checkout, and metadata copy around end-user value while keeping mock checkout transparent.
-8. A final source-to-brief audit found two remaining alignment gaps that the repository's earlier self-audit had normalized as trade-offs: subscription state was not yet a separate relation even though the brief explicitly asks for a subscription-information table, and stale-write conflicts were detected but not recovered in the browser. The final pass introduces the minimal 1:1 `Subscription` extension table with a data-preserving backfill migration and adds client-side canonical-state refresh on `ASSESSMENT_VERSION_CONFLICT`.
+1. `test:all` 之前遗漏了浏览器 E2E，而简报要求一键自动化测试路径。现在它运行所有三个测试层。
+2. 运行时验证此前已拒绝格式错误的值，但简报明确提到了非法值注入。现在路由级集成测试证明缺失、空值、对象和注入型数值载荷返回 `400 VALIDATION_ERROR` 且不会持久化。
+3. README 之前链接了 API/架构文档，但迫使评审者自行寻找最高信号量的证据。首屏现在包含评审者路径、API 接口、实际架构、`/pay` cURL、测试覆盖理由和有意排除项。
+4. 公开响应曾暴露 `X-Powered-By: Next.js`。这不是功能需求，但生产配置现在已禁用该不必要的框架披露。
+5. 最终文档中仍包含少量初始化阶段的措辞，如"planned"和过时的未来时态数据库测试说明。已根据实际交付的实现进行了统一调整。
+6. 轻量级桌面/移动端浏览器审计在落地页、评估入口和付费结果页面未发现水平溢出、控制台错误、页面错误或失败的网络请求。添加了本地应用图标，使提交不会因缺失的 favicon 请求而回退。
+7. 实时 UI 中积累了面向评审者的实现叙述（持久化、版本化快照、访问边界、服务端转换细节）。产品表面审核将这些证据移回 README/文档/测试中，并围绕终端用户价值重写了落地页、问卷、处理、结果、结账和元数据文案，同时保持模拟结账流程的透明性。
+8. 最终源码到简报的审计发现两个剩余的对齐差距，仓库此前的自我审计已将其规范化为取舍：订阅信息尚未作为独立关系，尽管简报明确要求订阅信息表；过时写入冲突被检测到但未在浏览器中恢复。最终修改引入了最小化的 1:1 `Subscription` 扩展表，带有数据保留的回填迁移，并在 `ASSESSMENT_VERSION_CONFLICT` 时添加客户端规范状态刷新。
 
-## Remaining known limitations
+## 剩余已知限制
 
-- Anonymous session cookies are intentionally demo authentication, not user accounts.
-- Payment is simulated; there is no provider signature/webhook verification.
-- Subscription state is intentionally binary; the dedicated 1:1 table has no plan, expiry, cancellation, or renewal lifecycle because the brief only requires mocked FREE/ACTIVE access.
-- One anonymous session owns one assessment; no assessment history/restart UI.
-- E2E is Chromium-only; no broad device/browser compatibility matrix.
-- No load/performance benchmark suite; the challenge's correctness/state-consistency behaviors were prioritized.
-- The health calculations are deterministic demo policies, not clinical recommendations.
+- 匿名会话 Cookie 是有意识的演示认证，而非用户账户。
+- 支付为模拟实现；没有供应商签名/webhook 验证。
+- 订阅状态有意设计为二元状态；专用的 1:1 表没有套餐、过期、取消或续费生命周期，因为简报仅要求模拟的 FREE/ACTIVE 访问。
+- 一个匿名会话拥有一次评估；没有评估历史记录/重启 UI。
+- E2E 仅限 Chromium；没有广泛的设备/浏览器兼容性矩阵。
+- 无负载/性能基准测试套件；挑战的正确性/状态一致性行为被优先考虑。
+- 健康计算是确定性的演示策略，而非临床建议。
 
-These limitations are explicit rather than hidden because each corresponds to work outside the supplied challenge's core evaluation boundary.
+这些限制是明确的而非隐藏的，因为每一项都对应于超出所提供的挑战核心评估边界的工作。
 
-## Second-round code review
+## 第二轮代码审查
 
-A separate code-level pass reviewed repository ports, transaction boundaries, HTTP caching/status semantics, error handling, and test isolation. It found three concrete issues worth changing rather than merely documenting:
+一次独立的代码级审查检查了仓库端口、事务边界、HTTP 缓存/状态语义、错误处理和测试隔离。发现了三个值得修改而非仅仅记录的具体问题：
 
-- session-personalized JSON had no explicit cache directive; all API success/error responses now use `Cache-Control: private, no-store`;
-- a directly entered target weight could be scalar-valid but contradict the selected goal, be persisted, and leave the UI on the same step; it now returns `422 STEP_VALUE_INCONSISTENT` without advancing revision;
-- local Playwright could reuse an unrelated/stale server on port 3000; it now owns a dedicated port and never reuses an existing process.
+- 会话个性化 JSON 没有显式缓存指令；所有 API 成功/错误响应现在使用 `Cache-Control: private, no-store`；
+- 直接输入的目标体重可能通过标量验证但与所选目标矛盾，被持久化后 UI 停留在同一步骤；现在返回 `422 STEP_VALUE_INCONSISTENT` 且不推进修订版本；
+- 本地 Playwright 可能复用端口 3000 上无关/过时的服务器；现在使用专用端口，绝不复用已有进程。
 
-The review also retained several choices deliberately: `400` is used for malformed request syntax/schema, `422` for a structurally valid but semantically inconsistent answer, and `409` for aggregate state/order/concurrency conflicts; repository interfaces remain use-case-specific rather than collapsing into a generic repository; and submit correctness continues to rely on the transactional compare-and-swap boundary rather than trying to make its preliminary read snapshot authoritative.
+审查还故意保留了几项选择：`400` 用于格式错误的请求语法/模式，`422` 用于结构有效但语义不一致的答案，`409` 用于聚合状态/排序/并发冲突；仓库接口保持用例特定，而非合并为通用仓库；提交正确性继续依赖事务性比较交换边界，而非尝试使其初步读取快照具有权威性。
 
-## Interview defense
+## 面试答辩
 
-For likely follow-up questions and concise code-backed answers, see `15-interview-defense.md`. The guide explicitly separates shipped guarantees from demo-scope limitations so the interview explanation does not overclaim production authentication, billing, or medical correctness.
+关于可能的后续问题及简洁的代码支撑答案，请参阅 `15-interview-defense.md`。该指南明确区分了已交付的保证与演示范围限制，以确保面试解释不会过度声称生产环境认证、计费或医疗正确性。
 
-## Third-round invariant/HTTP audit
+## 第三轮不变式/HTTP 审计
 
-A subsequent review attacked lower-level assumptions that the earlier type/source-of-truth pass did not cover. RED integration tests demonstrated four concrete gaps: JSON-looking `text/plain` requests were accepted by write routes; a successful CAS writer could report a later writer’s revision because it re-read after commit; PostgreSQL itself did not reject several structurally impossible states; and payment replay returned success from the dedupe record without re-establishing ACTIVE if that side effect had been externally lost.
+随后的审查攻击了此前类型/事实来源审查未涵盖的低层假设。RED 集成测试展示了四个具体差距：JSON 格式的 `text/plain` 请求被写入路由接受；成功的 CAS 写入者可能报告后续写入者的修订版本，因为它在提交后重新读取；PostgreSQL 本身未拒绝几个结构上不可能的状态；支付重放从去重记录中返回成功，但未在副作用被外部丢失时重新建立 ACTIVE。
 
-The final implementation requires `application/json` on PATCH/submit/pay (`415` otherwise), returns the exact `updateManyAndReturn` CAS row, adds committed/validated CHECK constraints for structural persistence invariants, makes replay re-apply the idempotent ACTIVE transition, repairs missing 1:1 child rows during bootstrap, and proves concurrent submit collapse with one canonical result snapshot. The fast suite is now 83 tests and the real-PostgreSQL integration suite is 49 tests. Main CI passed all four jobs; production had zero pre-migration invariant violations, applied all eight migrations, passed both public Playwright journeys, and returned the expected live `415` for a JSON-looking `text/plain` payment request.
+最终实现在 PATCH/submit/pay 上要求 `application/json`（否则返回 `415`），返回精确的 `updateManyAndReturn` CAS 行，为结构持久化不变式添加已提交/已验证的 CHECK 约束，使重放重新应用幂等的 ACTIVE 转换，在初始化期间修复缺失的 1:1 子行，并通过一个规范结果快照证明并发提交合并。快速测试套件现在有 83 个测试，真实 PostgreSQL 集成测试套件有 49 个测试。主 CI 通过了所有四个作业；生产环境零预迁移不变式违规，应用了全部八个迁移，通过了两个公开 Playwright 旅程，并为 JSON 格式的 `text/plain` 支付请求返回了预期的实时 `415`。

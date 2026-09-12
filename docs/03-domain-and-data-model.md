@@ -1,20 +1,20 @@
-# Domain and data model v1
+# 领域与数据模型 v1
 
-## 1. Domain boundary
+## 1. 领域边界
 
-The v1 system has one small assessment aggregate plus a subscription/payment boundary. It deliberately avoids modeling reference-funnel presentation screens as domain entities.
+v1 系统包含一个小型评估聚合体以及一个订阅/支付边界。系统刻意避免将参考漏斗中的展示页面（presentation screens）建模为领域实体。
 
-Persisted facts:
+持久化事实：
 
-- anonymous session identity plus its 1:1 subscription access state;
-- seven assessment answers;
-- assessment lifecycle/revision;
-- one immutable result snapshot;
-- payment idempotency events.
+- 匿名会话身份及其 1:1 订阅访问状态；
+- 七项评估答案；
+- 评估生命周期/版本号；
+- 一个不可变的结果快照；
+- 支付幂等事件。
 
-Derived/presentation state such as the next screen, analyzing animation, wellness profile view, projection view, and paywall screen is not duplicated in persistence.
+派生/展示状态（如下一屏幕、分析动画、健康档案视图、预测视图和付费墙屏幕）不会在持久化层中重复存储。
 
-## 2. Core persistence model
+## 2. 核心持久化模型
 
 ```mermaid
 classDiagram
@@ -74,9 +74,9 @@ classDiagram
     AnonymousSession "1" --> "0..*" PaymentEvent
 ```
 
-V1 intentionally enforces one assessment and one subscription row per anonymous session. `Subscription.sessionId` is both the primary key and foreign key, which keeps the required 1:1 relationship explicit without inventing a second meaningless identifier. Restart/history and real billing lifecycle are future use cases, not requirements to pre-model.
+V1 刻意为每个匿名会话强制一对一的关系——每个匿名会话仅拥有一条评估记录和一条订阅记录。`Subscription.sessionId` 同时作为主键和外键，使所需的 1:1 关系显式化，无需再发明第二个无意义的标识符。重新开始/历史记录以及真实的计费生命周期属于未来用例，而非需要预先建模的需求。
 
-## 3. Current enums
+## 3. 当前枚举值
 
 ```ts
 export type SubscriptionStatus = "FREE" | "ACTIVE";
@@ -105,34 +105,34 @@ export type AssessmentStatus = "IN_PROGRESS" | "COMPLETED";
 export type PaymentStatus = "SUCCEEDED";
 ```
 
-These enum values are implementation design choices; the source challenge does not prescribe the exact enum vocabulary.
+这些枚举值属于实现层面的设计选择；原始挑战题目并未规定具体的枚举词汇表。
 
-## 4. Aggregate root and ownership
+## 4. 聚合根与所有权
 
-`Assessment` is the aggregate whose answer mutations must remain internally consistent. Every load/mutation is scoped through the current `AnonymousSession`; the client never chooses an arbitrary `sessionId` to authorize access.
+`Assessment` 是聚合根，其答案变更操作必须保持内部一致性。所有加载/变更操作都通过当前 `AnonymousSession` 进行作用域限定；客户端永远不能选择一个任意的 `sessionId` 来授权访问。
 
-The aggregate owns:
+聚合根拥有：
 
-- answer values;
-- lifecycle status;
-- optimistic `revision`;
-- readiness for submission, derived from its answers.
+- 答案值；
+- 生命周期状态；
+- 乐观并发版本号 `revision`；
+- 提交就绪状态（从其答案派生而来）。
 
-Subscription status is session-level authorization state, not an assessment field. It is persisted in the dedicated 1:1 `Subscription` row and flattened into the session read model for application convenience. A missing subscription row is treated as `FREE` at read boundaries, so malformed/manual data fails closed rather than granting premium access.
+订阅状态属于会话级授权状态，而非评估字段。它存储在专用的 1:1 `Subscription` 行中，并为了应用便利被扁平化到会话读模型中。在读边界处，缺失的订阅行被视为 `FREE`，因此格式错误/手动注入的数据会以失败关闭（fails closed）的方式处理，而非授予高级访问权限。
 
-## 5. Why progress is derived, not persisted
+## 5. 为何进度是派生的而非持久化的
 
-There is no `currentStepKey` column. Persisting both answers and a mutable progress pointer would encode the same fact twice. A failed or partial update could otherwise produce states such as "activity is already saved but current step still says GOAL."
+不存在 `currentStepKey` 列。同时持久化答案和可变的进度指针会在同一事实上编码两次。失败或部分更新可能导致如下状态："activity 已保存但当前步骤仍显示 GOAL。"
 
-Instead:
+替代方案：
 
 ```ts
 getNextRequiredStep(assessment): AssessmentStep | null
 ```
 
-The resolver evaluates answer steps in semantic order and returns the first answer that is either missing or invalid in the current cross-field context. `null` means the in-progress assessment is ready to submit.
+该解析器按语义顺序评估各答案步骤，返回在当前跨字段上下文中第一个缺失或无效的答案。`null` 表示进行中的评估已准备好提交。
 
-This also handles edits correctly. Example:
+这也正确处理了编辑场景。示例：
 
 ```text
 weightKg = 80
@@ -145,38 +145,38 @@ edit goal = GAIN_WEIGHT
         -> nextRequiredStep = TARGET_WEIGHT
 ```
 
-The old target value can remain stored for user convenience, but it cannot satisfy readiness until corrected. Unrelated valid later answers are not erased merely because the resolver moved backward.
+旧的目标值可以为用户方便而保留存储，但在纠正之前无法满足提交就绪条件。不相关的后续有效答案不会因为解析器向后移动而被删除。
 
-That preservation rule applies when an upstream edit (for example `goal`) makes an already stored target invalid. A newly submitted `TARGET_WEIGHT` candidate that is already inconsistent with the current goal/current weight is rejected with `STEP_VALUE_INCONSISTENT` before persistence, so the UI does not report a successful save while remaining on the same unresolved step.
+该保留规则适用于上游编辑（例如 `goal`）使已存储的目标值失效的情况。新提交的 `TARGET_WEIGHT` 候选值如果与当前目标/当前体重不一致，则在持久化之前就会被拒绝并返回 `STEP_VALUE_INCONSISTENT`，因此 UI 不会在仍停留在同一未解决步骤时报告保存成功。
 
-## 6. Step-write policy
+## 6. 步骤写入策略
 
-For an in-progress assessment, a step mutation is allowed when either:
+对于进行中的评估，步骤变更在以下任一情况下被允许：
 
-1. it is the current `nextRequiredStep`; or
-2. that step already has an answer and the user is editing it.
+1. 它是当前的 `nextRequiredStep`；或者
+2. 该步骤已有答案且用户正在编辑它。
 
-A later unresolved step cannot be skipped. After any accepted edit, the server recomputes `nextRequiredStep`.
+后续未解决的步骤不能被跳过。在任何被接受的编辑之后，服务器会重新计算 `nextRequiredStep`。
 
-Completed assessments reject answer mutations unless a future explicit restart use case is introduced.
+已完成的评估拒绝答案变更，除非引入未来的显式重新开始用例。
 
-## 7. Target-weight semantics
+## 7. 目标体重语义
 
-All seven answer groups, including `targetWeightKg`, are required in v1. We intentionally do not introduce a speculative branch that omits target weight for `MAINTAIN`.
+v1 中所有七个答案组（包括 `targetWeightKg`）都是必需的。我们刻意不引入为 `MAINTAIN` 省略目标体重的投机性分支。
 
-`targetWeightKg` is cross-validated with `goal` and `weightKg`. T07 freezes a deliberately simple product-consistency invariant:
+`targetWeightKg` 与 `goal` 和 `weightKg` 进行交叉验证。T07 冻结了一个故意简单的产品一致性不变量：
 
-- `LOSE_WEIGHT` requires `targetWeightKg < weightKg`;
-- `GAIN_WEIGHT` requires `targetWeightKg > weightKg`;
-- `MAINTAIN` requires `targetWeightKg === weightKg`.
+- `LOSE_WEIGHT` 要求 `targetWeightKg < weightKg`；
+- `GAIN_WEIGHT` 要求 `targetWeightKg > weightKg`；
+- `MAINTAIN` 要求 `targetWeightKg === weightKg`。
 
-This is an implementation rule for keeping the questionnaire internally coherent, not a medical recommendation. It also gives earlier edits meaningful consequences: changing `goal` or current weight can make a previously persisted target invalid, and `getNextRequiredStep()` then derives `TARGET_WEIGHT` again without deleting unrelated later data.
+这是保持问卷内部一致性的实现规则，并非医学建议。它也使先前的编辑具有有意义的后果：更改 `goal` 或当前体重可能使之前持久化的目标值失效，随后 `getNextRequiredStep()` 会重新派生出 `TARGET_WEIGHT`，而不会删除不相关的后续数据。
 
-## 8. Optimistic concurrency
+## 8. 乐观并发控制
 
-`revision` starts at `0` and increments for every accepted aggregate mutation, including first successful completion.
+`revision` 从 `0` 开始，每次接受的聚合变更（包括首次成功完成）都会递增。
 
-Conceptual answer update:
+概念性答案更新：
 
 ```sql
 UPDATE assessment
@@ -189,92 +189,92 @@ WHERE id = :id
   AND revision = :expected_revision;
 ```
 
-A stale `expectedRevision` is a conflict even if the request happens to contain the same value that is already persisted. The client must refetch instead of silently treating a stale write as current.
+过期的 `expectedRevision` 即使请求中恰好包含与当前持久化值相同的值，也会被视为冲突。客户端必须重新获取数据，而非静默地将过期写入视为当前值。
 
-First-time `POST /submit` also supplies `expectedRevision` so result generation cannot race with a newer answer write. However, if the assessment is already completed with its result snapshot, submit retries return the existing success before stale-revision rejection; this supports retry after a lost HTTP response.
+首次 `POST /submit` 也需提供 `expectedRevision`，以防止结果生成与更新的答案写入之间产生竞态条件。但是，如果评估已完成并生成了结果快照，提交重试会在过期版本号拒绝之前返回现有的成功结果；这支持在丢失 HTTP 响应后进行重试。
 
-## 9. Result snapshot
+## 9. 结果快照
 
-A completed assessment has exactly one canonical `AssessmentResult`, enforced by unique `assessmentId`.
+已完成的评估恰好有一个规范的 `AssessmentResult`，由 `assessmentId` 的唯一约束强制执行。
 
-A result contains:
+结果包含：
 
-- `bmi`;
-- `bmiCategory`;
-- `recommendedDailyCalories`;
-- `estimatedGoalDate` (stored as a PostgreSQL calendar `date`);
-- `calculationVersion`;
-- creation timestamp.
+- `bmi`；
+- `bmiCategory`；
+- `recommendedDailyCalories`；
+- `estimatedGoalDate`（存储为 PostgreSQL 日历类型 `date`）；
+- `calculationVersion`；
+- 创建时间戳。
 
-Submission creates the snapshot and transitions the assessment to `COMPLETED` atomically. Reads never recompute a completed result from today's policy.
+提交操作以原子方式创建快照并将评估转换为 `COMPLETED`。读取操作永远不会基于当前策略重新计算已完成的结果。
 
-A future requirement could persist a dedicated input snapshot or richer policy metadata. For this challenge, the completed assessment plus `calculationVersion` is sufficient and avoids speculative storage.
+未来需求可能会持久化专用的输入快照或更丰富的策略元数据。对于本挑战，已完成的评估加上 `calculationVersion` 已足够，避免了投机性存储。
 
-## 10. Measurement representation
+## 10. 度量值表示
 
-`heightCm`, `weightKg`, `targetWeightKg`, and `bmi` use regular floating-point values rather than Prisma `Decimal`.
+`heightCm`、`weightKg`、`targetWeightKg` 和 `bmi` 使用常规浮点值，而非 Prisma `Decimal`。
 
-Reasoning:
+原因：
 
-- these are not financial amounts;
-- domain code controls explicit rounding;
-- JSON and TypeScript interoperability stays simple;
-- using `Decimal` would add conversion/serialization ceremony with little value for this scope.
+- 这些不是金融金额；
+- 领域代码控制显式的舍入操作；
+- JSON 和 TypeScript 互操作性保持简单；
+- 使用 `Decimal` 会增加转换/序列化仪式，而对此范围几乎没有价值。
 
-T06 freezes the following inclusive scalar input bounds as **implementation choices**, not values prescribed by the challenge brief:
+T06 冻结了以下包含性标量输入范围作为**实现选择**，而非挑战简报规定值：
 
-| Input | Inclusive range |
+| 输入 | 包含范围 |
 |---|---:|
-| age | 18–100 years |
+| age | 18–100 岁 |
 | height | 120–230 cm |
 | current weight | 25–300 kg |
 | target weight | 25–300 kg |
 
-Age must be an integer. Numeric contracts reject out-of-range values before persistence, so invalid requests do not advance the aggregate revision. Cross-field target-weight validity is a separate domain-policy concern and is not implied by these scalar bounds.
+年龄必须为整数。数值契约在持久化之前拒绝超出范围的值，因此无效请求不会推进聚合版本号。跨字段目标体重有效性属于独立的领域策略关注点，并非这些标量范围所隐含的。
 
-## 11. Payment idempotency model
+## 11. 支付幂等模型
 
-`PaymentEvent` records a simulated successful payment action using a caller-provided `idempotencyKey`. The database target is a composite uniqueness constraint:
+`PaymentEvent` 使用调用方提供的 `idempotencyKey` 记录一次模拟的成功支付操作。数据库目标为复合唯一约束：
 
 ```text
 UNIQUE(sessionId, idempotencyKey)
 ```
 
-The field is deliberately not called `paymentId`: this challenge does not integrate a real payment provider and should not imply that the demo key is an external transaction identifier.
+该字段刻意不命名为 `paymentId`：本挑战不集成真实的支付提供商，不应暗示该示例键是外部交易标识符。
 
-Replaying the same key for the same session returns the existing outcome without repeating subscription activation. Payment-event insertion and `Subscription.status = ACTIVE` happen inside the same database transaction. Only server-side payment application can activate subscription access.
+对同一会话重放相同的键会返回现有结果，而不会重复激活订阅。支付事件插入和 `Subscription.status = ACTIVE` 发生在同一个数据库事务中。只有服务端的支付应用才能激活订阅访问。
 
-## 12. Calculation policy boundary
+## 12. 计算策略边界
 
-Calculations live in pure domain functions and receive time explicitly:
+计算位于纯领域函数中，并显式接收时间参数：
 
 ```ts
 calculateAssessmentResult(input, referenceDate)
 ```
 
-They do not import Prisma, Next.js, cookies, environment variables, or call the wall clock directly.
+它们不导入 Prisma、Next.js、cookies、环境变量，也不直接调用系统时钟。
 
 ### BMI
 
-BMI uses the standard metric relationship:
+BMI 使用标准的公制关系式：
 
 ```text
 BMI = weightKg / (heightMeters ^ 2)
 ```
 
-Policy details, thresholds, rounding, and references are frozen in `10-calculation-policy.md` before production implementation.
+策略细节、阈值、舍入和参考文献在生产实现之前冻结于 `10-calculation-policy.md`。
 
-### Recommended intake
+### 推荐摄入量
 
-D017 is accepted. `demo-v1` uses Mifflin–St Jeor as a recognizable resting-energy base, project-defined activity multipliers, a ±300 kcal/day goal adjustment, a defensive 1000 kcal/day lower guard, and nearest-10 rounding. The `OTHER` branch uses the arithmetic midpoint of the published male/female constants and is explicitly documented as a demo limitation rather than a physiological claim.
+D017 已被接受。`demo-v1` 使用 Mifflin-St Jeor 公式作为公认的静息能量基准、项目定义的活动系数、±300 kcal/天的目标调整量、防御性的 1000 kcal/天下限值以及最近 10 的舍入方式。`OTHER` 分支使用已发布的男性/女性常数的算术中值，并被明确记录为演示限制而非生理学声明。
 
-### Estimated target date
+### 预估目标日期
 
-D018 is accepted. `demo-v1` uses a deliberately static 0.5 kg/week projection for lose/gain and returns the injected reference date for maintain. The model is intentionally simpler than a physiological dynamic model and is labeled as an estimate/simulation. `referenceDate` is injected so CI remains deterministic.
+D018 已被接受。`demo-v1` 使用故意静态的每周 0.5 kg 预测值进行增重/减重预测，对维持体重则返回注入的参考日期。该模型有意比生理动态模型更简单，并被标注为估计值/模拟值。`referenceDate` 采用注入方式以保持 CI 的确定性。
 
-## 13. Domain functions to implement
+## 13. 待实现的领域函数
 
-The core domain surface should stay small:
+核心领域接口应保持精简：
 
 ```ts
 getNextRequiredStep(assessment)
@@ -284,44 +284,44 @@ calculateAssessmentResult(input, referenceDate)
 projectResult(result, subscriptionStatus)
 ```
 
-Application use cases orchestrate persistence/transactions; they do not duplicate these rules.
+应用用例编排持久化/事务操作；它们不重复这些规则。
 
-## 14. Database constraints to target
+## 14. 待实现的数据库约束
 
-The initial Prisma/PostgreSQL schema should express:
+初始 Prisma/PostgreSQL schema 应表达：
 
-- primary keys on all entities;
-- primary/foreign-key `Subscription.sessionId` (one subscription row per anonymous session);
-- unique `Assessment.sessionId` (one assessment per anonymous session);
-- unique `AssessmentResult.assessmentId`;
-- composite unique `(PaymentEvent.sessionId, PaymentEvent.idempotencyKey)`;
-- indexes for ownership/result lookup where not already covered by unique indexes;
-- explicit relation delete behavior;
-- enum-backed statuses;
-- default timestamps and assessment revision.
+- 所有实体上的主键；
+- 主/外键 `Subscription.sessionId`（每个匿名会话一条订阅记录）；
+- 唯一约束 `Assessment.sessionId`（每个匿名会话一条评估记录）；
+- 唯一约束 `AssessmentResult.assessmentId`；
+- 复合唯一约束 `(PaymentEvent.sessionId, PaymentEvent.idempotencyKey)`；
+- 在唯一索引未覆盖的所有者/结果查询处建立索引；
+- 显式的关联删除行为；
+- 枚举支持的状态值；
+- 默认时间戳和评估版本号。
 
-Useful API errors still come from runtime/domain validation; database uniqueness/relations are the final integrity boundary, not the user-facing validation layer.
+有用的 API 错误仍来自运行时/领域验证；数据库唯一性/关联是最终的完整性边界，而非面向用户的验证层。
 
-## 15. Frozen v0.2 invariants
+## 15. 冻结的 v0.2 不变量
 
-Before implementation begins, the following are frozen:
+在实现开始之前，以下内容已冻结：
 
-- one anonymous session owns exactly one v1 assessment;
-- seven answer groups are required;
-- progress is derived, never stored as `currentStepKey`;
-- presentation states such as analyzing/projection are not domain steps;
-- editing earlier answers may invalidate dependent later answers;
-- stale PATCH writes are conflicts even when values match;
-- first-time submit participates in revision concurrency control;
-- successful submit retry returns the existing canonical result;
-- result creation and completion are atomic;
-- result values are versioned snapshots;
-- free result serialization omits premium values entirely;
-- payment replay safety uses a session-scoped idempotency key;
-- only server logic can activate subscription.
+- 一个匿名会话恰好拥有一个 v1 评估；
+- 七个答案组为必填项；
+- 进度为派生值，永不存储为 `currentStepKey`；
+- 分析/预测等展示状态不属于领域步骤；
+- 编辑较早的答案可能使后续依赖的答案失效；
+- 过期的 PATCH 写入即使值相同也会被视为冲突；
+- 首次提交参与版本号并发控制；
+- 成功的提交重试返回现有的规范结果；
+- 结果创建与完成是原子性的；
+- 结果值为带版本号的快照；
+- 免费结果序列化完全省略高级功能值；
+- 支付重放安全性使用会话范围的幂等键；
+- 只有服务端逻辑才能激活订阅。
 
-Calculation constants/ranges are intentionally not frozen here; D017/D018 plus RED tests will freeze them before implementation of those policies.
+计算常量/范围在此处故意不冻结；D017/D018 加上 RED 测试将在这些策略实现之前冻结它们。
 
-### Public order correlation
+### 公开订单关联
 
-`Assessment.id` is exposed as the opaque `order` query value used across the product flow. It is not a bearer secret and no API route accepts it as authorization; the HttpOnly anonymous-session cookie remains the ownership boundary.
+`Assessment.id` 作为产品流程中使用的不透明 `order` 查询值暴露。它不是承载令牌（bearer secret），没有 API 路由接受它作为授权依据；HttpOnly 匿名会话 cookie 仍然是所有权边界。

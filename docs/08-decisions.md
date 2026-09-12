@@ -1,223 +1,223 @@
-# Decision log
+# 决策日志
 
-This is a lightweight ADR index for decisions that are important enough to explain but do not require heavyweight architecture-process ceremony.
+这是一个轻量级 ADR 索引，记录值得解释但不需要重量级架构流程仪式的重要决策。
 
-| ID | Decision | Status | Reason |
+| ID | 决策 | 状态 | 理由 |
 |---|---|---|---|
-| D001 | Next.js modular monolith | accepted | lowest deployment/integration overhead for three-day scope |
-| D002 | PostgreSQL + Prisma | accepted | explicit relational schema and testable persistence |
-| D003 | anonymous HttpOnly session | accepted | challenge does not need full account/auth implementation |
-| D004 | explicit assessment columns | accepted | small stable field set; clearer schema than JSON blob |
-| D005 | semantic answer-step keys, derived progress | accepted | persist facts once; avoid `currentStepKey` drift and keep branching/reordering possible |
-| D006 | optimistic aggregate `revision` | accepted | prevents stale writes and stale first-time submission |
-| D007 | result snapshot | accepted | historical reproducibility and retry-safe submit |
-| D008 | server-side free/full DTO projection | accepted | authorization must not depend on UI hiding |
-| D009 | session-scoped payment `idempotencyKey` | accepted | simulated payment should be replay-safe without pretending to have a provider payment ID |
-| D010 | outside-in TDD | accepted | requirements become executable before implementation |
-| D011 | real Postgres integration tests | accepted | persistence/concurrency behavior is central to challenge |
-| D012 | one assessment per anonymous session in v1 | accepted | history/restart is outside the challenge and should not enlarge the aggregate prematurely |
-| D013 | target weight required in v1 | accepted | source scope names target weight and projection depends on it; avoid speculative branching |
-| D014 | `Float` for physical measurements/result BMI | accepted | financial precision is not required; simpler TS/JSON boundary than Prisma `Decimal` |
-| D015 | strict stale PATCH semantics | accepted | a stale write returns conflict even if the value matches; idempotency is reserved for explicit submit/payment retry contracts |
-| D016 | shadcn/ui + Base UI, library-first component policy | accepted | use maintained accessible primitives as the shared baseline, then customize/compose locally to keep UI consistent and avoid duplicate primitives |
-| D017 | intake calculation formula | accepted | freeze a deterministic `demo-v1` estimate with explicit external references, project constants, rounding, guard, and limitations |
-| D018 | target-date rate policy | accepted | use injected UTC date plus a documented static 0.5 kg/week demo projection; do not pretend to implement a physiological model |
-| D019 | scalar assessment input bounds | accepted | freeze runtime-validation boundaries in tests while keeping them explicitly separate from source requirements and cross-field health logic |
-| D020 | goal/target directional invariant | accepted | keep the questionnaire internally coherent with a deterministic non-medical rule and make upstream edits revalidate downstream target state |
-| D021 | stable dependency refresh with compatibility gate | accepted | prefer current stable runtime packages only when the full framework/plugin toolchain supports them; reject upgrades that break quality gates |
-| D022 | one bounded production database pool per app process | accepted | prevent per-request Prisma/pg pools from exhausting the isolated production role |
-| D023 | reviewer-first delivery surface | accepted | expose the required demo, API, schema, one-command tests, coverage rationale, and AI evidence without making an interviewer search through implementation history |
-| D024 | private/no-store session API responses | accepted | personalized assessment/result payloads must not be eligible for shared-cache reuse |
-| D025 | reject inconsistent target candidates before persistence | accepted | avoid reporting a successful save that leaves the same semantic step unresolved |
-| D026 | isolated local Playwright server | accepted | one-command E2E must execute the current checkout rather than silently reusing a stale port-3000 process |
-| D027 | revalidate persisted scalar invariants in the domain | accepted | transport validation is not sufficient proof that stored legacy/manual data is safe to submit |
-| D028 | remote E2E has no local database bootstrap | accepted | production smoke tests should exercise only the remote deployment and not depend on unrelated local Docker state |
-| D029 | product-facing UI, reviewer-facing engineering evidence | accepted | let the public funnel behave like a real product; keep persistence/snapshot/TDD/server narration in repository evidence |
-| D030 | live client BMI preview from the shared pure calculation | accepted | provide immediate user value on the weight step without duplicating or replacing the server-side result snapshot |
-| D031 | cookie authority + opaque URL order correlation with landing prewarm | accepted | mirror the useful BetterMe identity split without turning a URL UUID into a bearer credential, while removing an avoidable sequential bootstrap on CTA navigation |
-| D032 | target-weight BMI preview | accepted | show the BMI implied by the draft goal weight before submission using the same shared calculation |
-| D033 | dedicated 1:1 subscription extension table | accepted | match the brief's explicit schema relationship while keeping mocked billing state minimal and non-speculative |
-| D034 | client recovery after optimistic-concurrency conflict | accepted | refetch canonical state after a stale write instead of leaving the browser stuck on an obsolete revision |
-| D035 | strict JSON request media type | accepted | state-changing JSON routes should reject JSON-looking `text/plain` bodies and make the HTTP boundary explicit |
-| D036 | CAS write returns its own mutation snapshot | accepted | a successful writer must not report a later concurrent revision from a separate read |
-| D037 | database CHECK backstops for structural invariants | accepted | transport/domain validation should not be the only barrier against impossible persisted scalar/lifecycle/key states |
-| D038 | replay re-establishes idempotent payment side effect | accepted | an idempotency record should imply the successful operation outcome, not merely suppress duplicate insertion |
-| D039 | bootstrap repairs both 1:1 session resources | accepted | legacy/manual partial rows should converge back to the documented assessment+subscription shape |
+| D001 | Next.js 模块化单体 | 已接受 | 三天范围内的最低部署/集成开销 |
+| D002 | PostgreSQL + Prisma | 已接受 | 显式关系模式与可测试的持久化 |
+| D003 | 匿名 HttpOnly 会话 | 已接受 | 挑战不需要完整的账户/认证实现 |
+| D004 | 显式评估列 | 已接受 | 小而稳定的数据集；比 JSON blob 更清晰的模式 |
+| D005 | 语义化 answer-step key，派生进度 | 已接受 | 事实只存储一次；避免 `currentStepKey` 漂移并保持分支/重排序的可能 |
+| D006 | 乐观聚合 `revision` | 已接受 | 防止过时写入和过时首次提交 |
+| D007 | 结果快照 | 已接受 | 历史可复现性与安全重试提交 |
+| D008 | 服务端 free/full DTO 投影 | 已接受 | 授权不应依赖 UI 隐藏 |
+| D009 | 会话范围内的支付 `idempotencyKey` | 已接受 | 模拟支付应支持重放安全，而不必假装拥有提供商支付 ID |
+| D010 | 由外向内的 TDD | 已接受 | 需求在实现之前即可执行 |
+| D011 | 真实 Postgres 集成测试 | 已接受 | 持久化/并发行为是挑战的核心 |
+| D012 | 每个匿名会话 v1 仅一次评估 | 已接受 | 历史/重启超出挑战范围，不应过早扩大聚合 |
+| D013 | v1 目标体重为必填 | 已接受 | 来源范围指定了目标体重且投影依赖于此；避免投机性分支 |
+| D014 | `Float` 用于体测数据/结果 BMI | 已接受 | 不需要金融精度；比 Prisma `Decimal` 更简单的 TS/JSON 边界 |
+| D015 | 严格的过时 PATCH 语义 | 已接受 | 过时写入即使值匹配也返回冲突；幂等性保留给显式提交/支付重试契约 |
+| D016 | shadcn/ui + Base UI，库优先组件策略 | 已接受 | 使用维护良好的可访问原语作为共享基线，然后在本地自定义/组合以保持 UI 一致并避免重复原语 |
+| D017 | 摄入量计算公式 | 已接受 | 冻结一个带有显式外部引用、项目常量、舍入、保护值和限制的确定性 `demo-v1` 估算 |
+| D018 | 目标日期速率策略 | 已接受 | 使用注入的 UTC 日期加上文档化的静态 0.5 kg/week demo 投影；不假装实现生理模型 |
+| D019 | 标量评估输入边界 | 已接受 | 在测试中冻结运行时验证边界，同时将其与源需求和跨字段健康逻辑显式分离 |
+| D020 | 目标/目标方向不变量 | 已接受 | 通过确定性非医疗规则保持问卷内部一致性，使上游编辑重新验证下游目标状态 |
+| D021 | 稳定依赖刷新与兼容性门控 | 已接受 | 仅在完整框架/插件工具链支持时才使用当前稳定的运行时包；拒绝破坏质量门控的升级 |
+| D022 | 每个应用进程一个有界的生产数据库连接池 | 已接受 | 防止按请求的 Prisma/pg 连接池耗尽隔离的生产角色 |
+| D023 | 评审者优先的交付面 | 已接受 | 公开必要的 demo、API、模式、一键测试、覆盖率说明和 AI 证据，而无需面试官翻阅实现历史 |
+| D024 | private/no-store 会话 API 响应 | 已接受 | 个性化的评估/结果载荷不得用于共享缓存复用 |
+| D025 | 在持久化前拒绝不一致的目标候选 | 已接受 | 避免报告成功保存后仍留下相同的语义步骤未解决 |
+| D026 | 隔离的本地 Playwright 服务器 | 已接受 | 一键 E2E 必须执行当前签出，而不是静默复用过时的端口 3000 进程 |
+| D027 | 在域中重新验证持久化的标量不变量 | 已接受 | 传输验证不足以证明存储的遗留/手动数据可以安全提交 |
+| D028 | 远程 E2E 无本地数据库引导 | 已接受 | 生产冒烟测试应仅测试远程部署，而不依赖无关的本地 Docker 状态 |
+| D029 | 面向产品的 UI，面向评审者的工程证据 | 已接受 | 让公共漏斗像真实产品一样运行；将持久化/快照/TDD/服务端叙述保留在仓库证据中 |
+| D030 | 基于共享纯函数的实时客户端 BMI 预览 | 已接受 | 在体重步骤上提供即时用户价值，而不复制或替代服务端结果快照 |
+| D031 | cookie 权威 + 不透明 URL 订单关联与落地页预热 | 已接受 | 镜像有用的 BetterMe 身份分离，而不将 URL UUID 变成 bearer 凭证，同时消除 CTA 导航中可避免的顺序引导 |
+| D032 | 目标体重 BMI 预览 | 已接受 | 在提交前使用相同的共享计算显示草案目标体重所暗示的 BMI |
+| D033 | 专用 1:1 订阅扩展表 | 已接受 | 匹配简介中的显式模式关系，同时保持模拟计费状态最小化且非投机性 |
+| D034 | 乐观并发冲突后的客户端恢复 | 已接受 | 在过时写入后重新获取规范状态，而不是让浏览器卡在过时的修订上 |
+| D035 | 严格的 JSON 请求 media type | 已接受 | 状态变更的 JSON 路由应拒绝类似 JSON 的 `text/plain` body，并使 HTTP 边界显式 |
+| D036 | CAS 写入返回自身的变更快照 | 已接受 | 成功的写入者不得报告来自单独读取的后续并发修订 |
+| D037 | 数据库 CHECK 兜底结构不变量 | 已接受 | 传输/域验证不应是防止不可能的持久化标量/生命周期/键状态的唯一屏障 |
+| D038 | 重放重新建立幂等支付副作用 | 已接受 | 幂等记录应暗示成功的操作结果，而不仅仅是抑制重复插入 |
+| D039 | 引导修复两个 1:1 会话资源 | 已接受 | 遗留/手动部分行应收敛回文档化的 assessment+subscription 形状 |
 
-## D001 — Next.js modular monolith
+## D001 — Next.js 模块化单体
 
-A split frontend/API deployment would add CORS, deployment, configuration, and integration overhead without improving the behaviors being evaluated. Next.js Route Handlers provide a convenient transport adapter while domain/application code remains framework-independent.
+拆分前端/API 部署将增加 CORS、部署、配置和集成开销，而不会改善被评估的行为。Next.js Route Handlers 提供了便捷的传输适配器，同时域/应用代码保持框架无关。
 
 
-## D002 — Prisma 7 and PostgreSQL adapter
+## D002 — Prisma 7 和 PostgreSQL 适配器
 
-The implementation uses Prisma ORM 7.10 with the `prisma-client` generator and `@prisma/adapter-pg`/`pg`. Integration tests use a disposable PostgreSQL 17 container, not a mocked Prisma client. The generated client is build output rather than reviewed source: it is ignored by git and regenerated during a fresh package install.
+实现使用 Prisma ORM 7.10，配合 `prisma-client` 生成器和 `@prisma/adapter-pg`/`pg`。集成测试使用可丢弃的 PostgreSQL 17 容器，而非模拟的 Prisma 客户端。生成的客户端是构建产物而非被审查的源代码：它被 git 忽略，并在全新包安装时重新生成。
 
-The test database is intentionally separate from any production/hosted database and uses committed migrations as the source of truth.
+测试数据库有意与任何生产/托管数据库分离，并使用已提交的迁移作为真实来源。
 
-## D003 — Anonymous HttpOnly session
+## D003 — 匿名 HttpOnly 会话
 
-The challenge does not need account registration or password authentication. A random UUID stored in `health_assessment_session` acts as the anonymous bearer session identifier. It is issued only by the server in a 30-day HttpOnly cookie with `SameSite=Lax`, `Path=/`, and `Secure` in production.
+挑战不需要账户注册或密码认证。存储在 `health_assessment_session` 中的随机 UUID 充当匿名 bearer 会话标识符。它仅由服务器在 30 天的 HttpOnly cookie 中颁发，生产环境使用 `SameSite=Lax`、`Path=/` 和 `Secure`。
 
-The client cannot authorize access by sending a `sessionId` field. Missing, malformed, or unknown cookie values result in a newly created server-owned session. Session creation also creates the single v1 assessment so later routes do not need to choose among multiple active assessments.
+客户端无法通过发送 `sessionId` 字段来授权访问。缺失、格式错误或未知的 cookie 值会导致创建新的服务器拥有会话。会话创建还会创建单个 v1 评估，因此后续路由无需在多个活跃评估中选择。
 
-## D004 — Explicit columns, not arbitrary JSON
+## D004 — 显式列，而非任意 JSON
 
-The assessment has a compact, known data set. Explicit columns improve schema readability, validation, migrations, and test assertions. A dynamic JSON answer model is intentionally deferred until there is a requirement for server-configurable questionnaires.
+评估拥有紧凑、已知的数据集。显式列改善了模式可读性、验证、迁移和测试断言。动态 JSON 答案模型被有意推迟到需要服务端可配置问卷时再使用。
 
-## D005 — Persist answers, derive progress
+## D005 — 持久化答案，派生进度
 
-The persisted facts are the answers themselves. Storing both answers and a mutable `currentStepKey` would represent progress twice and permit drift. `getNextRequiredStep(assessment)` instead scans semantic step definitions and returns the first missing or context-invalid answer.
+持久化的事实是答案本身。同时存储答案和可变的 `currentStepKey` 会重复表示进度并允许漂移。`getNextRequiredStep(assessment)` 改为扫描语义步骤定义并返回第一个缺失或上下文无效的答案。
 
-This also handles dependency changes safely: editing `goal` or current weight may make a previously entered target weight invalid, so the resolver can move the user back to `TARGET_WEIGHT` without deleting unrelated valid answers. `ANALYZING`, wellness profile, projection, result, and paywall are presentation/result states rather than answer steps.
+这也安全地处理了依赖变更：编辑 `goal` 或当前体重可能使先前输入的目标体重无效，因此解析器可以将用户移回 `TARGET_WEIGHT` 而无需删除无关的有效答案。`ANALYZING`、健康档案、投影、结果和 paywall 是展示/结果状态而非答案步骤。
 
-## D006 — Optimistic aggregate concurrency
+## D006 — 乐观聚合并发
 
-`revision` belongs to the assessment aggregate, not just individual fields. Answer writes require `expectedRevision`; the first successful submit does as well. A successful aggregate mutation increments revision.
+`revision` 属于评估聚合，而不仅仅是个别字段。答案写入需要 `expectedRevision`；首次成功提交也是如此。成功的聚合变更会递增 revision。
 
-A stale answer PATCH is always a `409 ASSESSMENT_VERSION_CONFLICT`, including when the stale client sends the same value. Hiding that conflict would make the concurrency guarantee ambiguous.
+过时的答案 PATCH 始终返回 `409 ASSESSMENT_VERSION_CONFLICT`，包括当过时客户端发送相同值时。隐藏该冲突会使并发保证变得模糊。
 
-For submit retries, completed-result detection is checked first: if the first submit succeeded but its response was lost, retry returns the existing canonical result rather than failing solely because the completion mutation advanced revision.
+对于提交重试，首先检测已完成的结果：如果首次提交成功但其响应丢失，重试将返回现有的规范结果，而非仅因完成变更递增了 revision 而失败。
 
-## D007 — Result snapshot
+## D007 — 结果快照
 
-Completed assessment results should not change merely because the calculation implementation changes later. Submission therefore creates a versioned snapshot exactly once semantically. Result creation and aggregate completion must happen atomically.
+已完成的评估结果不应仅仅因为计算实现后来发生变化而改变。因此，提交在语义上仅创建一次带版本的快照。结果创建和聚合完成必须原子性地发生。
 
-## D008 — Server-side result projection
+## D008 — 服务端结果投影
 
-Free clients should not receive premium values at all. Returning all data and using CSS blur would be a presentation technique, not access control.
+免费客户端根本不应收到高级值。返回所有数据并使用 CSS 模糊是一种展示技术，而非访问控制。
 
-## D009 — Payment idempotency key
+## D009 — 支付幂等键
 
-The challenge uses a simulated payment endpoint. `PaymentEvent` therefore stores a caller-provided `idempotencyKey` unique within the current anonymous session instead of claiming that a demo token is a real payment-provider ID. Replaying the same key returns the existing outcome without repeating the subscription side effect.
+挑战使用模拟支付端点。因此 `PaymentEvent` 存储调用者提供的在当前匿名会话内唯一的 `idempotencyKey`，而不是声称演示令牌是真实的支付提供商 ID。重放相同的键会返回现有结果，而不会重复执行订阅副作用。
 
-## D012 — One assessment per anonymous session
+## D012 — 每个匿名会话仅一次评估
 
-The v1 relationship is `AnonymousSession 1:1 Assessment`, enforced with a unique `Assessment.sessionId`. Restart/history behavior is intentionally deferred because the challenge does not require it. This keeps recovery unambiguous and removes an unnecessary "which active assessment?" query.
+v1 的关系是 `AnonymousSession 1:1 Assessment`，通过唯一的 `Assessment.sessionId` 强制执行。重启/历史行为被有意推迟，因为挑战不需要它。这使恢复保持明确，并移除了不必要的"哪个活跃评估？"查询。
 
-## D013 — Target weight is required
+## D013 — 目标体重为必填
 
-All seven answer groups are required in v1. `targetWeightKg` is cross-validated against `goal` and `weightKg`; changing those earlier answers can make target weight the next required step again. We do not add a speculative branch that skips target weight for maintenance goals.
+v1 中所有七个答案组都是必填的。`targetWeightKg` 与 `goal` 和 `weightKg` 进行交叉验证；更改这些早期答案可能使目标体重再次成为下一个必需步骤。我们不为维护目标添加投机性跳过目标体重的分支。
 
-## D014 — Float measurements
+## D014 — Float 体测数据
 
-Height, weight, target weight, and BMI use regular floating-point values at persistence/application boundaries. Domain functions own explicit rounding. Prisma `Decimal` would add conversion and serialization ceremony without a financial-precision requirement.
+身高、体重、目标体重和 BMI 在持久化/应用边界使用普通浮点值。域函数负责显式舍入。Prisma `Decimal` 在没有金融精度要求的情况下会增加转换和序列化仪式。
 
-## D010 — Outside-in TDD
+## D010 — 由外向内的 TDD
 
-Architecture provides boundaries; TDD decides the concrete implementation incrementally. This also provides a controlled interface for AI assistance: code must satisfy reviewed behavior rather than letting generated code define requirements implicitly.
+架构提供边界；TDD 决定具体的增量实现。这也为 AI 辅助提供了受控接口：代码必须满足已审查的行为，而不是让生成的代码隐式定义需求。
 
-## D016 — shadcn/ui with Base UI; library first
+## D016 — shadcn/ui 配合 Base UI；库优先
 
-The frontend uses shadcn/ui initialized with the Base UI component base, the `base-nova` preset, and Tailwind CSS v4. shadcn components are checked first whenever the product needs a common primitive such as a button, input, progress indicator, radio group, dialog, alert, separator, or skeleton.
+前端使用 shadcn/ui，初始化时采用 Base UI 组件基础、`base-nova` 预设和 Tailwind CSS v4。每当产品需要常见原语（如按钮、输入框、进度指示器、单选组、对话框、警告、分隔符或骨架）时，首先检查 shadcn 组件。
 
-Because shadcn installs component source into the repository, product styling and variants can be implemented directly on that shared baseline. Assessment-specific components should compose these primitives. A new low-level component is justified only when an existing shadcn/Base UI primitive does not fit the required semantics or interaction model.
+因为 shadcn 将组件源码安装到仓库中，产品样式和变体可以直接在该共享基线上实现。评估特定的组件应组合这些原语。仅当现有的 shadcn/Base UI 原语不适合所需的语义或交互模型时，才证明新底层组件的合理性。
 
-This is not a rule to maximize dependency/component count. Only components actually needed by a vertical slice are added. The purpose is consistency, accessibility, maintainability, and avoiding duplicated focus/keyboard/state behavior.
+这不是最大化依赖/组件数量的规则。仅添加垂直切片实际需要的组件。目的是保持一致性、可访问性、可维护性，并避免重复的焦点/键盘/状态行为。
 
-## D019 — Scalar assessment input bounds
+## D019 — 标量评估输入边界
 
-The v1 request contracts accept age 18–100 (integer), height 120–230 cm, and current/target weight 25–300 kg, all inclusive. These are project-level validation choices used to make boundary behavior deterministic and testable; the challenge brief does not prescribe these exact limits.
+v1 请求契约接受年龄 18–100（整数）、身高 120–230 cm、当前/目标体重 25–300 kg，均为包含边界。这些是项目级别的验证选择，用于使边界行为确定性和可测试；挑战简介并未规定这些确切限制。
 
-Scalar bounds only answer whether one field is structurally acceptable. They do not decide whether a target weight is semantically compatible with `goal` and current weight; that cross-field invariant is owned by the assessment step/domain policy.
+标量边界仅回答单个字段在结构上是否可接受。它们不决定目标体重是否与 `goal` 和当前体重语义兼容；该跨字段不变量由评估步骤/域策略拥有。
 
-## D020 — Goal/target directional invariant
+## D020 — 目标/目标方向不变量
 
-V1 treats target-weight consistency as product-state logic: a lose goal requires a target below current weight, a gain goal requires a target above current weight, and a maintain goal requires the target to equal current weight. The rule is intentionally simple and deterministic. It is not presented as health or clinical advice.
+v1 将目标体重一致性视为产品状态逻辑：减重目标要求目标低于当前体重，增重目标要求目标高于当前体重，维持目标要求目标等于当前体重。该规则有意简单且确定性。它不作为健康或临床建议呈现。
 
-The main architectural value is dependency revalidation: if an already-complete assessment draft changes `goal` or `weightKg`, a previously stored `targetWeightKg` can become invalid. Progress is therefore derived back to `TARGET_WEIGHT` without a mutable current-step column or destructive clearing of unrelated answers.
+主要的架构价值是依赖重新验证：如果已完成的评估草案更改了 `goal` 或 `weightKg`，先前存储的 `targetWeightKg` 可能变得无效。因此进度被派生回 `TARGET_WEIGHT`，而无需可变的当前步骤列或破坏性地清除无关答案。
 
-## D017 — Recommended-intake demo policy
+## D017 — 推荐摄入量演示策略
 
-`demo-v1` uses the Mifflin–St Jeor resting-energy equation as an externally recognizable base, then applies project-defined activity multipliers and a -300/0/+300 kcal/day goal adjustment. Output has a defensive 1000 kcal/day lower guard and is rounded to the nearest 10. Because the questionnaire includes `OTHER` while the source equation publishes male/female constants, the demo uses their arithmetic midpoint (-78) for that branch and documents this as a limitation rather than a physiological category. Full formulas and references live in `10-calculation-policy.md`.
+`demo-v1` 使用 Mifflin–St Jeor 静息能量方程作为可外部识别的基础，然后应用项目定义的活动乘数和 -300/0/+300 kcal/天的目标调整。输出有防御性的 1000 kcal/天下限保护，并舍入到最近的 10。因为问卷包含 `OTHER` 而源方程发布的是男性/女性常量，demo 为该分支使用算术中点 (-78)，并将其记录为限制条件而非生理类别。完整公式和参考在 `10-calculation-policy.md` 中。
 
-## D018 — Static target-date demo policy
+## D018 — 静态目标日期演示策略
 
-`demo-v1` projects lose/gain progress at a static 0.5 kg/week and adds `ceil(abs(current-target)/0.5) * 7` days to an injected UTC calendar date. Maintain returns the reference date because the v1 step policy requires target=current. This is intentionally a transparent simulation, not the dynamic physiological model used by NIDDK's Body Weight Planner.
+`demo-v1` 以静态 0.5 kg/week 投影减重/增重进度，并将 `ceil(abs(current-target)/0.5) * 7` 天添加到注入的 UTC 日历日期。维持返回参考日期，因为 v1 步骤策略要求 target=current。这是有意的透明模拟，而非 NIDDK Body Weight Planner 使用的动态生理模型。
 
-## D021 — Stable dependency refresh with compatibility gate
+## D021 — 稳定依赖刷新与兼容性门控
 
-The project prefers current stable dependencies, but "latest" is not treated as a requirement that overrides compatibility evidence. After T17, React/React DOM were updated from 19.2.8 to 19.3.0, Zod from 4.5.4 to 4.6.2, and the matching React/Node type packages were refreshed. The complete unit/component, PostgreSQL integration, lint, typecheck, peer-dependency, and production-build gates remained green.
+项目优先使用当前稳定依赖，但"最新"不被视为覆盖兼容性证据的需求。T17 之后，React/React DOM 从 19.2.8 更新到 19.3.0，Zod 从 4.5.4 更新到 4.6.2，匹配的 React/Node 类型包也已刷新。完整的单元/组件、PostgreSQL 集成、lint、类型检查、peer-dependency 和生产构建门控保持绿色。
 
-ESLint 10.10.0 was evaluated separately and rejected for now. `eslint-config-next@16.3.4` still resolves `eslint-plugin-react@7.37.5`; that plugin declares support only through ESLint 9 and fails at runtime under ESLint 10 (`contextOrFilename.getFilename is not a function`). Keeping ESLint 9.39.5 is therefore an explicit compatibility decision, not an unnoticed stale dependency. The project will move to ESLint 10 only when the Next/React lint stack supports it cleanly.
+ESLint 10.10.0 被单独评估并暂时拒绝。`eslint-config-next@16.3.4` 仍然解析 `eslint-plugin-react@7.37.5`；该插件仅声明支持到 ESLint 9，在 ESLint 10 下运行时失败（`contextOrFilename.getFilename is not a function`）。因此保留 ESLint 9.39.5 是显式的兼容性决策，而非未注意到的过时依赖。项目仅在 Next/React lint 栈完整支持时才会迁移到 ESLint 10。
 
-Prisma 7.10 remains intentionally unchanged because its current schema/client/migration workflow is already covered by real PostgreSQL integration tests; a major ORM migration is not justified solely to maximize version numbers during this challenge.
+Prisma 7.10 被有意保持不变，因为其当前的 schema/client/migration 工作流已被真实的 PostgreSQL 集成测试覆盖；在此次挑战中仅为了最大化版本号而不进行主要的 ORM 迁移是不合理的。
 
-TypeScript 7.0.2 was also evaluated and rejected for now. The project itself typechecked and all unit/integration tests passed under TS 7, but the current `typescript-eslint` stack pulled by `eslint-config-next@16.3.4` explicitly rejects TypeScript 7. Keeping TypeScript 5.9.3 preserves a fully supported lint/typecheck toolchain instead of introducing a side-by-side compiler workaround during a three-day challenge.
+TypeScript 7.0.2 也被评估并暂时拒绝。项目本身在 TS 7 下类型检查通过且所有单元/集成测试通过，但 `eslint-config-next@16.3.4` 拉取的当前 `typescript-eslint` 栈显式拒绝 TypeScript 7。保留 TypeScript 5.9.3 维护了完整支持的 lint/类型检查工具链，而不是在三天挑战期间引入并行编译器变通方案。
 
-## D022 — One bounded production database pool per app process
+## D022 — 每个应用进程一个有界的生产数据库连接池
 
-The standalone Next.js process caches one application `PrismaClient` on `globalThis` in every environment. The `@prisma/adapter-pg` adapter is configured with a default maximum of four pooled connections, overridable through `DATABASE_POOL_MAX`. This is intentionally below the dedicated production role's connection cap so migration/administrative work retains headroom.
+独立的 Next.js 进程在每个环境中将一个应用 `PrismaClient` 缓存在 `globalThis` 上。`@prisma/adapter-pg` 适配器配置默认最大四个池化连接，可通过 `DATABASE_POOL_MAX` 覆盖。这有意低于专用生产角色的连接上限，以便迁移/管理工作保留余量。
 
-This decision was made from production evidence rather than style preference: the first public concurrent Playwright run exposed `P2037 TooManyConnections` because the previous production branch constructed a fresh Prisma client and pg pool for repeated request-path lookups. A dedicated production-lifecycle regression test now prevents that behavior from returning.
+该决策基于生产证据而非风格偏好：首次公开并发 Playwright 运行暴露了 `P2037 TooManyConnections`，因为之前的生产分支为重复的请求路径查找构造了新的 Prisma 客户端和 pg 连接池。专用的生产生命周期回归测试现在防止该行为再次出现。
 
-## D023 — Reviewer-first delivery surface
+## D023 — 评审者优先的交付面
 
-A correct implementation can still be a weak submission if the reviewer must infer where evidence lives. The final README therefore front-loads the public demo, paid evaluator identity, endpoint map, reproducible `/pay` cURL, actual schema, one-command test runner, behavior coverage, and intentional exclusions. `docs/13-interviewer-audit.md` maps the supplied brief to concrete evidence and names the remaining trade-offs explicitly.
+正确的实现如果评审者必须推断证据所在位置，仍可能成为薄弱的提交。因此最终 README 将公开演示、固定 FREE / ACTIVE 评审身份、端点映射、可复现的 `/pay` cURL、实际模式、一键测试运行器、行为覆盖范围和有意排除项置于最前面。`docs/13-interviewer-audit.md` 将提供的简介映射到具体证据，并显式列出剩余的权衡取舍。
 
-## D024 — Private/no-store session API responses
+## D024 — private/no-store 会话 API 响应
 
-Every API route in this challenge is scoped to the anonymous bearer session. Success and error JSON therefore use a shared response helper that emits `Cache-Control: private, no-store`. Cloudflare currently treats these routes as dynamic, but correctness should not depend on a particular edge-cache default or future configuration.
+挑战中的每个 API 路由都限定在匿名 bearer 会话范围内。因此成功和错误 JSON 使用共享响应助手，发送 `Cache-Control: private, no-store`。Cloudflare 目前将这些路由视为动态的，但正确性不应依赖特定的边缘缓存默认值或未来配置。
 
-## D025 — Reject inconsistent target candidates before persistence
+## D025 — 在持久化前拒绝不一致的目标候选
 
-Scalar input validation and cross-field domain validation have different responsibilities. A target can be a valid numeric weight yet contradict `LOSE_WEIGHT`, `GAIN_WEIGHT`, or `MAINTAIN` relative to the stored current weight. Direct inconsistent candidates return `422 STEP_VALUE_INCONSISTENT` and do not advance the optimistic revision. If a previously valid stored target becomes invalid because an earlier goal/current-weight answer is edited, that historical value may remain stored while derived progress moves back to `TARGET_WEIGHT`.
+标量输入验证和跨字段域验证有不同的职责。目标可以是有效的数值体重，但与存储的当前体重相比矛盾于 `LOSE_WEIGHT`、`GAIN_WEIGHT` 或 `MAINTAIN`。直接拒绝不一致的候选返回 `422 STEP_VALUE_INCONSISTENT`，且不递增乐观修订。如果先前有效的存储目标因之前的目标/当前体重答案被编辑而变得无效，该历史值可能保持存储，同时派生进度移回 `TARGET_WEIGHT`。
 
-## D026 — Isolated local Playwright server
+## D026 — 隔离的本地 Playwright 服务器
 
-Local browser tests run on a dedicated `127.0.0.1:3100` server with `reuseExistingServer: false`. This intentionally fails on an unexpected port collision instead of silently testing a stale developer process. Public-deployment verification remains opt-in through `E2E_BASE_URL`.
+本地浏览器测试在专用的 `127.0.0.1:3100` 服务器上运行，`reuseExistingServer: false`。这有意在意外端口冲突时失败，而不是静默测试过时的开发者进程。公共部署验证仍通过 `E2E_BASE_URL` 选择性启用。
 
-## D027 — Revalidate persisted scalar invariants in the domain
+## D027 — 在域中重新验证持久化的标量不变量
 
-Zod remains the HTTP contract boundary, but stored state is not assumed valid merely because it exists. `getNextRequiredStep()` and submission validation reuse the frozen scalar limits for height, weight, target weight, and integer age. This protects recovery/submission from legacy, manual, seed, or otherwise non-HTTP data that violates current invariants. The calculation functions can therefore continue to accept a validated complete input rather than duplicating defensive range checks internally.
+Zod 仍然是 HTTP 契约边界，但存储的状态不因其存在而被假定为有效。`getNextRequiredStep()` 和提交验证复用了冻结的身高、体重、目标体重和整数年龄标量限制。这保护了恢复/提交免受违反当前不变量的遗留、手动、种子或非 HTTP 数据的影响。因此计算函数可以继续接受已验证的完整输入，而无需在内部重复防御性的范围检查。
 
-## D028 — Remote E2E skips local database bootstrap
+## D028 — 远程 E2E 跳过本地数据库引导
 
-`E2E_BASE_URL` is a production/deployed-environment verification mode. The E2E wrapper now starts PostgreSQL, applies migrations, and resets fixtures only for local execution. Remote mode launches Playwright directly against the supplied URL. This keeps production smoke evidence independent from local Docker availability and avoids touching an unrelated test database.
+`E2E_BASE_URL` 是生产/已部署环境的验证模式。E2E 包装器现在仅在本地执行时启动 PostgreSQL、应用迁移和重置固定数据。远程模式直接针对提供的 URL 启动 Playwright。这使生产冒烟证据独立于本地 Docker 可用性，并避免接触无关的测试数据库。
 
-## D029 — Product-facing UI, reviewer-facing engineering evidence
+## D029 — 面向产品的 UI，面向评审者的工程证据
 
-The public funnel is not an architecture presentation. Engineering terms such as progressive persistence, versioned result snapshot, access boundary, server state, deterministic implementation, and FREE/ACTIVE transition belong in README/docs/tests. The live UI instead explains user value: body metrics, calorie estimate, goal timeline, and a concise wellness disclaimer.
+公共漏斗不是架构展示。渐进式持久化、带版本的结果快照、访问边界、服务端状态、确定性实现和 FREE/ACTIVE 转换等工程术语应保留在 README/docs/tests 中。实时 UI 改为解释用户价值：身体指标、卡路里估算、目标时间线和简洁的健康声明。
 
-Mock payment remains transparent without exposing backend mechanics: the paywall states that no payment details are required and the user will not be charged, while details about the idempotency key and subscription-state transition remain in reviewer documentation.
+模拟支付保持透明而不暴露后端机制：paywall 声明无需支付信息且用户不会被扣费，而幂等键和订阅状态转换的细节保留在评审者文档中。
 
-This corrects an earlier reviewer-first interpretation that over-optimized the live page for demonstrating implementation details. Reviewer discoverability is still provided by D023, but on the repository surface rather than inside the end-user experience.
+这纠正了早期评审者优先的解读——过度优化了实时页面以展示实现细节。评审者可发现性仍通过 D023 提供，但在仓库层面而非终端用户体验内部。
 
-## D030 — Live client BMI preview from the shared pure calculation
+## D030 — 基于共享纯函数的实时客户端 BMI 预览
 
-Once height is already saved, the current-weight step calculates BMI immediately after the draft weight becomes valid. The preview imports the same pure `calculateBmi()` domain function used by submission, so the browser does not carry a second formula or threshold table. This is presentation feedback only: it does not persist a result and does not replace the canonical server-side snapshot created on submission.
+一旦身高已保存，当前体重步骤在草案体重变得有效后立即计算 BMI。预览导入与提交使用的相同纯 `calculateBmi()` 域函数，因此浏览器不携带第二个公式或阈值表。这仅是展示反馈：它不持久化结果，也不替代提交时创建的规范服务端快照。
 
-The preview maps BMI into two clear product severities: normal uses a positive green state, while any value outside the standard range uses a stronger destructive/red warning state. The copy still avoids calling BMI alone “dangerous” because it is a screening measure rather than a diagnosis; stronger visual salience does not turn the metric into a medical conclusion.
+预览将 BMI 映射为两个清晰的产品严重性级别：正常使用积极的绿色状态，而标准范围外的任何值使用更强的破坏性/红色警告状态。文案仍避免仅凭 BMI 声称"危险"，因为它是筛查手段而非诊断；更强的视觉显著性不会将该指标变成医学结论。
 
-Assessment numeric fields retain `type=number` and mobile `inputMode`, but suppress browser-native spinner controls through local styling so height/current-weight/age/target-weight entry remains visually consistent with the product surface. Each numeric label row shows the accepted range (for example `120–230 cm`) without reverting to developer-oriented “accepted range” helper copy below the field.
+评估数值字段保留 `type=number` 和移动端 `inputMode`，但通过本地样式抑制浏览器原生的 spinner 控件，使身高/当前体重/年龄/目标体重输入在视觉上与产品表面保持一致。每个数值标签行显示接受的范围（例如 `120–230 cm`），而不在字段下方回退到面向开发者的"接受范围"辅助文案。
 
-## D031 — Cookie authority + opaque URL order correlation with landing prewarm
+## D031 — cookie 权威 + 不透明 URL 订单关联与落地页预热
 
-The public assessment UUID is surfaced as `?order=<uuid>` for flow correlation and reviewer-visible identity, but it never selects or authorizes server data. Ownership remains the HttpOnly `health_assessment_session` cookie. Supplying an old or foreign `order` without the owning cookie creates/resolves the current browser's own session and the page replaces the URL with that session's order. This avoids an IDOR-shaped design where a copied URL becomes sufficient authentication.
+公共评估 UUID 以 `?order=<uuid>` 形式呈现用于流程关联和评审者可见的身份，但它从不选择或授权服务器数据。所有权仍属于 HttpOnly `health_assessment_session` cookie。在没有所属 cookie 的情况下提供旧的或外部的 `order` 会创建/解析当前浏览器自己的会话，页面会替换为该会话的 order。这避免了 IDOR 形状的设计——复制的 URL 成为足够的认证。
 
-This is intentionally inspired by the observed BetterMe identity split. Repeated live checks, including copying an existing order URL into a clean private window, showed that the URL UUID alone does not restore the prior questionnaire; the separate browser cookie is also required. Our implementation follows the same security shape: the cookie is authority and `order` is correlation. The landing page prewarms the one-session/one-assessment aggregate, and a 30-second one-shot client handoff prevents duplicate sequential bootstrap requests during normal CTA navigation while a normal request remains the fallback. The session-route integration test already proves that a foreign `order` without the owning cookie cannot select another assessment, so a third browser E2E is intentionally not added merely to duplicate that security contract.
+这是有意受到观察到的 BetterMe 身份分离的启发。反复的实时检查，包括将现有订单 URL 复制到干净的隐私窗口，显示仅 URL UUID 无法恢复先前的问卷；还需要单独的浏览器 cookie。我们的实现遵循相同的安全形状：cookie 是权威，`order` 是关联。落地页预热单会话/单评估聚合，30 秒一次性客户端交接防止正常 CTA 导航期间的重复顺序引导请求，同时正常请求仍作为回退。会话路由集成测试已证明没有所属 cookie 的外部 `order` 无法选择另一个评估，因此有意不添加第三个浏览器 E2E 仅仅为了重复该安全契约。
 
 
-## D032 — Target-weight BMI is previewed as projected wellness feedback
+## D032 — 目标体重 BMI 作为预测健康反馈进行预览
 
-The final target-weight step reuses the saved height and the same pure `calculateBmi()` function to show the BMI that the entered target would imply before submission. The preview is explicitly labeled `Target BMI` so it is not confused with the user's current BMI, and it remains presentation-only: no result snapshot is written until the normal submit transaction completes.
+最终的目标体重步骤复用已保存的身高和相同的纯 `calculateBmi()` 函数，在提交前显示输入目标所暗示的 BMI。预览显式标记为 `Target BMI` 以免与用户当前 BMI 混淆，且它保持仅展示：在正常提交事务完成之前不写入结果快照。
 
-The four existing BMI categories reuse the same visual severity language as the current-weight preview, with target-specific copy. Normal targets use a positive green state; underweight, overweight, and obese targets all use the stronger destructive/red warning state, while wording stays proportional and avoids treating BMI as a diagnosis. The warning does not hard-block submission solely because BMI is outside the standard range; the existing scalar and goal-direction domain rules remain the authoritative write constraints.
+四个现有的 BMI 类别复用与当前体重预览相同的视觉严重性语言，使用针对目标的文案。正常目标使用积极的绿色状态；体重不足、超重和肥胖目标均使用更强的破坏性/红色警告状态，同时措辞保持比例并避免将 BMI 视为诊断。警告不会仅因 BMI 超出标准范围而硬性阻止提交；现有的标量和目标方向域规则仍是权威的写入约束。
 
-## D033 — Dedicated 1:1 subscription extension table
+## D033 — 专用 1:1 订阅扩展表
 
-The final persistence model promotes access state from an `AnonymousSession` column into a dedicated `Subscription` table because the challenge explicitly asks the schema to show user/session, assessment data, and subscription information as related records. `Subscription.sessionId` is both primary key and foreign key, so the relation is exactly 1:1 without introducing a second meaningless identifier.
+最终持久化模型将访问状态从 `AnonymousSession` 列提升到专用的 `Subscription` 表，因为挑战明确要求模式显示用户/会话、评估数据和订阅信息作为关联记录。`Subscription.sessionId` 既是主键又是外键，因此关系恰好是 1:1，无需引入第二个无意义的标识符。
 
-The migration backfills every existing session before dropping the old column, preserving FREE/ACTIVE state for production and the seeded evaluator session. Fresh session creation writes assessment and subscription rows together. Payment-event insertion and FREE→ACTIVE activation remain transactional. The table intentionally does not invent plans, expiry, renewal, cancellation, or provider identifiers that the mock-payment scope does not own. Missing subscription data fails closed to FREE at read boundaries.
+迁移在删除旧列之前回填每个现有会话，为生产环境和种子评估者会话保留 FREE/ACTIVE 状态。新会话创建同时写入评估和订阅行。支付事件插入和 FREE→ACTIVE 激活保持事务性。该表有意不发明计划、过期、续订、取消或模拟支付范围不拥有的提供商标识符。缺失的订阅数据在读取边界失败关闭到 FREE。
 
-## D034 — Recover the browser after a stale optimistic write
+## D034 — 乐观并发冲突后的浏览器恢复
 
-The server continues to reject stale PATCH requests with `409 ASSESSMENT_VERSION_CONFLICT`; that concurrency rule is unchanged. The browser now treats the conflict as a recoverable synchronization event: it fetches `GET /api/assessment`, replaces its local revision/answers with canonical persisted state, and resumes at the latest server-derived step. If another tab already completed the assessment, the stale tab follows the completed result instead.
+服务器继续使用 `409 ASSESSMENT_VERSION_CONFLICT` 拒绝过时的 PATCH 请求；该并发规则不变。浏览器现在将冲突视为可恢复的同步事件：它获取 `GET /api/assessment`，用规范的持久化状态替换其本地修订/答案，并在最新的服务器派生步骤处恢复。如果另一个标签页已完成评估，过时的标签页则跟随已完成的结果。
 
-This keeps optimistic concurrency strict while avoiding a poor UX where the user sees a conflict message but remains trapped on state that can never be saved successfully.
+这保持了乐观并发的严格性，同时避免了用户看到冲突消息但仍被困在永远无法成功保存的状态上的糟糕 UX。
 
-## D035–D039 — Boundary/invariant hardening
+## D035–D039 — 边界/不变量加固
 
-A third interviewer-style audit moved below type-shape drift and attacked failure atomicity, HTTP semantics, and persistence invariants. Body-bearing mutation routes now accept only `application/json`, returning `415` before parsing other media types. Step CAS writes use PostgreSQL-backed `updateManyAndReturn` so a successful response is tied to its own mutation row rather than a later SELECT. Committed CHECK constraints backstop scalar bounds, nonnegative revision, lifecycle timestamp consistency, payment-key shape, and structural result sanity. Payment replay continues through the idempotent ACTIVE transition instead of returning early on the dedupe record, and bootstrap duplicate-safely repairs missing assessment/subscription children for an existing session.
+第三次面试官式审计移除了类型形状漂移，并攻击了故障原子性、HTTP 语义和持久化不变量。携带 body 的变更路由现在仅接受 `application/json`，在解析其他 media 类型之前返回 `415`。步骤 CAS 写入使用 PostgreSQL 支持的 `updateManyAndReturn`，因此成功响应与其自身变更行绑定，而非后续的 SELECT。已提交的 CHECK 约束兜底标量边界、非负修订、生命周期时间戳一致性、支付键形状和结构化结果完整性。支付重放继续通过幂等 ACTIVE 转换，而非在去重记录上提前返回，引导安全地为现有会话修复缺失的评估/订阅子项。
 
-Cross-field goal/target compatibility intentionally remains outside a database CHECK: editing goal/current weight is allowed to retain an older target as draft data while derived progress moves back to `TARGET_WEIGHT`. That distinction keeps database constraints structural and domain rules semantic.
+跨字段目标/目标兼容性有意保留在数据库 CHECK 之外：编辑目标/当前体重允许保留较旧的目标作为草案数据，同时派生进度移回 `TARGET_WEIGHT`。该区分使数据库约束保持结构性，域规则保持语义性。

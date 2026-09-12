@@ -1,10 +1,10 @@
-# AI collaboration retrospective
+# AI 协作回顾
 
-## How AI was used
+## AI 的使用方式
 
-AI was used as an implementation and review accelerator, not as the source of truth for requirements. It helped summarize the reference funnel, propose domain/API shapes, draft test scenarios, implement vertical slices, audit dependency versions, and diagnose CI/deployment failures. Each accepted change remained constrained by reviewed acceptance criteria and executable tests.
+AI 被用作实现和审查的加速器，而非需求的唯一真相来源。它帮助总结参考漏斗、提出领域/API 形状、起草测试场景、实现垂直切片、审计依赖版本以及诊断 CI/部署故障。每次接受的更改仍然受到已审查的验收标准和可执行测试的约束。
 
-The working loop was deliberately narrow:
+工作循环被刻意保持精简：
 
 ```text
 requirement / observed behavior
@@ -15,32 +15,32 @@ requirement / observed behavior
   -> developer review and refactor
 ```
 
-## Where AI saved time
+## AI 节省时间的地方
 
-The highest leverage came from quickly enumerating edge cases and turning them into concrete test matrices: resumable progress, out-of-order steps, stale optimistic revisions, repeated submission, concurrent idempotent payment, FREE-versus-ACTIVE result projection, and deployment reproducibility. AI also accelerated repetitive adapter/DTO/component work while the domain contracts stayed explicit.
+最大的杠杆作用来自于快速枚举边界情况并将其转化为具体的测试矩阵：可恢复的进度、乱序步骤、过时的乐观修订、重复提交、并发幂等支付、FREE 与 ACTIVE 结果投影，以及部署可重现性。AI 还加速了重复性的适配器/DTO/组件工作，而领域契约则保持显式。
 
-## Proposals or implementations that were rejected or corrected
+## 被拒绝或纠正的提案或实现
 
-1. **Persisted numeric/current step pointer.** The early design stored progress separately from answers. After auditing the reference funnel and dependency behavior, this was rejected because answers and `currentStep` could drift. The final model persists facts and derives `nextRequiredStep` from semantic answer keys.
-2. **Client-side premium hiding.** A tempting result design sent full result data and blurred premium values. This was rejected because CSS is not authorization. FREE responses now omit protected values entirely and return only `{ locked: true }`.
-3. **Latest-version upgrades without compatibility proof.** ESLint 10 and TypeScript 7 were both evaluated. The project itself largely worked, but the current Next lint/plugin stack did not support those versions cleanly, so both upgrades were rolled back rather than weakening linting or carrying custom compatibility hacks.
-4. **Production Prisma lifecycle.** The production database helper created a fresh Prisma/pg pool on repeated lookups. Local tests did not expose it, but the first public concurrent Playwright run produced `P2037 TooManyConnections`. A production-mode failing regression test was added first; the fix reuses one application client and caps the pool at four connections.
-5. **Personalized-response caching and semantic target writes.** A final interviewer-style code review found that session-scoped JSON had no explicit no-store policy, and a scalar-valid but goal-inconsistent target could be persisted while the funnel stayed on the same step. Failing integration assertions were added first; responses are now `private, no-store`, and inconsistent target candidates return `422 STEP_VALUE_INCONSISTENT` without mutating revision.
-6. **Persisted-data trust and remote test isolation.** A technical-interview pressure test found that domain completion treated any non-null scalar already in PostgreSQL as valid, even when it violated the HTTP contract range. RED domain/submission tests proved the gap; domain validity now rechecks the shared bounds. The same pass removed unnecessary local PostgreSQL bootstrap from `E2E_BASE_URL` runs so deployed-environment tests depend only on the deployed system.
-7. **Reviewer evidence leaked into product copy.** The implementation over-applied the “make evidence easy to review” goal and put persistence, snapshot, access-boundary, deterministic-demo, and server-transition narration directly into the live funnel. The user rejected that presentation. RED-first component expectations were changed to require end-user value language; the live copy now reads as a wellness product while technical proof remains in README/docs/tests.
-8. **The first type-safety audit was incomplete.** The repository already had a `contracts/` directory, and the initial review incorrectly treated that as stronger evidence than the actual call graph: browser response DTOs were still duplicated and `fetch().json()` was trusted through a generic assertion. After that miss was challenged, a second source-of-truth audit deliberately searched for the same class of problem elsewhere. It found route-local error/status contracts, duplicated step/UI/persistence mappings, weak compiler defaults, missing Prisma/domain alignment checks, toolchain-version drift risk, and ambiguous lost-response recovery. The correction was not another documentation claim: each boundary gained executable type/runtime/test evidence.
-9. **Server retry safety was not automatically browser retry safety.** Submit was idempotent on the server and step writes were concurrency-safe, but an HTTP response could be lost after commit and leave React with stale revision/state. The browser now reconciles canonical state after ambiguous PATCH/submit failures; tests explicitly simulate “commit succeeded, response lost” for both paths.
-10. **The next audit found persistence/HTTP invariants below the type layer.** A successful CAS write performed a second SELECT before returning, so a later revision could commit in that gap and make the first writer report somebody else’s newer revision. JSON routes also parsed `text/plain` bodies, database scalar/lifecycle rules existed only above PostgreSQL, and payment replay trusted the event record without re-establishing ACTIVE access if that side effect had been externally lost. RED integration tests reproduced each case. Step writes now use `updateManyAndReturn`, JSON-body routes enforce `application/json` with `415`, committed CHECK constraints backstop structural invariants, and payment replay idempotently re-applies the access side effect.
+1. **持久化的数字/当前步骤指针。** 早期设计将进度与答案分开存储。在审计参考漏斗和依赖行为后，此方案被拒绝，因为答案和 `currentStep` 可能会漂移。最终模型持久化事实，并从语义答案键派生 `nextRequiredStep`。
+2. **客户端 premium 隐藏。** 一个诱人的结果设计发送完整结果数据并模糊 premium 值。此方案被拒绝，因为 CSS 不是授权机制。FREE 响应现在完全省略受保护的值，仅返回 `{ locked: true }`。
+3. **无兼容性证明的最新版本升级。** ESLint 10 和 TypeScript 7 均经过评估。项目本身基本可以运行，但当前的 Next lint/插件堆栈无法干净地支持这些版本，因此两个升级均被回滚，而不是削弱 lint 或引入自定义兼容性 hack。
+4. **生产环境 Prisma 生命周期。** 生产数据库辅助程序在重复查找时创建新的 Prisma/pg 连接池。本地测试未暴露此问题，但首次公开并发 Playwright 运行产生了 `P2037 TooManyConnections`。首先添加了生产模式失败的回归测试；修复方案复用一个应用客户端并将连接池限制为四个连接。
+5. **个性化响应缓存和语义目标写入。** 最终的面试官式代码审查发现，会话范围的 JSON 没有显式的 no-store 策略，并且标量有效但目标不一致的目标可以在漏斗停留在同一步骤时被持久化。首先添加了失败的集成断言；响应现在为 `private, no-store`，不一致的目标候选返回 `422 STEP_VALUE_INCONSISTENT` 而不修改修订。
+6. **持久化数据信任和远程测试隔离。** 技术面试压力测试发现领域完成将 PostgreSQL 中任何非空标量视为有效，即使它违反了 HTTP 契约范围。RED 领域/提交测试证明了差距；领域有效性现在重新检查共享边界。同一轮还移除了 `E2E_BASE_URL` 运行中不必要的本地 PostgreSQL 引导，以便部署环境测试仅依赖已部署的系统。
+7. **审查证据泄露到产品文案中。** 实现过度应用了"使证据易于审查"的目标，将持久化、快照、访问边界、确定性演示和服务器转换叙述直接放入实时漏斗中。用户拒绝了这种呈现方式。RED 优先的组件期望更改为要求终端用户价值语言；实时文案现在读起来像健康产品，而技术证明保留在 README/docs/tests 中。
+8. **首次类型安全审计不完整。** 仓库已有 `contracts/` 目录，初始审查错误地将其视为比实际调用图更强的证据：浏览器响应 DTO 仍然重复，且 `fetch().json()` 通过泛型断言被信任。在该遗漏被质疑后，第二轮真相来源审计有意在其他地方搜索同类问题。它发现了路由本地的错误/状态契约、重复的步骤/UI/持久化映射、弱编译器默认值、缺少 Prisma/领域对齐检查、工具链版本漂移风险，以及不明确的丢失响应恢复。纠正措施不是又一次文档声明：每个边界都获得了可执行的类型/运行时/测试证据。
+9. **服务器重试安全并不等同于浏览器重试安全。** 提交在服务器上是幂等的，步骤写入也是并发安全的，但 HTTP 响应可能在提交后丢失，导致 React 持有过时的修订/状态。浏览器现在在模糊的 PATCH/提交失败后协调规范状态；测试明确模拟了两条路径的"提交成功、响应丢失"。
+10. **下一轮审计发现了类型层之下的持久化/HTTP 不变量。** 成功的 CAS 写入在返回前执行了第二次 SELECT，因此后续修订可能在该间隙中提交，使第一个写入者报告其他人较新的修订。JSON 路由也解析 `text/plain` 主体，数据库标量/生命周期规则仅存在于 PostgreSQL 之上，支付重放信任事件记录而未在该副作用被外部丢失时重新建立 ACTIVE 访问。RED 集成测试复现了每种情况。步骤写入现在使用 `updateManyAndReturn`，JSON 主体路由强制执行 `application/json` 并返回 `415`，已提交的 CHECK 约束支持结构不变量，支付重放幂等性地重新应用访问副作用。
 
-## Evidence used to accept changes
+## 用于接受更改的证据
 
-At delivery time the repository has:
+在交付时，仓库包含：
 
-- 83 Vitest unit/component tests;
-- 49 PostgreSQL integration tests against committed migrations;
-- two Playwright browser flows covering FREE and paid journeys;
-- GitHub Actions gates for lint, route-aware typecheck, tests, production build, and immutable container publication;
-- the same two Playwright flows passing against the public HTTPS deployment;
-- a reproducible GHCR -> guarded migration -> standalone Next.js -> Caddy release path.
+- 83 个 Vitest 单元/组件测试；
+- 49 个针对已提交迁移的 PostgreSQL 集成测试；
+- 两个 Playwright 浏览器流程，覆盖 FREE 和付费旅程；
+- GitHub Actions 门控用于 lint、路由感知类型检查、测试、生产构建和不可变容器发布；
+- 相同的两个 Playwright 流程在公共 HTTPS 部署上通过；
+- 可重现的 GHCR -> 受保护迁移 -> 独立 Next.js -> Caddy 发布路径。
 
-The important AI lesson from the challenge is that strong assistance increases implementation speed, but only explicit contracts and independent evidence prevent fast mistakes from becoming architecture. The most valuable AI interactions were therefore not "generate the whole app" prompts; they were short iterations bounded by a test, a production observation, or a concrete design decision that could be rejected.
+从挑战中得出的重要 AI 经验是，强大的辅助提高了实现速度，但只有显式的契约和独立的证据才能防止快速错误演变成架构问题。因此，最有价值的 AI 交互不是"生成整个应用"的提示；而是由测试、生产观察或可被拒绝的具体设计决策所限定的简短迭代。

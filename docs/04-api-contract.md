@@ -1,20 +1,20 @@
-# API contract v1
+# API 契约 v1
 
-## 1. Conventions
+## 1. 约定
 
-Base path: `/api`
+基础路径：`/api`
 
-Authentication model: anonymous HttpOnly session cookie.
+认证模型：匿名 HttpOnly 会话 cookie。
 
-Content type: `application/json` for request/response bodies unless no body is required.
+内容类型：请求/响应体使用 `application/json`，除非不需要请求体。
 
-All session-scoped API responses, including errors, send `Cache-Control: private, no-store` so personalized assessment/result data is not eligible for shared-cache reuse.
+所有会话作用域的 API 响应（包括错误响应）均发送 `Cache-Control: private, no-store`，以确保个性化的评估/结果数据不被共享缓存复用。
 
-All mutating assessment requests use the current server session; callers do not select another session by sending an arbitrary identifier.
+所有修改评估状态的请求均使用当前服务器会话；调用方不得通过发送任意标识符来选择另一个会话。
 
-All endpoints with JSON request bodies require `Content-Type: application/json` (parameters such as `charset=UTF-8` are allowed). JSON-looking bytes sent as `text/plain` or another media type are rejected with `415 UNSUPPORTED_MEDIA_TYPE` before body parsing. Besides making the HTTP contract explicit, this prevents state-changing JSON routes from accepting CORS-safelisted `text/plain` requests as an alternate browser write path.
+所有具有 JSON 请求体的端点均要求 `Content-Type: application/json`（允许 `charset=UTF-8` 等参数）。以 `text/plain` 或其他媒体类型发送的 JSON 格式字节流将在请求体解析前被拒绝，返回 `415 UNSUPPORTED_MEDIA_TYPE`。除了使 HTTP 契约更加明确外，这还可防止状态变更的 JSON 路由接受 CORS 安全列表中的 `text/plain` 请求作为替代的浏览器写入路径。
 
-## 2. Error envelope
+## 2. 错误信封
 
 ```json
 {
@@ -28,7 +28,7 @@ All endpoints with JSON request bodies require `Content-Type: application/json` 
 }
 ```
 
-Initial stable error codes:
+初始稳定错误码：
 
 - `VALIDATION_ERROR`
 - `SESSION_REQUIRED`
@@ -45,9 +45,9 @@ Initial stable error codes:
 
 ## 3. `POST /api/session`
 
-Create or reuse the anonymous browser session and ensure its single v1 assessment exists.
+创建或复用匿名浏览器会话，并确保其唯一的 v1 评估存在。
 
-### Response `200` or `201`
+### 响应 `200` 或 `201`
 
 ```json
 {
@@ -70,15 +70,15 @@ Create or reuse the anonymous browser session and ensure its single v1 assessmen
 }
 ```
 
-`orderId` is the opaque assessment UUID exposed as a correlation identifier in `/assessment?order=...` and `/result?order=...`. It is deliberately **not** an authorization credential: API reads/writes continue to resolve ownership exclusively from the server-issued session cookie, and an `order` query parameter without the matching cookie cannot resume another assessment.
+`orderId` 是作为关联标识符暴露在 `/assessment?order=...` 和 `/result?order=...` 中的不透明评估 UUID。它**不是**授权凭证：API 读取/写入操作始终仅通过服务器签发的会话 cookie 来解析所有权，没有匹配 cookie 的 `order` 查询参数无法恢复另一个评估。
 
-The raw session identifier is not exposed in the JSON body. The route issues `health_assessment_session` as a 30-day HttpOnly cookie with `SameSite=Lax`, `Path=/`, and `Secure` enabled in production. A missing, malformed, or unknown cookie does not let the client select an identity; the server creates and issues a new session instead. The bootstrap response includes the current answers so a prefetched landing-page bootstrap can be consumed by the assessment screen without an immediate second recovery request.
+原始会话标识符不会在 JSON 响应体中暴露。该路由签发名为 `health_assessment_session` 的 30 天 HttpOnly cookie，设置 `SameSite=Lax`、`Path=/`，并在生产环境中启用 `Secure`。缺失、格式错误或未知的 cookie 不允许客户端选择身份；服务器会创建并签发新的会话。引导响应包含当前答案，以便预取的着陆页引导数据可直接供评估页面使用，无需立即发送二次恢复请求。
 
 ## 4. `GET /api/assessment`
 
-Restore current assessment state.
+恢复当前评估状态。
 
-### Response `200`
+### 响应 `200`
 
 ```json
 {
@@ -97,19 +97,19 @@ Restore current assessment state.
 }
 ```
 
-The endpoint is the canonical recovery source after refresh/revisit. `nextRequiredStep` is a response projection derived from persisted answers; it is not a database column. If all required answers are valid, `nextRequiredStep` is `null` and the assessment is ready to submit.
+该端点是刷新/重新访问后的标准恢复来源。`nextRequiredStep` 是根据已持久化的答案派生的响应投影，并非数据库列。如果所有必需答案均已有效填写，`nextRequiredStep` 为 `null`，表示评估已可提交。
 
 ## 5. `PATCH /api/assessment/steps/:stepKey`
 
-Persist one assessment step.
+持久化单个评估步骤。
 
-Example:
+示例：
 
 ```http
 PATCH /api/assessment/steps/weight
 ```
 
-### Request
+### 请求
 
 ```json
 {
@@ -118,21 +118,21 @@ PATCH /api/assessment/steps/weight
 }
 ```
 
-The Zod schema selected by `stepKey` validates the `value` type/range. The v1 route keys and current scalar contracts are:
+由 `stepKey` 选择的 Zod 模式验证 `value` 的类型/范围。v1 路由键及当前标量契约如下：
 
-| Route key | Accepted value |
+| 路由键 | 接受的值 |
 |---|---|
-| `gender` | `MALE`, `FEMALE`, `OTHER` |
-| `goal` | `LOSE_WEIGHT`, `MAINTAIN`, `GAIN_WEIGHT` |
-| `activity` | `SEDENTARY`, `LIGHT`, `MODERATE`, `ACTIVE`, `VERY_ACTIVE` |
-| `height` | number, 120–230 cm inclusive |
-| `weight` | number, 25–300 kg inclusive |
-| `age` | integer, 18–100 inclusive |
-| `target-weight` | number, 25–300 kg inclusive |
+| `gender` | `MALE`、`FEMALE`、`OTHER` |
+| `goal` | `LOSE_WEIGHT`、`MAINTAIN`、`GAIN_WEIGHT` |
+| `activity` | `SEDENTARY`、`LIGHT`、`MODERATE`、`ACTIVE`、`VERY_ACTIVE` |
+| `height` | 数值，120–230 cm（含） |
+| `weight` | 数值，25–300 kg（含） |
+| `age` | 整数，18–100（含） |
+| `target-weight` | 数值，25–300 kg（含） |
 
-These numeric bounds are implementation choices for the challenge and are not claimed to be supplied by the source brief. Cross-field target-weight validity is handled by the domain step policy rather than by the scalar request schema.
+这些数值边界是本挑战赛的实现选择，并非声称由源需求文档提供。跨字段的 target-weight 有效性由领域步骤策略处理，而非由标量请求模式处理。
 
-### Response `200`
+### 响应 `200`
 
 ```json
 {
@@ -142,11 +142,11 @@ These numeric bounds are implementation choices for the challenge and are not cl
 }
 ```
 
-If an earlier edit invalidates a dependent answer, `nextRequiredStep` can move backward to the first missing or context-invalid step. Existing later values are not automatically deleted. For v1, target-weight consistency follows a simple deterministic rule: lose requires target below current weight, gain requires target above current weight, and maintain requires an equal target. This is challenge product logic, not medical guidance.
+如果早期编辑使依赖答案失效，`nextRequiredStep` 可能向后回退到第一个缺失或上下文无效的步骤。已有的后续值不会被自动删除。在 v1 中，target-weight 一致性遵循简单的确定性规则：减重要求目标体重低于当前体重，增重要求目标体重高于当前体重，维持要求目标体重等于当前体重。这是挑战赛的产品逻辑，而非医疗指导。
 
-A missing or malformed session cookie returns `401 SESSION_REQUIRED`. A syntactically valid but unknown session identity cannot select another assessment and returns `404 ASSESSMENT_NOT_FOUND`.
+缺失或格式错误的会话 cookie 返回 `401 SESSION_REQUIRED`。语法有效但未知的会话身份无法选择其他评估，返回 `404 ASSESSMENT_NOT_FOUND`。
 
-### Not found `404`
+### 未找到 `404`
 
 ```json
 {
@@ -158,7 +158,7 @@ A missing or malformed session cookie returns `401 SESSION_REQUIRED`. A syntacti
 }
 ```
 
-### Conflict `409`
+### 版本冲突 `409`
 
 ```json
 {
@@ -170,7 +170,7 @@ A missing or malformed session cookie returns `401 SESSION_REQUIRED`. A syntacti
 }
 ```
 
-### Out-of-order `409`
+### 乱序提交 `409`
 
 ```json
 {
@@ -184,9 +184,9 @@ A missing or malformed session cookie returns `401 SESSION_REQUIRED`. A syntacti
 }
 ```
 
-### Semantically inconsistent value `422`
+### 语义不一致的值 `422`
 
-A scalar-valid target weight is still rejected if it contradicts the already selected goal/current weight. The invalid candidate is not persisted and the aggregate revision does not advance.
+即使通过标量验证的目标体重，如果与已选择的目标/当前体重相矛盾，仍会被拒绝。无效候选项不会被持久化，聚合版本号不会递增。
 
 ```json
 {
@@ -202,11 +202,11 @@ A scalar-valid target weight is still rejected if it contradicts the already sel
 
 ## 6. `POST /api/assessment/submit`
 
-Finalize the assessment and generate the immutable result snapshot.
+完成评估并生成不可变的结果快照。
 
-### Request
+### 请求
 
-No client calculation values are accepted. The client includes only the aggregate revision it most recently observed so first-time submission cannot race with a newer answer mutation.
+不接受任何客户端计算值。客户端仅包含其最近观察到的聚合版本号，以确保首次提交不会与较新的答案变更产生竞争。
 
 ```json
 {
@@ -214,7 +214,7 @@ No client calculation values are accepted. The client includes only the aggregat
 }
 ```
 
-### First successful response `200`
+### 首次成功响应 `200`
 
 ```json
 {
@@ -223,15 +223,15 @@ No client calculation values are accepted. The client includes only the aggregat
 }
 ```
 
-The first successful submit creates the canonical result snapshot and changes the assessment from `IN_PROGRESS` to `COMPLETED` in the same database transaction. The aggregate revision increments once as part of that transition.
+首次成功提交会创建标准结果快照，并在同一数据库事务中将评估状态从 `IN_PROGRESS` 变更为 `COMPLETED`。聚合版本号作为该转换的一部分递增一次。
 
-### Retry semantics
+### 重试语义
 
-If the assessment is already completed and has its canonical result snapshot, return the existing successful state rather than recomputing a different result. This completed-result check takes precedence over a stale `expectedRevision`, allowing a network retry of the successful submit to remain idempotent.
+如果评估已完成并已生成标准结果快照，则返回已有的成功状态，而非重新计算不同的结果。该已完成结果检查优先于过时的 `expectedRevision`，从而允许对成功提交进行网络重试时保持幂等性。
 
-If the assessment is still in progress and `expectedRevision` is stale, return `409 ASSESSMENT_VERSION_CONFLICT`.
+如果评估仍在进行中且 `expectedRevision` 已过时，则返回 `409 ASSESSMENT_VERSION_CONFLICT`。
 
-### Incomplete `409`
+### 未完成 `409`
 
 ```json
 {
@@ -247,9 +247,9 @@ If the assessment is still in progress and `expectedRevision` is stale, return `
 
 ## 7. `GET /api/assessment/result`
 
-Return a subscription-aware server projection of the stored result.
+返回基于订阅状态的存储结果服务器投影。
 
-### Free response `200`
+### 免费版响应 `200`
 
 ```json
 {
@@ -267,9 +267,9 @@ Return a subscription-aware server projection of the stored result.
 }
 ```
 
-Important: premium values are absent from the JSON. They are not returned and blurred by the UI.
+重要提示：付费值不在 JSON 中返回。它们不会被返回，也不会被 UI 模糊处理。
 
-### Active response `200`
+### 付费版响应 `200`
 
 ```json
 {
@@ -289,13 +289,13 @@ Important: premium values are absent from the JSON. They are not returned and bl
 }
 ```
 
-The example values are illustrative contract examples, not frozen calculation expectations.
+示例值仅为契约说明用途，不代表固定的计算预期。
 
 ## 8. `POST /api/pay`
 
-Simulate successful payment and activate the current session subscription.
+模拟支付成功并激活当前会话订阅。
 
-### Request
+### 请求
 
 ```json
 {
@@ -303,7 +303,7 @@ Simulate successful payment and activate the current session subscription.
 }
 ```
 
-### Response `200`
+### 响应 `200`
 
 ```json
 {
@@ -313,11 +313,11 @@ Simulate successful payment and activate the current session subscription.
 }
 ```
 
-`idempotencyKey` is a caller-generated demo key of 1–128 characters using letters, digits, `.`, `_`, `:`, or `-`. It is unique only within the current anonymous session and is not presented as a real provider transaction identifier.
+`idempotencyKey` 是由调用方生成的演示密钥，长度为 1–128 个字符，可使用字母、数字、`.`、`_`、`:` 或 `-`。它仅在当前匿名会话内唯一，不作为真实的支付提供商事务标识符。
 
-### Reproducible cURL
+### 可重现的 cURL
 
-The endpoint is authorized by the server-issued anonymous session cookie. This two-command example creates a disposable session cookie jar and exercises `/api/pay` without requiring browser tooling:
+该端点通过服务器签发的匿名会话 cookie 进行授权。以下两条命令示例创建一个一次性会话 cookie 文件并调用 `/api/pay`，无需浏览器工具：
 
 ```bash
 BASE_URL=https://assessment.bakersean.top
@@ -333,9 +333,9 @@ curl -sS -b "$COOKIE_JAR" \
 rm -f "$COOKIE_JAR"
 ```
 
-Repeating the second request with the same cookie jar and key returns `replayed: true`.
+使用相同的 cookie 文件和密钥重复第二个请求将返回 `replayed: true`。
 
-A replay of the same session-scoped `idempotencyKey` returns the already-applied outcome:
+对同一会话作用域的 `idempotencyKey` 进行重放将返回已应用的结果：
 
 ```json
 {
@@ -345,16 +345,16 @@ A replay of the same session-scoped `idempotencyKey` returns the already-applied
 }
 ```
 
-## 9. Contract testing priorities
+## 9. 契约测试优先级
 
-API tests should assert stable behavior rather than incidental implementation details:
+API 测试应断言稳定的行为，而非偶然的实现细节：
 
-- status code;
-- error code;
-- response shape;
-- omission of premium values;
-- revision progression;
-- persisted state after request;
-- idempotency after retries;
-- derived `nextRequiredStep` after recovery and cross-field edits;
-- strict stale-write conflict behavior.
+- 状态码；
+- 错误码；
+- 响应结构；
+- 付费值的缺失；
+- 版本号递增；
+- 请求后的持久化状态；
+- 重试后的幂等性；
+- 恢复和跨字段编辑后的派生 `nextRequiredStep`；
+- 严格的过时写入冲突行为。

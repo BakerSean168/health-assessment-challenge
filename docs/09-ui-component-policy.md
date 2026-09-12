@@ -1,148 +1,147 @@
-# UI component policy
+# UI 组件策略
 
-## 1. Decision
+## 1. 决策
 
-The project uses **Tailwind CSS v4 + shadcn/ui `base-nova` with Base UI primitives** as the shared UI foundation.
+本项目采用 **Tailwind CSS v4 + shadcn/ui `base-nova`（基于 Base UI 原语）** 作为共享 UI 基础设施。
 
-The default engineering rule is **library first, compose second, create a new primitive last**.
+默认工程规则为**优先使用库组件，其次进行组合，最后才创建新原语**。
 
-This keeps common interaction semantics, accessibility, focus behavior, states, spacing conventions, and visual tokens consistent across the funnel without preventing product-specific design.
+这样可以保持常见交互语义、可访问性、焦点行为、状态、间距约定和视觉 Token 在整个漏斗流程中一致，同时不阻止产品特有的设计定制。
 
-## 2. Selection order
+## 2. 选择优先级
 
-For every UI need:
+针对每一个 UI 需求：
 
 ```text
-1. Is there an appropriate shadcn/ui component?
+1. 是否有合适的 shadcn/ui 组件？
         |
-        +-- yes -> add/use the Base UI-backed component
+        +-- 有 -> 添加/使用基于 Base UI 的组件
         |             |
-        |             -> customize local variants/tokens if needed
+        |             -> 根据需要自定义本地变体/Token
         |
-        +-- no  -> can existing primitives be composed?
+        +-- 无  -> 现有原语能否进行组合？
                       |
-                      +-- yes -> create a product composition
+                      +-- 能 -> 创建产品组合组件
                       |
-                      +-- no  -> implement a focused new primitive
+                      +-- 不能 -> 实现一个专注的新原语
 ```
 
-Before creating a generic component such as `Button`, `Input`, `Dialog`, `RadioGroup`, `Progress`, `Alert`, or `Skeleton`, check shadcn/ui first.
+在创建通用组件（如 `Button`、`Input`、`Dialog`、`RadioGroup`、`Progress`、`Alert` 或 `Skeleton`）之前，请先检查 shadcn/ui 是否已有对应组件。
 
-## 3. What may be customized
+## 3. 可自定义的内容
 
-shadcn/ui installs source into the repository, so local changes are part of the intended model. We may change:
+shadcn/ui 将源代码安装到仓库中，因此本地修改是其预期模型的一部分。我们可以修改：
 
-- variants;
-- spacing and typography tokens;
-- radius and surface treatment;
-- funnel-specific sizing;
-- loading/disabled presentation;
-- composition and supporting copy;
-- icons;
-- responsive behavior.
+- 变体；
+- 间距和排版 Token；
+- 圆角和表面处理；
+- 漏斗流程特定的尺寸；
+- 加载/禁用状态的呈现；
+- 组合方式和辅助文案；
+- 图标；
+- 响应式行为。
 
-Customization should keep the underlying component semantics and accessible interaction behavior unless there is a concrete reason to change them.
+自定义应保持底层组件的语义和可访问交互行为，除非有具体理由需要改变。
 
-## 4. Product components vs primitives
+## 4. 产品组件与原语的区别
 
-A product component is encouraged when it expresses challenge-specific meaning.
+当产品组件表达特定于挑战赛的含义时，鼓励使用产品组件。
 
-Examples:
+示例：
 
 ```text
-components/ui/button.tsx              # shadcn primitive
-components/ui/progress.tsx            # shadcn primitive
-components/ui/radio-group.tsx         # shadcn primitive
+components/ui/button.tsx              # shadcn 原语
+components/ui/progress.tsx            # shadcn 原语
+components/ui/radio-group.tsx         # shadcn 原语
 
 components/assessment/
-  assessment-shell.tsx                # product composition
-  assessment-option-card.tsx          # product composition
-  save-status.tsx                     # product component
-  wellness-profile.tsx                # product component
-  projection-card.tsx                 # product component
+  assessment-shell.tsx                # 产品组合组件
+  assessment-option-card.tsx          # 产品组合组件
+  save-status.tsx                     # 产品组件
+  wellness-profile.tsx                # 产品组件
+  projection-card.tsx                 # 产品组件
 ```
 
-`AssessmentOptionCard` may compose `RadioGroup`, `Card`, and typography styles. It should not independently reimplement roving focus, keyboard selection, or checked-state semantics that the primitive already provides.
+`AssessmentOptionCard` 可以组合 `RadioGroup`、`Card` 和排版样式。它不应独立重新实现原语已提供的漫游焦点、键盘选择或选中状态语义。
 
-## 5. Initial component shortlist
+## 5. 初始组件候选清单
 
-Do **not** install the entire shadcn registry up front. Add components only when a TDD/product slice needs them.
+**不要**预先安装整个 shadcn 注册表。仅当 TDD/产品切片需要时才添加组件。
 
-Likely components for this challenge:
+本挑战赛可能需要的组件：
 
-| Need | Preferred shared component |
+| 需求 | 首选共享组件 |
 |---|---|
-| Primary/back actions | `Button` |
-| Numeric/text entry | `Input` |
-| Single-choice answers | `RadioGroup` |
-| Funnel progress | `Progress` |
-| Result/paywall surfaces | `Card` |
-| Payment/paywall modal if used | `Dialog` |
-| Validation/server error | `Alert` |
-| Loading result surfaces | `Skeleton` |
-| Visual grouping | `Separator` |
+| 主操作/返回操作 | `Button` |
+| 数字/文本输入 | `Input` |
+| 单选答案 | `RadioGroup` |
+| 漏斗流程进度 | `Progress` |
+| 结果/付费墙界面 | `Card` |
+| 支付/付费墙弹窗（如使用） | `Dialog` |
+| 校验/服务器错误 | `Alert` |
+| 加载结果界面 | `Skeleton` |
+| 可视分组 | `Separator` |
 
-This is a forecast, not a dependency checklist.
+此为预估清单，非依赖检查清单。
 
-## 6. Consistency rules
+## 6. 一致性规则
 
-- One shared primitive per semantic role; do not create parallel `PrimaryButton`, `ActionButton`, and `CTAButton` primitives when variants/composition are sufficient.
-- Funnel-specific components may wrap primitives to encode product meaning.
-- Prefer variant APIs and design tokens over repeated arbitrary class strings.
-- Keep form semantics and labels accessible.
-- Do not replace a library primitive merely to reproduce a visual detail that can be expressed through styling.
-- Do not force a library component when its semantics are wrong for the interaction.
+- 每个语义角色仅使用一个共享原语；当变体/组合足够时，不要创建并行的 `PrimaryButton`、`ActionButton` 和 `CTAButton` 原语。
+- 漏斗流程特定组件可以包装原语以编码产品含义。
+- 优先使用变体 API 和设计 Token，而非重复的任意类名字符串。
+- 保持表单语义和标签的可访问性。
+- 不要仅为了复现可以通过样式表达的视觉细节而替换库原语。
+- 当库组件的语义与交互不符时，不要强行使用。
 
-## 7. Testing boundary
+## 7. 测试边界
 
-Do not unit-test shadcn/Base UI internals. Test our behavior:
+不要对 shadcn/Base UI 内部实现进行单元测试。测试我们的行为：
 
-- user can choose an option by accessible role/label;
-- disabled/loading states prevent incorrect progression;
-- validation feedback is discoverable;
-- paywall actions invoke the correct application behavior;
-- keyboard-driven E2E paths work on the critical funnel.
+- 用户可以通过可访问角色/标签选择选项；
+- 禁用/加载状态阻止不正确的流程推进；
+- 校验反馈可被发现；
+- 付费墙操作调用正确的应用行为；
+- 键盘驱动的 E2E 路径在关键漏斗流程中正常工作。
 
-The library is responsible for its primitive implementation; the project is responsible for correct composition and product behavior.
+库负责其原语实现；项目负责正确的组合和产品行为。
 
-## 8. Review checklist
+## 8. 评审检查清单
 
-Before merging a new UI component, ask:
+在合并新 UI 组件之前，请检查：
 
-1. Did we check shadcn/ui for an existing semantic component?
-2. Could this be a variant or composition instead of a new primitive?
-3. Are focus, keyboard, disabled, loading, and error states preserved?
-4. Does it reuse the same tokens/spacing conventions as the rest of the funnel?
-5. Is the abstraction product-specific enough to justify existing?
+1. 是否已检查 shadcn/ui 是否有现成的语义组件？
+2. 这是否可以作为变体或组合，而非新原语？
+3. 焦点、键盘、禁用、加载和错误状态是否已保留？
+4. 是否复用了与漏斗流程其他部分相同的 Token/间距约定？
+5. 该抽象是否足够特定于产品，值得独立存在？
 
-## 9. Installed baseline
+## 9. 已安装基线
 
-As of T15, the repository contains the shadcn/Base UI-backed `Button`, `Progress`, `RadioGroup`, `Input`, `Card`, `Alert`, `Skeleton`, `Separator`, `Dialog`, and `Label` primitives. They were selected because the next three product slices directly need assessment inputs, progress, feedback/loading, and paywall/result surfaces; this is still a focused subset rather than a registry-wide install.
+截至 T15，仓库包含 shadcn/Base UI 支持的 `Button`、`Progress`、`RadioGroup`、`Input`、`Card`、`Alert`、`Skeleton`、`Separator`、`Dialog` 和 `Label` 原语。选择这些组件是因为接下来的三个产品切片直接需要评估输入、进度、反馈/加载和付费墙/结果界面；这仍然是一个聚焦的子集，而非全注册表安装。
 
-`AssessmentShell` is the first product composition and imports shared primitives from `components/ui` rather than implementing equivalent keyboard/focus/progress behavior itself.
+`AssessmentShell` 是第一个产品组合组件，它从 `components/ui` 导入共享原语，而非自行实现等效的键盘/焦点/进度行为。
 
-## 10. T16 product compositions
+## 10. T16 产品组合
 
-The persisted funnel adds two assessment-specific compositions rather than new generic primitives:
+持久化的漏斗流程增加了两个评估特定的组合组件，而非新的通用原语：
 
-- `AssessmentOptionGroup` uses the shadcn/Base UI `RadioGroup` and `RadioGroupItem` for single-choice semantics, keyboard/focus behavior, and checked state;
-- `NumericAnswer` uses shadcn `Input` and `Label`, adding the unit suffix and product sizing while runtime bounds stay shared with the assessment contract.
+- `AssessmentOptionGroup` 使用 shadcn/Base UI 的 `RadioGroup` 和 `RadioGroupItem` 来实现单选语义、键盘/焦点行为和选中状态；
+- `NumericAnswer` 使用 shadcn 的 `Input` 和 `Label`，添加单位后缀和产品尺寸，同时运行时约束与评估契约保持共享。
 
-`AssessmentFunnel` composes these with the existing shared `Button`, `Alert`, `Card`, and `Skeleton`. Numeric input limits are imported from the same domain constant used by server validation so HTML input constraints cannot silently diverge from the runtime contract.
+`AssessmentFunnel` 将这些与现有的共享 `Button`、`Alert`、`Card` 和 `Skeleton` 进行组合。数字输入限制从服务器校验使用的同一领域常量导入，确保 HTML 输入约束不会与运行时契约产生隐式偏离。
 
+## 11. 产品界面与评审界面
 
-## 11. Product surface vs reviewer surface
+公开应用应呈现为一个小型的真实健康产品，而非带注释的工程提交物。实现证明（如乐观并发、持久化时机、结果快照、服务端预测、FREE/ACTIVE 状态、TDD 和数据库行为）应属于 README/文档/测试范畴，而非解释性 UI 文案。
 
-The public application should read like a small real wellness product, not like an annotated engineering submission. Implementation proof such as optimistic concurrency, persistence timing, result snapshots, server-side projection, FREE/ACTIVE state, TDD, and database behavior belongs in README/docs/tests rather than explanatory UI copy.
+产品文案仍可披露对用户信任有实质影响的行为，例如一般性健康免责声明或结账流程不收集支付信息的事实。这些披露应使用用户语言而非架构术语来表述。
 
-Product copy may still disclose behavior that materially affects user trust, such as a general-wellness disclaimer or the fact that the checkout does not collect payment details. Those disclosures should be phrased in user terms rather than architecture terms.
+这种分离是有意为之的：应用通过正确的行为来展示产品完成度，而仓库则展示其正确性的原因和方式。
 
-This separation is deliberate: the application demonstrates product completion by behaving correctly, while the repository demonstrates how and why it is correct.
+## 11. 实时数值反馈
 
-## 11. Live numeric feedback
+数值评估字段复用共享的 shadcn/Base UI `Input`；原生浏览器步进按钮在视觉上被隐藏，而非引入一个并行的自定义输入原语。体重步骤将现有的 `Card` 与共享的纯函数 `calculateBmi()` 进行组合，在输入的体重有效且有已保存身高时提供即时 BMI 预览。该预览为瞬态 UI 反馈；最终结果仍以服务器创建的快照为准。
 
-Numeric assessment fields reuse the shared shadcn/Base UI `Input`; native browser stepper buttons are visually suppressed rather than introducing a parallel custom input primitive. The weight step composes the existing `Card` with the shared pure `calculateBmi()` function to provide an immediate BMI preview once the entered weight is valid and a saved height is available. The preview is transient UI feedback; the final result remains the server-created snapshot.
+## 12. 落地页预热与流程关联
 
-## 12. Landing prewarm and flow correlation
-
-The product CTA is a small composition around Next.js `Link`: the route remains prefetchable, while a background `/api/session` bootstrap obtains the server-owned assessment state and its opaque `orderId`. The assessment screen consumes that short-lived prefetched response instead of immediately issuing the same bootstrap again. This reduces the initial skeleton window without moving session ownership into client storage or the query string.
+产品 CTA 是围绕 Next.js `Link` 的一个小组合：路由保持可预取，同时后台 `/api/session` 引导获取服务器拥有的评估状态及其不透明 `orderId`。评估页面消费该短时预取响应，而非立即再次发起相同的引导请求。这减少了初始骨架屏的等待时间，同时不会将会话所有权移入客户端存储或查询字符串。
