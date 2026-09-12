@@ -1,3 +1,6 @@
+import { ERROR_CODE } from "@/contracts/error-code";
+import { assertNever } from "@/lib/assert-never";
+
 import { calculateAssessmentResult } from "../domain/calculation";
 import {
   COMPLETED_ASSESSMENT_STATUS,
@@ -14,11 +17,11 @@ export interface SubmitAssessmentInput {
 
 export type SubmitAssessmentResult =
   | { ok: true; replayed: boolean }
-  | { ok: false; code: "ASSESSMENT_NOT_FOUND" }
-  | { ok: false; code: "ASSESSMENT_VERSION_CONFLICT" }
+  | { ok: false; code: typeof ERROR_CODE.ASSESSMENT_NOT_FOUND }
+  | { ok: false; code: typeof ERROR_CODE.ASSESSMENT_VERSION_CONFLICT }
   | {
       ok: false;
-      code: "ASSESSMENT_INCOMPLETE";
+      code: typeof ERROR_CODE.ASSESSMENT_INCOMPLETE;
       missingSteps: AssessmentStep[];
     };
 
@@ -29,7 +32,7 @@ export async function submitAssessment(
   const state = await repository.findSubmissionState(input.sessionId);
 
   if (!state) {
-    return { ok: false, code: "ASSESSMENT_NOT_FOUND" };
+    return { ok: false, code: ERROR_CODE.ASSESSMENT_NOT_FOUND };
   }
 
   if (state.assessment.status === COMPLETED_ASSESSMENT_STATUS) {
@@ -40,7 +43,7 @@ export async function submitAssessment(
   }
 
   if (state.assessment.revision !== input.expectedRevision) {
-    return { ok: false, code: "ASSESSMENT_VERSION_CONFLICT" };
+    return { ok: false, code: ERROR_CODE.ASSESSMENT_VERSION_CONFLICT };
   }
 
   const validation = validateAssessmentReadyForSubmission(
@@ -49,7 +52,7 @@ export async function submitAssessment(
   if (!validation.ready) {
     return {
       ok: false,
-      code: "ASSESSMENT_INCOMPLETE",
+      code: ERROR_CODE.ASSESSMENT_INCOMPLETE,
       missingSteps: validation.missingSteps,
     };
   }
@@ -71,8 +74,10 @@ export async function submitAssessment(
     case "replayed":
       return { ok: true, replayed: true };
     case "not_found":
-      return { ok: false, code: "ASSESSMENT_NOT_FOUND" };
+      return { ok: false, code: ERROR_CODE.ASSESSMENT_NOT_FOUND };
     case "conflict":
-      return { ok: false, code: "ASSESSMENT_VERSION_CONFLICT" };
+      return { ok: false, code: ERROR_CODE.ASSESSMENT_VERSION_CONFLICT };
+    default:
+      return assertNever(persistence, "assessment submission persistence result");
   }
 }

@@ -1,3 +1,5 @@
+import { assertNever } from "@/lib/assert-never";
+
 import { ASSESSMENT_INPUT_LIMITS } from "./input-limits";
 
 export const GENDER_VALUES = ["MALE", "FEMALE", "OTHER"] as const;
@@ -95,6 +97,8 @@ export function isTargetWeightCompatible(answers: AssessmentAnswers): boolean {
       return targetWeightKg > weightKg;
     case "MAINTAIN":
       return targetWeightKg === weightKg;
+    default:
+      return assertNever(goal, "assessment goal");
   }
 }
 

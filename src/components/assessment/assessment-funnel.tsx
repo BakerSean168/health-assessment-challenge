@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ERROR_CODE } from "@/contracts/error-code";
+import { assertNever } from "@/lib/assert-never";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { calculateBmi } from "@/modules/assessment/domain/calculation";
@@ -154,9 +156,6 @@ const questionByStep = {
   },
 } as const satisfies Record<AssessmentStep, OptionQuestion | NumericQuestion>;
 
-function assertNever(value: never): never {
-  throw new Error(`Unexpected assessment variant: ${JSON.stringify(value)}`);
-}
 
 function valueForStep(
   answers: Required<AssessmentAnswers>,
@@ -178,7 +177,7 @@ function valueForStep(
     case "TARGET_WEIGHT":
       return answers.targetWeightKg?.toString() ?? "";
     default:
-      return assertNever(step);
+      return assertNever(step, "assessment step");
   }
 }
 
@@ -422,7 +421,7 @@ export function AssessmentFunnel({
             );
             setError(
               caught instanceof AssessmentBrowserApiError &&
-                caught.code === "ASSESSMENT_VERSION_CONFLICT"
+                caught.code === ERROR_CODE.ASSESSMENT_VERSION_CONFLICT
                 ? "Your assessment changed in another tab. We refreshed the latest saved progress."
                 : "We restored the latest saved progress after the connection was interrupted.",
             );

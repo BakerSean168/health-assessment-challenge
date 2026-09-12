@@ -1,4 +1,6 @@
 import { NextRequest } from "next/server";
+
+import { ERROR_CODE } from "@/contracts/error-code";
 import { apiError } from "@/lib/api-error";
 import { privateJson } from "@/lib/api-response";
 import { getPrismaClient } from "@/lib/db";
@@ -12,14 +14,14 @@ import { PrismaPaymentRepository } from "@/modules/payment/infrastructure/prisma
 import { sessionIdSchema } from "@/modules/session/contracts/session-id";
 import { SESSION_COOKIE_NAME } from "@/modules/session/http/session-cookie";
 
-
 export async function POST(request: NextRequest) {
   const sessionId = sessionIdSchema.safeParse(
     request.cookies.get(SESSION_COOKIE_NAME)?.value,
   );
 
   if (!sessionId.success) {
-    return apiError("SESSION_REQUIRED",
+    return apiError(
+      ERROR_CODE.SESSION_REQUIRED,
       "Start an assessment before unlocking your results.",
       {},
     );
@@ -27,7 +29,7 @@ export async function POST(request: NextRequest) {
 
   if (!hasJsonContentType(request)) {
     return apiError(
-      "UNSUPPORTED_MEDIA_TYPE",
+      ERROR_CODE.UNSUPPORTED_MEDIA_TYPE,
       "This endpoint requires an application/json request body.",
       {},
     );
@@ -37,17 +39,25 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return apiError("PAYMENT_INVALID", "The payment request must be JSON.", {});
+    return apiError(
+      ERROR_CODE.PAYMENT_INVALID,
+      "The payment request must be JSON.",
+      {},
+    );
   }
 
   const parsed = payRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError("PAYMENT_INVALID", "The payment request is invalid.", {
-      issues: parsed.error.issues.map((issue) => ({
-        path: issue.path.join("."),
-        message: issue.message,
-      })),
-    });
+    return apiError(
+      ERROR_CODE.PAYMENT_INVALID,
+      "The payment request is invalid.",
+      {
+        issues: parsed.error.issues.map((issue) => ({
+          path: issue.path.join("."),
+          message: issue.message,
+        })),
+      },
+    );
   }
 
   const result = await activateSubscription(

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { ERROR_CODE } from "@/contracts/error-code";
 import { ASSESSMENT_STEP_VALUES } from "@/modules/assessment/domain/assessment";
 
 const validationIssueSchema = z
@@ -26,33 +27,33 @@ function errorVariant<Code extends string, Details extends z.ZodType>(
 }
 
 const apiErrorSchema = z.discriminatedUnion("code", [
-  errorVariant("SESSION_REQUIRED", emptyDetailsSchema),
-  errorVariant("SESSION_NOT_FOUND", emptyDetailsSchema),
-  errorVariant("UNSUPPORTED_MEDIA_TYPE", emptyDetailsSchema),
+  errorVariant(ERROR_CODE.SESSION_REQUIRED, emptyDetailsSchema),
+  errorVariant(ERROR_CODE.SESSION_NOT_FOUND, emptyDetailsSchema),
+  errorVariant(ERROR_CODE.UNSUPPORTED_MEDIA_TYPE, emptyDetailsSchema),
   errorVariant(
-    "VALIDATION_ERROR",
+    ERROR_CODE.VALIDATION_ERROR,
     z.object({ issues: z.array(validationIssueSchema).optional() }).strict(),
   ),
   errorVariant(
-    "PAYMENT_INVALID",
+    ERROR_CODE.PAYMENT_INVALID,
     z.object({ issues: z.array(validationIssueSchema).optional() }).strict(),
   ),
-  errorVariant("ASSESSMENT_NOT_FOUND", emptyDetailsSchema),
+  errorVariant(ERROR_CODE.ASSESSMENT_NOT_FOUND, emptyDetailsSchema),
   errorVariant(
-    "ASSESSMENT_INCOMPLETE",
+    ERROR_CODE.ASSESSMENT_INCOMPLETE,
     z.object({ missingSteps: z.array(assessmentStepSchema) }).strict(),
   ),
-  errorVariant("ASSESSMENT_VERSION_CONFLICT", emptyDetailsSchema),
-  errorVariant("ASSESSMENT_ALREADY_COMPLETED", emptyDetailsSchema),
+  errorVariant(ERROR_CODE.ASSESSMENT_VERSION_CONFLICT, emptyDetailsSchema),
+  errorVariant(ERROR_CODE.ASSESSMENT_ALREADY_COMPLETED, emptyDetailsSchema),
   errorVariant(
-    "STEP_OUT_OF_ORDER",
+    ERROR_CODE.STEP_OUT_OF_ORDER,
     z.object({ nextRequiredStep: assessmentStepSchema.nullable() }).strict(),
   ),
   errorVariant(
-    "STEP_VALUE_INCONSISTENT",
+    ERROR_CODE.STEP_VALUE_INCONSISTENT,
     z.object({ nextRequiredStep: z.literal("TARGET_WEIGHT") }).strict(),
   ),
-  errorVariant("RESULT_NOT_FOUND", emptyDetailsSchema),
+  errorVariant(ERROR_CODE.RESULT_NOT_FOUND, emptyDetailsSchema),
 ]);
 
 export const apiErrorEnvelopeSchema = z.object({ error: apiErrorSchema }).strict();
@@ -66,16 +67,16 @@ export type ApiErrorDetails<Code extends ApiErrorCode> = Extract<
 >["details"];
 
 export const API_ERROR_STATUS_BY_CODE = {
-  SESSION_REQUIRED: 401,
-  SESSION_NOT_FOUND: 404,
-  UNSUPPORTED_MEDIA_TYPE: 415,
-  VALIDATION_ERROR: 400,
-  PAYMENT_INVALID: 400,
-  ASSESSMENT_NOT_FOUND: 404,
-  ASSESSMENT_INCOMPLETE: 409,
-  ASSESSMENT_VERSION_CONFLICT: 409,
-  ASSESSMENT_ALREADY_COMPLETED: 409,
-  STEP_OUT_OF_ORDER: 409,
-  STEP_VALUE_INCONSISTENT: 422,
-  RESULT_NOT_FOUND: 404,
+  [ERROR_CODE.SESSION_REQUIRED]: 401,
+  [ERROR_CODE.SESSION_NOT_FOUND]: 404,
+  [ERROR_CODE.UNSUPPORTED_MEDIA_TYPE]: 415,
+  [ERROR_CODE.VALIDATION_ERROR]: 400,
+  [ERROR_CODE.PAYMENT_INVALID]: 400,
+  [ERROR_CODE.ASSESSMENT_NOT_FOUND]: 404,
+  [ERROR_CODE.ASSESSMENT_INCOMPLETE]: 409,
+  [ERROR_CODE.ASSESSMENT_VERSION_CONFLICT]: 409,
+  [ERROR_CODE.ASSESSMENT_ALREADY_COMPLETED]: 409,
+  [ERROR_CODE.STEP_OUT_OF_ORDER]: 409,
+  [ERROR_CODE.STEP_VALUE_INCONSISTENT]: 422,
+  [ERROR_CODE.RESULT_NOT_FOUND]: 404,
 } as const satisfies Record<ApiErrorCode, number>;

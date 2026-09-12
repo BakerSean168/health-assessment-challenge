@@ -1,3 +1,5 @@
+import { ERROR_CODE } from "@/contracts/error-code";
+
 import {
   COMPLETED_ASSESSMENT_STATUS,
   getNextRequiredStep,
@@ -26,7 +28,7 @@ export type GetAssessmentResult =
     }
   | {
       ok: false;
-      code: "ASSESSMENT_NOT_FOUND";
+      code: typeof ERROR_CODE.ASSESSMENT_NOT_FOUND;
     };
 
 export async function getAssessment(
@@ -37,7 +39,7 @@ export async function getAssessment(
     await repository.findBySessionId(sessionId);
 
   if (!assessment) {
-    return { ok: false, code: "ASSESSMENT_NOT_FOUND" };
+    return { ok: false, code: ERROR_CODE.ASSESSMENT_NOT_FOUND };
   }
 
   return {

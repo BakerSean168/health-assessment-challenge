@@ -5,7 +5,13 @@ import {
   type ApiErrorCode,
 } from "@/contracts/api-error";
 
-export type BrowserApiErrorCode = ApiErrorCode | "INVALID_SERVER_RESPONSE";
+export const BROWSER_API_ERROR_CODE = {
+  INVALID_SERVER_RESPONSE: "INVALID_SERVER_RESPONSE",
+} as const;
+
+export type BrowserApiErrorCode =
+  | ApiErrorCode
+  | (typeof BROWSER_API_ERROR_CODE)[keyof typeof BROWSER_API_ERROR_CODE];
 
 export class BrowserApiError extends Error {
   constructor(
@@ -41,7 +47,7 @@ export async function requestJson<Schema extends z.ZodType>(
   if (!parsed.success) {
     throw new BrowserApiError(
       "The server returned a response that does not match the shared API contract.",
-      "INVALID_SERVER_RESPONSE",
+      BROWSER_API_ERROR_CODE.INVALID_SERVER_RESPONSE,
       response.status,
     );
   }

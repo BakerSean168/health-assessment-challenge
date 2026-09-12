@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { assertNever } from "@/lib/assert-never";
+
 import {
   ASSESSMENT_STEP_VALUES,
   type AssessmentAnswers,
@@ -86,6 +88,8 @@ export function assessmentAnswerPatchForCommand(
       return { age: command.value };
     case "TARGET_WEIGHT":
       return { targetWeightKg: command.value };
+    default:
+      return assertNever(command, "assessment step command");
   }
 }
 

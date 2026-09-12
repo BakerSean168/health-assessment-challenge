@@ -1,5 +1,8 @@
 import { NextRequest } from "next/server";
+
+import { ERROR_CODE } from "@/contracts/error-code";
 import { apiError } from "@/lib/api-error";
+import { assertNever } from "@/lib/assert-never";
 import { privateJson } from "@/lib/api-response";
 import { getPrismaClient } from "@/lib/db";
 import { hasJsonContentType } from "@/lib/http-request";
@@ -9,7 +12,6 @@ import { parseAssessmentStepRequest } from "@/modules/assessment/contracts/asses
 import { PrismaAssessmentRepository } from "@/modules/assessment/infrastructure/prisma-assessment-repository";
 import { sessionIdSchema } from "@/modules/session/contracts/session-id";
 import { SESSION_COOKIE_NAME } from "@/modules/session/http/session-cookie";
-
 
 type StepRouteContext = {
   params: Promise<{ stepKey: string }>;
@@ -21,7 +23,8 @@ export async function PATCH(request: NextRequest, context: StepRouteContext) {
   );
 
   if (!sessionId.success) {
-    return apiError("SESSION_REQUIRED",
+    return apiError(
+      ERROR_CODE.SESSION_REQUIRED,
       "Start an assessment session before saving answers.",
       {},
     );
@@ -29,7 +32,7 @@ export async function PATCH(request: NextRequest, context: StepRouteContext) {
 
   if (!hasJsonContentType(request)) {
     return apiError(
-      "UNSUPPORTED_MEDIA_TYPE",
+      ERROR_CODE.UNSUPPORTED_MEDIA_TYPE,
       "This endpoint requires an application/json request body.",
       {},
     );
@@ -39,14 +42,18 @@ export async function PATCH(request: NextRequest, context: StepRouteContext) {
   try {
     body = await request.json();
   } catch {
-    return apiError("VALIDATION_ERROR", "The request body must be JSON.", {});
+    return apiError(
+      ERROR_CODE.VALIDATION_ERROR,
+      "The request body must be JSON.",
+      {},
+    );
   }
 
   const { stepKey } = await context.params;
   const parsed = parseAssessmentStepRequest(stepKey, body);
 
   if (!parsed.success) {
-    return apiError("VALIDATION_ERROR", "The request is invalid.", {
+    return apiError(ERROR_CODE.VALIDATION_ERROR, "The request is invalid.", {
       issues: [...parsed.issues],
     });
   }
@@ -59,33 +66,33 @@ export async function PATCH(request: NextRequest, context: StepRouteContext) {
     new PrismaAssessmentRepository(getPrismaClient()),
   );
 
-  if (!result.ok && result.code === "ASSESSMENT_NOT_FOUND") {
-    return apiError(result.code, "The assessment was not found.", {});
-  }
-
-  if (!result.ok && result.code === "STEP_OUT_OF_ORDER") {
-    return apiError(result.code,
-      "This assessment step cannot be submitted yet.",
-      { nextRequiredStep: result.nextRequiredStep },
-    );
-  }
-
-  if (!result.ok && result.code === "ASSESSMENT_ALREADY_COMPLETED") {
-    return apiError(result.code, "The assessment is already completed.", {});
-  }
-
-  if (!result.ok && result.code === "STEP_VALUE_INCONSISTENT") {
-    return apiError(result.code,
-      "The target weight does not match the selected goal.",
-      { nextRequiredStep: result.nextRequiredStep },
-    );
-  }
-
   if (!result.ok) {
-    return apiError(result.code,
-      "The assessment changed since this page loaded.",
-      {},
-    );
+    switch (result.code) {
+      case ERROR_CODE.ASSESSMENT_NOT_FOUND:
+        return apiError(result.code, "The assessment was not found.", {});
+      case ERROR_CODE.STEP_OUT_OF_ORDER:
+        return apiError(
+          result.code,
+          "This assessment step cannot be submitted yet.",
+          { nextRequiredStep: result.nextRequiredStep },
+        );
+      case ERROR_CODE.ASSESSMENT_ALREADY_COMPLETED:
+        return apiError(result.code, "The assessment is already completed.", {});
+      case ERROR_CODE.STEP_VALUE_INCONSISTENT:
+        return apiError(
+          result.code,
+          "The target weight does not match the selected goal.",
+          { nextRequiredStep: result.nextRequiredStep },
+        );
+      case ERROR_CODE.ASSESSMENT_VERSION_CONFLICT:
+        return apiError(
+          result.code,
+          "The assessment changed since this page loaded.",
+          {},
+        );
+      default:
+        return assertNever(result, "save assessment step result");
+    }
   }
 
   return privateJson(
