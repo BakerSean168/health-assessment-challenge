@@ -25,7 +25,7 @@ classDiagram
     }
 
     class Subscription {
-      UUID sessionId PK, FK
+      UUID sessionId PK_FK
       SubscriptionStatus status
       DateTime? activatedAt
       DateTime createdAt
