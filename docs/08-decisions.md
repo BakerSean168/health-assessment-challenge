@@ -34,6 +34,7 @@ This is a lightweight ADR index for decisions that are important enough to expla
 | D028 | remote E2E has no local database bootstrap | accepted | production smoke tests should exercise only the remote deployment and not depend on unrelated local Docker state |
 | D029 | product-facing UI, reviewer-facing engineering evidence | accepted | let the public funnel behave like a real product; keep persistence/snapshot/TDD/server narration in repository evidence |
 | D030 | live client BMI preview from the shared pure calculation | accepted | provide immediate user value on the weight step without duplicating or replacing the server-side result snapshot |
+| D031 | cookie authority + opaque URL order correlation with landing prewarm | accepted | mirror the useful BetterMe identity split without turning a URL UUID into a bearer credential, while removing an avoidable sequential bootstrap on CTA navigation |
 
 ## D001 — Next.js modular monolith
 
@@ -181,3 +182,9 @@ Once height is already saved, the current-weight step calculates BMI immediately
 The preview also maps the existing four BMI categories to distinct product states: normal uses a positive state, overweight uses a caution state, and underweight/obese use stronger attention states. Copy deliberately avoids calling BMI alone “dangerous” because it is a screening measure rather than a diagnosis.
 
 Assessment numeric fields retain `type=number` and mobile `inputMode`, but suppress browser-native spinner controls through local styling so height/current-weight/age/target-weight entry remains visually consistent with the product surface. Each numeric label row shows the accepted range (for example `120–230 cm`) without reverting to developer-oriented “accepted range” helper copy below the field.
+
+## D031 — Cookie authority + opaque URL order correlation with landing prewarm
+
+The public assessment UUID is surfaced as `?order=<uuid>` for flow correlation and reviewer-visible identity, but it never selects or authorizes server data. Ownership remains the HttpOnly `health_assessment_session` cookie. Supplying an old or foreign `order` without the owning cookie creates/resolves the current browser's own session and the page replaces the URL with that session's order. This avoids an IDOR-shaped design where a copied URL becomes sufficient authentication.
+
+This is intentionally inspired by, not identical to, the observed BetterMe flow. Live inspection showed BetterMe issues a separate `session_uuid` cookie and later adds the questionnaire UUID to `order` after questionnaire creation; a clean browser with the same order URL did not recover the prior state. Our three-day implementation keeps its simpler one-session/one-assessment aggregate, so the landing page prewarms that aggregate and the assessment route consumes the prefetched bootstrap. A 30-second one-shot client handoff prevents duplicate sequential bootstrap requests during normal CTA navigation while a normal request remains the fallback.

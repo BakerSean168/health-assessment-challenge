@@ -48,16 +48,28 @@ Create or reuse the anonymous browser session and ensure its single v1 assessmen
 
 ```json
 {
+  "orderId": "9f27be8a-ec0b-4ba6-8e9f-8996e0c60a1b",
   "subscriptionStatus": "FREE",
   "assessment": {
     "status": "IN_PROGRESS",
     "nextRequiredStep": "GENDER",
-    "revision": 0
+    "revision": 0,
+    "answers": {
+      "gender": null,
+      "goal": null,
+      "activityLevel": null,
+      "heightCm": null,
+      "weightKg": null,
+      "age": null,
+      "targetWeightKg": null
+    }
   }
 }
 ```
 
-The raw session identifier is not exposed in the JSON body. The route issues `health_assessment_session` as a 30-day HttpOnly cookie with `SameSite=Lax`, `Path=/`, and `Secure` enabled in production. A missing, malformed, or unknown cookie does not let the client select an identity; the server creates and issues a new session instead.
+`orderId` is the opaque assessment UUID exposed as a correlation identifier in `/assessment?order=...` and `/result?order=...`. It is deliberately **not** an authorization credential: API reads/writes continue to resolve ownership exclusively from the server-issued session cookie, and an `order` query parameter without the matching cookie cannot resume another assessment.
+
+The raw session identifier is not exposed in the JSON body. The route issues `health_assessment_session` as a 30-day HttpOnly cookie with `SameSite=Lax`, `Path=/`, and `Secure` enabled in production. A missing, malformed, or unknown cookie does not let the client select an identity; the server creates and issues a new session instead. The bootstrap response includes the current answers so a prefetched landing-page bootstrap can be consumed by the assessment screen without an immediate second recovery request.
 
 ## 4. `GET /api/assessment`
 

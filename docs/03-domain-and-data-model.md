@@ -312,3 +312,7 @@ Before implementation begins, the following are frozen:
 - only server logic can activate subscription.
 
 Calculation constants/ranges are intentionally not frozen here; D017/D018 plus RED tests will freeze them before implementation of those policies.
+
+### Public order correlation
+
+`Assessment.id` is exposed as the opaque `order` query value used across the product flow. It is not a bearer secret and no API route accepts it as authorization; the HttpOnly anonymous-session cookie remains the ownership boundary.

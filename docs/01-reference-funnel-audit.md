@@ -60,6 +60,14 @@ The free user should see a meaningful, trustworthy result preview. However, valu
 
 The captured reference contains conditional paths. Our first release intentionally has a mostly linear path, but step identity is modeled with stable keys rather than numeric positions so conditions can be added without changing the meaning of persisted progress.
 
+### 3.5 Visitor identity and questionnaire/order identity
+
+A live 2026-09-12 browser check of the supplied BetterMe flow clarified that the visible `order` query parameter is not the whole browser identity model. A fresh visit to `onboarding?flow=1453` first receives a `session_uuid` cookie and lands on the first-page experience without an `order` parameter. Selecting the first answer creates a questionnaire through `POST /api/v3/questionnaires`; the returned UUID is then placed into `?order=<uuid>`. Opening the same `order` URL in a clean browser context did not restore the previous questionnaire state, which is evidence that the URL identifier should not be treated as a bearer credential by itself.
+
+The challenge therefore adopts the useful separation without cloning BetterMe internals: the HttpOnly cookie remains the authority for the anonymous browser session, while the assessment UUID is exposed as an opaque `order` correlation identifier in the URL. A stale/foreign `order` parameter cannot select another session; the page canonicalizes back to the order owned by the current cookie.
+
+For navigation latency, the landing page begins the anonymous bootstrap in the background and Next.js prefetches the assessment route. The bootstrap result is reusable for a short handoff window so clicking the CTA normally renders the first required step without waiting for a second sequential assessment request. This deliberately creates the challenge assessment slightly earlier than the observed BetterMe questionnaire-creation moment; that is a small-scope performance trade-off, not an attempt to reproduce BetterMe's backend lifecycle exactly.
+
 ## 4. What is deliberately removed
 
 The following reference-funnel patterns are not useful enough for this challenge to justify their implementation cost:

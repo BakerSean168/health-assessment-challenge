@@ -142,3 +142,7 @@ This separation is deliberate: the application demonstrates product completion b
 ## 11. Live numeric feedback
 
 Numeric assessment fields reuse the shared shadcn/Base UI `Input`; native browser stepper buttons are visually suppressed rather than introducing a parallel custom input primitive. The weight step composes the existing `Card` with the shared pure `calculateBmi()` function to provide an immediate BMI preview once the entered weight is valid and a saved height is available. The preview is transient UI feedback; the final result remains the server-created snapshot.
+
+## 12. Landing prewarm and flow correlation
+
+The product CTA is a small composition around Next.js `Link`: the route remains prefetchable, while a background `/api/session` bootstrap obtains the server-owned assessment state and its opaque `orderId`. The assessment screen consumes that short-lived prefetched response instead of immediately issuing the same bootstrap again. This reduces the initial skeleton window without moving session ownership into client storage or the query string.

@@ -14,6 +14,8 @@ The repository is public from the start so the implementation history, test-firs
 
 **Live demo:** https://assessment.bakersean.top
 
+The live funnel exposes an opaque `?order=<assessment UUID>` for flow correlation, while the HttpOnly cookie remains the authorization/recovery boundary; copying an order URL alone does not grant access to another browser session.
+
 The live site is intentionally product-facing: it presents the wellness journey to an end user rather than narrating persistence, snapshots, server state, TDD, or other implementation details. Reviewer evidence lives in this README, the docs, tests, and commit history.
 
 **Synthetic paid evaluator sessionId:** `11111111-1111-4111-8111-111111111111` (contains demo data only).
@@ -219,8 +221,8 @@ pnpm test:all
 
 | Layer | Current evidence | Why this layer exists |
 |---|---|---|
-| Unit/component | 64 tests | Pure calculation boundaries, step policy, FREE redaction, production Prisma lifecycle, and product-component behavior should fail fast without infrastructure noise |
-| PostgreSQL integration | 35 tests | Persistence, recovery, ordering, optimistic concurrency, malformed/injection-shaped input, atomic submit, result authorization, and payment idempotency depend on real database/HTTP-boundary semantics |
+| Unit/component | 65 tests | Pure calculation boundaries, step policy, FREE redaction, production Prisma lifecycle, and product-component behavior should fail fast without infrastructure noise |
+| PostgreSQL integration | 36 tests | Persistence, recovery, ordering, optimistic concurrency, malformed/injection-shaped input, atomic submit, result authorization, and payment idempotency depend on real database/HTTP-boundary semantics |
 | Playwright | 2 browser journeys | The two highest-value user paths prove cookies, Next routes, refresh recovery, FREE result, paywall, simulated payment, and ACTIVE result work together |
 | GitHub Actions | 4 jobs | A clean runner proves lint/typecheck/tests/build and immutable application/migration image publication are reproducible |
 
