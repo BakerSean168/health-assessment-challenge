@@ -384,8 +384,14 @@ export function AssessmentFunnel({
   const description = optionQuestion?.description ?? numericQuestion?.description;
   const parsedDraftValue = parseDraftValue(displayStep, draftValue);
   const canContinue = parsedDraftValue !== null;
+  const bmiPreviewContext =
+    displayStep === "WEIGHT"
+      ? "current"
+      : displayStep === "TARGET_WEIGHT"
+        ? "target"
+        : null;
   const bmiPreview =
-    displayStep === "WEIGHT" &&
+    bmiPreviewContext &&
     typeof parsedDraftValue === "number" &&
     assessment.answers.heightCm != null
       ? calculateBmi({
@@ -442,8 +448,12 @@ export function AssessmentFunnel({
             unit={numericQuestion.unit}
             disabled={isSaving}
           />
-          {bmiPreview ? (
-            <BmiPreview bmi={bmiPreview.bmi} category={bmiPreview.category} />
+          {bmiPreview && bmiPreviewContext ? (
+            <BmiPreview
+              bmi={bmiPreview.bmi}
+              category={bmiPreview.category}
+              context={bmiPreviewContext}
+            />
           ) : null}
         </div>
       ) : null}

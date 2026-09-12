@@ -28,4 +28,16 @@ describe("BmiPreview", () => {
     expect(preview).toHaveAttribute("data-bmi-category", "OBESE");
     expect(preview.className).toContain("destructive");
   });
+  it("frames an underweight target as a safety warning and labels it as target BMI", () => {
+    render(<BmiPreview bmi={16.3} category="UNDERWEIGHT" context="target" />);
+
+    const preview = screen.getByRole("status");
+    expect(preview).toHaveTextContent("Target BMI");
+    expect(preview).toHaveTextContent("16.3");
+    expect(preview).toHaveTextContent("Target is below the standard range");
+    expect(preview).toHaveTextContent(/consider a target within the standard range/i);
+    expect(preview).toHaveAttribute("data-bmi-context", "target");
+    expect(preview.className).toContain("destructive");
+  });
+
 });

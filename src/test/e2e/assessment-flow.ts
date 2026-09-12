@@ -53,6 +53,11 @@ export async function completeDefaultAssessment(
   await page.getByRole("button", { name: "Continue" }).click();
 
   await page.getByRole("spinbutton", { name: "Target weight" }).fill("68");
+  await expect(page.getByText("Target BMI", { exact: true })).toBeVisible();
+  await expect(page.getByText("22.2", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Target is within the standard range", { exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Continue" }).click();
 
   await expect(page).toHaveURL(/\/result\?order=[0-9a-f-]{36}$/i);

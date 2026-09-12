@@ -178,6 +178,41 @@ describe("AssessmentFunnel", () => {
     ).toBeInTheDocument();
   });
 
+  it("previews target BMI before saving the target weight", async () => {
+    const user = userEvent.setup();
+    const api = createApi({
+      bootstrapSession: vi.fn().mockResolvedValue({
+        orderId: "11111111-1111-4111-8111-111111111111",
+        subscriptionStatus: "FREE",
+        assessment: {
+          status: "IN_PROGRESS",
+          nextRequiredStep: "TARGET_WEIGHT",
+          revision: 6,
+          answers: {
+            gender: "FEMALE",
+            goal: "LOSE_WEIGHT",
+            activityLevel: "MODERATE",
+            heightCm: 175,
+            weightKg: 80,
+            age: 24,
+            targetWeightKg: null,
+          },
+        },
+      }),
+    });
+
+    render(<AssessmentFunnel api={api} onComplete={vi.fn()} />);
+
+    const input = await screen.findByRole("spinbutton", { name: "Target weight" });
+    await user.type(input, "50");
+
+    expect(screen.getByText("Target BMI")).toBeInTheDocument();
+    expect(screen.getByText("16.3")).toBeInTheDocument();
+    expect(screen.getByText("Target is below the standard range")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveAttribute("data-bmi-category", "UNDERWEIGHT");
+    expect(api.saveStep).not.toHaveBeenCalled();
+  });
+
   it("submits with the newly returned revision after the final saved answer", async () => {
     const user = userEvent.setup();
     const onComplete = vi.fn();
