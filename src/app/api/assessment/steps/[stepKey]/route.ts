@@ -5,6 +5,7 @@ import { apiError } from "@/lib/api-error";
 import { privateJson } from "@/lib/api-response";
 import { getPrismaClient } from "@/lib/db";
 import { saveAssessmentStep } from "@/modules/assessment/application/save-assessment-step";
+import { saveAssessmentStepDtoSchema } from "@/modules/assessment/contracts/assessment-api";
 import { parseAssessmentStepRequest } from "@/modules/assessment/contracts/assessment-step";
 import { PrismaAssessmentRepository } from "@/modules/assessment/infrastructure/prisma-assessment-repository";
 import { SESSION_COOKIE_NAME } from "@/modules/session/http/session-cookie";
@@ -86,9 +87,11 @@ export async function PATCH(request: NextRequest, context: StepRouteContext) {
     );
   }
 
-  return privateJson({
-    saved: true,
-    revision: result.revision,
-    nextRequiredStep: result.nextRequiredStep,
-  });
+  return privateJson(
+    saveAssessmentStepDtoSchema.parse({
+      saved: true,
+      revision: result.revision,
+      nextRequiredStep: result.nextRequiredStep,
+    }),
+  );
 }

@@ -7,6 +7,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { calculateBmi } from "@/modules/assessment/domain/calculation";
+import {
+  domainStepToRouteStep,
+  parseAssessmentStepRequest,
+  type AssessmentStepCommand,
+} from "@/modules/assessment/contracts/assessment-step";
 import { Skeleton } from "@/components/ui/skeleton";
 import type {
   AssessmentAnswers,
@@ -17,7 +22,6 @@ import {
   browserAssessmentApi,
   type AssessmentBrowserApi,
   type AssessmentRecoveryDto,
-  type AssessmentStepValue,
 } from "@/modules/assessment/client/assessment-api";
 import { AssessmentOptionGroup } from "./assessment-option-group";
 import { BmiPreview } from "./bmi-preview";
@@ -146,42 +150,42 @@ function valueForStep(
 
 function withStepValue(
   answers: Required<AssessmentAnswers>,
-  step: AssessmentStep,
-  value: AssessmentStepValue,
+  command: AssessmentStepCommand,
 ): Required<AssessmentAnswers> {
-  switch (step) {
+  switch (command.step) {
     case "GENDER":
-      return { ...answers, gender: value as Required<AssessmentAnswers>["gender"] };
+      return { ...answers, gender: command.value };
     case "GOAL":
-      return { ...answers, goal: value as Required<AssessmentAnswers>["goal"] };
+      return { ...answers, goal: command.value };
     case "ACTIVITY":
-      return {
-        ...answers,
-        activityLevel: value as Required<AssessmentAnswers>["activityLevel"],
-      };
+      return { ...answers, activityLevel: command.value };
     case "HEIGHT":
-      return { ...answers, heightCm: value as number };
+      return { ...answers, heightCm: command.value };
     case "WEIGHT":
-      return { ...answers, weightKg: value as number };
+      return { ...answers, weightKg: command.value };
     case "AGE":
-      return { ...answers, age: value as number };
+      return { ...answers, age: command.value };
     case "TARGET_WEIGHT":
-      return { ...answers, targetWeightKg: value as number };
+      return { ...answers, targetWeightKg: command.value };
   }
 }
 
-function parseDraftValue(step: AssessmentStep, draft: string): AssessmentStepValue | null {
+function parseDraftCommand(
+  step: AssessmentStep,
+  draft: string,
+  expectedRevision: number,
+): AssessmentStepCommand | null {
   if (!draft) return null;
-  if (isOptionStep(step)) return draft as AssessmentStepValue;
 
-  const numeric = Number(draft);
-  if (!Number.isFinite(numeric)) return null;
+  const rawValue = isNumericStep(step) ? Number(draft) : draft;
+  if (typeof rawValue === "number" && !Number.isFinite(rawValue)) return null;
 
-  const config = numericQuestions[step as NumericStep];
-  if (numeric < config.min || numeric > config.max) return null;
-  if (step === "AGE" && !Number.isInteger(numeric)) return null;
+  const parsed = parseAssessmentStepRequest(domainStepToRouteStep[step], {
+    value: rawValue,
+    expectedRevision,
+  });
 
-  return numeric;
+  return parsed.success ? parsed.data : null;
 }
 
 function errorMessage(error: unknown): string {
@@ -314,8 +318,12 @@ export function AssessmentFunnel({
   async function continueFromStep() {
     if (!assessment || !displayStep) return;
 
-    const value = parseDraftValue(displayStep, draftValue);
-    if (value === null) {
+    const command = parseDraftCommand(
+      displayStep,
+      draftValue,
+      assessment.revision,
+    );
+    if (command === null) {
       setError("Choose or enter a valid value before continuing.");
       return;
     }
@@ -324,12 +332,8 @@ export function AssessmentFunnel({
     setError(null);
 
     try {
-      const saved = await api.saveStep(
-        displayStep,
-        value,
-        assessment.revision,
-      );
-      const answers = withStepValue(assessment.answers, displayStep, value);
+      const saved = await api.saveStep(command);
+      const answers = withStepValue(assessment.answers, command);
       const nextAssessment: AssessmentRecoveryDto = {
         ...assessment,
         revision: saved.revision,
@@ -414,8 +418,12 @@ export function AssessmentFunnel({
     : null;
   const title = optionQuestion?.title ?? numericQuestion?.title ?? "Assessment";
   const description = optionQuestion?.description ?? numericQuestion?.description;
-  const parsedDraftValue = parseDraftValue(displayStep, draftValue);
-  const canContinue = parsedDraftValue !== null;
+  const parsedDraftCommand = parseDraftCommand(
+    displayStep,
+    draftValue,
+    assessment.revision,
+  );
+  const canContinue = parsedDraftCommand !== null;
   const bmiPreviewContext =
     displayStep === "WEIGHT"
       ? "current"
@@ -424,11 +432,12 @@ export function AssessmentFunnel({
         : null;
   const bmiPreview =
     bmiPreviewContext &&
-    typeof parsedDraftValue === "number" &&
+    parsedDraftCommand &&
+    typeof parsedDraftCommand.value === "number" &&
     assessment.answers.heightCm != null
       ? calculateBmi({
           heightCm: assessment.answers.heightCm,
-          weightKg: parsedDraftValue,
+          weightKg: parsedDraftCommand.value,
         })
       : null;
 

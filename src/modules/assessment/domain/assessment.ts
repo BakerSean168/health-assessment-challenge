@@ -1,22 +1,33 @@
 import { ASSESSMENT_INPUT_LIMITS } from "./input-limits";
 
-export type Gender = "MALE" | "FEMALE" | "OTHER";
-export type Goal = "LOSE_WEIGHT" | "MAINTAIN" | "GAIN_WEIGHT";
-export type ActivityLevel =
-  | "SEDENTARY"
-  | "LIGHT"
-  | "MODERATE"
-  | "ACTIVE"
-  | "VERY_ACTIVE";
+export const GENDER_VALUES = ["MALE", "FEMALE", "OTHER"] as const;
+export type Gender = (typeof GENDER_VALUES)[number];
 
-export type AssessmentStep =
-  | "GENDER"
-  | "GOAL"
-  | "ACTIVITY"
-  | "HEIGHT"
-  | "WEIGHT"
-  | "AGE"
-  | "TARGET_WEIGHT";
+export const GOAL_VALUES = ["LOSE_WEIGHT", "MAINTAIN", "GAIN_WEIGHT"] as const;
+export type Goal = (typeof GOAL_VALUES)[number];
+
+export const ACTIVITY_LEVEL_VALUES = [
+  "SEDENTARY",
+  "LIGHT",
+  "MODERATE",
+  "ACTIVE",
+  "VERY_ACTIVE",
+] as const;
+export type ActivityLevel = (typeof ACTIVITY_LEVEL_VALUES)[number];
+
+export const ASSESSMENT_STEP_VALUES = [
+  "GENDER",
+  "GOAL",
+  "ACTIVITY",
+  "HEIGHT",
+  "WEIGHT",
+  "AGE",
+  "TARGET_WEIGHT",
+] as const;
+export type AssessmentStep = (typeof ASSESSMENT_STEP_VALUES)[number];
+
+export const ASSESSMENT_STATUS_VALUES = ["IN_PROGRESS", "COMPLETED"] as const;
+export type AssessmentStatus = (typeof ASSESSMENT_STATUS_VALUES)[number];
 
 export interface AssessmentAnswers {
   gender?: Gender | null;

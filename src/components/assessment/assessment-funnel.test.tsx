@@ -79,7 +79,11 @@ describe("AssessmentFunnel", () => {
     await user.click(screen.getByRole("button", { name: "Continue" }));
 
     await waitFor(() =>
-      expect(api.saveStep).toHaveBeenCalledWith("GENDER", "MALE", 0),
+      expect(api.saveStep).toHaveBeenCalledWith({
+        step: "GENDER",
+        value: "MALE",
+        expectedRevision: 0,
+      }),
     );
     expect(
       await screen.findByRole("heading", { name: "What is your main goal?" }),
@@ -279,7 +283,11 @@ describe("AssessmentFunnel", () => {
     await user.click(screen.getByRole("button", { name: "Continue" }));
 
     await waitFor(() =>
-      expect(api.saveStep).toHaveBeenCalledWith("TARGET_WEIGHT", 72, 6),
+      expect(api.saveStep).toHaveBeenCalledWith({
+        step: "TARGET_WEIGHT",
+        value: 72,
+        expectedRevision: 6,
+      }),
     );
     await waitFor(() =>
       expect(api.submitAssessment).toHaveBeenCalledWith(7),

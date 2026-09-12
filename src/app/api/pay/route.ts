@@ -5,7 +5,10 @@ import { apiError } from "@/lib/api-error";
 import { privateJson } from "@/lib/api-response";
 import { getPrismaClient } from "@/lib/db";
 import { activateSubscription } from "@/modules/payment/application/activate-subscription";
-import { payRequestSchema } from "@/modules/payment/contracts/pay";
+import {
+  payRequestSchema,
+  payResponseSchema,
+} from "@/modules/payment/contracts/pay";
 import { PrismaPaymentRepository } from "@/modules/payment/infrastructure/prisma-payment-repository";
 import { SESSION_COOKIE_NAME } from "@/modules/session/http/session-cookie";
 
@@ -53,9 +56,11 @@ export async function POST(request: NextRequest) {
     return apiError(404, result.code, "The session was not found.");
   }
 
-  return privateJson({
-    status: result.status,
-    subscriptionStatus: result.subscriptionStatus,
-    replayed: result.replayed,
-  });
+  return privateJson(
+    payResponseSchema.parse({
+      status: result.status,
+      subscriptionStatus: result.subscriptionStatus,
+      replayed: result.replayed,
+    }),
+  );
 }

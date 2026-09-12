@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { privateJson } from "@/lib/api-response";
 
 import { getPrismaClient } from "@/lib/db";
+import { sessionBootstrapDtoSchema } from "@/modules/assessment/contracts/assessment-api";
 import { getNextRequiredStep } from "@/modules/assessment/domain/assessment";
 import { ensureAnonymousSession } from "@/modules/session/application/ensure-anonymous-session";
 import { PrismaAnonymousSessionRepository } from "@/modules/session/infrastructure/prisma-anonymous-session-repository";
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
   }
 
   const response = privateJson(
-    {
+    sessionBootstrapDtoSchema.parse({
       orderId: session.assessment.id,
       subscriptionStatus: session.subscriptionStatus,
       assessment: {
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
           targetWeightKg: session.assessment.targetWeightKg,
         },
       },
-    },
+    }),
     { status: created ? 201 : 200 },
   );
 

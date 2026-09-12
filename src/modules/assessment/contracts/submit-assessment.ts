@@ -5,3 +5,5 @@ export const submitAssessmentRequestSchema = z
     expectedRevision: z.number().int().nonnegative(),
   })
   .strict();
+
+export type SubmitAssessmentRequest = z.infer<typeof submitAssessmentRequestSchema>;

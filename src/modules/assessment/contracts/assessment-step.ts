@@ -1,25 +1,22 @@
 import { z } from "zod";
 
-import type {
-  ActivityLevel,
-  AssessmentStep,
-  Gender,
-  Goal,
+import {
+  ACTIVITY_LEVEL_VALUES,
+  type ActivityLevel,
+  type AssessmentStep,
+  GENDER_VALUES,
+  type Gender,
+  GOAL_VALUES,
+  type Goal,
 } from "../domain/assessment";
 import { ASSESSMENT_INPUT_LIMITS } from "../domain/input-limits";
 
 export { ASSESSMENT_INPUT_LIMITS } from "../domain/input-limits";
 
 const expectedRevisionSchema = z.number().int().nonnegative();
-const genderSchema = z.enum(["MALE", "FEMALE", "OTHER"]);
-const goalSchema = z.enum(["LOSE_WEIGHT", "MAINTAIN", "GAIN_WEIGHT"]);
-const activityLevelSchema = z.enum([
-  "SEDENTARY",
-  "LIGHT",
-  "MODERATE",
-  "ACTIVE",
-  "VERY_ACTIVE",
-]);
+const genderSchema = z.enum(GENDER_VALUES);
+const goalSchema = z.enum(GOAL_VALUES);
+const activityLevelSchema = z.enum(ACTIVITY_LEVEL_VALUES);
 const ageSchema = z
   .number()
   .int()
@@ -38,20 +35,29 @@ const targetWeightSchema = z
   .min(ASSESSMENT_INPUT_LIMITS.targetWeightKg.min)
   .max(ASSESSMENT_INPUT_LIMITS.targetWeightKg.max);
 
-export type AssessmentStepCommand =
-  | { step: "GENDER"; value: Gender; expectedRevision: number }
-  | { step: "GOAL"; value: Goal; expectedRevision: number }
-  | { step: "ACTIVITY"; value: ActivityLevel; expectedRevision: number }
-  | { step: "HEIGHT"; value: number; expectedRevision: number }
-  | { step: "WEIGHT"; value: number; expectedRevision: number }
-  | { step: "AGE"; value: number; expectedRevision: number }
-  | { step: "TARGET_WEIGHT"; value: number; expectedRevision: number };
+export interface AssessmentStepValueMap {
+  GENDER: Gender;
+  GOAL: Goal;
+  ACTIVITY: ActivityLevel;
+  HEIGHT: number;
+  WEIGHT: number;
+  AGE: number;
+  TARGET_WEIGHT: number;
+}
+
+export type AssessmentStepCommand = {
+  [Step in AssessmentStep]: {
+    step: Step;
+    value: AssessmentStepValueMap[Step];
+    expectedRevision: number;
+  };
+}[AssessmentStep];
 
 export type AssessmentStepParseResult =
   | { success: true; data: AssessmentStepCommand }
   | { success: false; issues: ReadonlyArray<{ path: string; message: string }> };
 
-const routeStepToDomainStep = {
+export const routeStepToDomainStep = {
   gender: "GENDER",
   goal: "GOAL",
   activity: "ACTIVITY",
@@ -61,7 +67,17 @@ const routeStepToDomainStep = {
   "target-weight": "TARGET_WEIGHT",
 } as const satisfies Record<string, AssessmentStep>;
 
-type RouteStepKey = keyof typeof routeStepToDomainStep;
+export type RouteStepKey = keyof typeof routeStepToDomainStep;
+
+export const domainStepToRouteStep = {
+  GENDER: "gender",
+  GOAL: "goal",
+  ACTIVITY: "activity",
+  HEIGHT: "height",
+  WEIGHT: "weight",
+  AGE: "age",
+  TARGET_WEIGHT: "target-weight",
+} as const satisfies Record<AssessmentStep, RouteStepKey>;
 
 function issuesFrom(error: z.ZodError): AssessmentStepParseResult {
   return {
@@ -73,9 +89,9 @@ function issuesFrom(error: z.ZodError): AssessmentStepParseResult {
   };
 }
 
-function parseValue<T>(
-  step: AssessmentStep,
-  schema: z.ZodType<T>,
+function parseValue<Step extends AssessmentStep>(
+  step: Step,
+  schema: z.ZodType<AssessmentStepValueMap[Step]>,
   input: unknown,
 ): AssessmentStepParseResult {
   const parsed = z

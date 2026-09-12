@@ -1,60 +1,35 @@
 import { requestJson, BrowserApiError } from "@/lib/browser-api";
 
-import type {
-  ActivityLevel,
-  AssessmentAnswers,
-  AssessmentStep,
-  Gender,
-  Goal,
-} from "../domain/assessment";
+import {
+  assessmentRecoveryDtoSchema,
+  type AssessmentRecoveryDto,
+  saveAssessmentStepDtoSchema,
+  type SaveAssessmentStepDto,
+  sessionBootstrapDtoSchema,
+  type SessionBootstrapDto,
+  submitAssessmentDtoSchema,
+  type SubmitAssessmentDto,
+} from "../contracts/assessment-api";
+import {
+  domainStepToRouteStep,
+  type AssessmentStepCommand,
+} from "../contracts/assessment-step";
+import type { SubmitAssessmentRequest } from "../contracts/submit-assessment";
 
-export type AssessmentStepValue = Gender | Goal | ActivityLevel | number;
-
-export interface AssessmentRecoveryDto {
-  status: "IN_PROGRESS" | "COMPLETED";
-  nextRequiredStep: AssessmentStep | null;
-  revision: number;
-  answers: Required<AssessmentAnswers>;
-}
-
-export interface SessionBootstrapDto {
-  orderId: string;
-  subscriptionStatus: "FREE" | "ACTIVE";
-  assessment: AssessmentRecoveryDto;
-}
-
-export interface SaveAssessmentStepDto {
-  saved: true;
-  revision: number;
-  nextRequiredStep: AssessmentStep | null;
-}
-
-export interface SubmitAssessmentDto {
-  status: "COMPLETED";
-  resultReady: true;
-}
+export type {
+  AssessmentRecoveryDto,
+  SaveAssessmentStepDto,
+  SessionBootstrapDto,
+  SubmitAssessmentDto,
+} from "../contracts/assessment-api";
 
 export interface AssessmentBrowserApi {
   prewarmSession(): Promise<SessionBootstrapDto>;
   bootstrapSession(): Promise<SessionBootstrapDto>;
   getAssessment(): Promise<AssessmentRecoveryDto>;
-  saveStep(
-    step: AssessmentStep,
-    value: AssessmentStepValue,
-    expectedRevision: number,
-  ): Promise<SaveAssessmentStepDto>;
+  saveStep(command: AssessmentStepCommand): Promise<SaveAssessmentStepDto>;
   submitAssessment(expectedRevision: number): Promise<SubmitAssessmentDto>;
 }
-
-const routeKeyByStep: Record<AssessmentStep, string> = {
-  GENDER: "gender",
-  GOAL: "goal",
-  ACTIVITY: "activity",
-  HEIGHT: "height",
-  WEIGHT: "weight",
-  AGE: "age",
-  TARGET_WEIGHT: "target-weight",
-};
 
 export { BrowserApiError as AssessmentBrowserApiError };
 
@@ -63,7 +38,7 @@ let prewarmedAt = 0;
 const SESSION_PREWARM_TTL_MS = 30_000;
 
 function requestSessionBootstrap() {
-  return requestJson<SessionBootstrapDto>("/api/session", { method: "POST" });
+  return requestJson("/api/session", sessionBootstrapDtoSchema, { method: "POST" });
 }
 
 function createPrewarm() {
@@ -106,25 +81,30 @@ export const browserAssessmentApi: AssessmentBrowserApi = {
   },
 
   getAssessment() {
-    return requestJson<AssessmentRecoveryDto>("/api/assessment");
+    return requestJson("/api/assessment", assessmentRecoveryDtoSchema);
   },
 
-  saveStep(step, value, expectedRevision) {
-    return requestJson<SaveAssessmentStepDto>(
-      `/api/assessment/steps/${routeKeyByStep[step]}`,
+  saveStep(command) {
+    return requestJson(
+      `/api/assessment/steps/${domainStepToRouteStep[command.step]}`,
+      saveAssessmentStepDtoSchema,
       {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ value, expectedRevision }),
+        body: JSON.stringify({
+          value: command.value,
+          expectedRevision: command.expectedRevision,
+        }),
       },
     );
   },
 
   submitAssessment(expectedRevision) {
-    return requestJson<SubmitAssessmentDto>("/api/assessment/submit", {
+    const body: SubmitAssessmentRequest = { expectedRevision };
+    return requestJson("/api/assessment/submit", submitAssessmentDtoSchema, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ expectedRevision }),
+      body: JSON.stringify(body),
     });
   },
 };
