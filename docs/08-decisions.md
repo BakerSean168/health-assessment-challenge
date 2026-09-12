@@ -178,4 +178,6 @@ This corrects an earlier reviewer-first interpretation that over-optimized the l
 
 Once height is already saved, the current-weight step calculates BMI immediately after the draft weight becomes valid. The preview imports the same pure `calculateBmi()` domain function used by submission, so the browser does not carry a second formula or threshold table. This is presentation feedback only: it does not persist a result and does not replace the canonical server-side snapshot created on submission.
 
-Assessment numeric fields retain `type=number` and mobile `inputMode`, but suppress browser-native spinner controls through local styling so height/current-weight/age/target-weight entry remains visually consistent with the product surface.
+The preview also maps the existing four BMI categories to distinct product states: normal uses a positive state, overweight uses a caution state, and underweight/obese use stronger attention states. Copy deliberately avoids calling BMI alone “dangerous” because it is a screening measure rather than a diagnosis.
+
+Assessment numeric fields retain `type=number` and mobile `inputMode`, but suppress browser-native spinner controls through local styling so height/current-weight/age/target-weight entry remains visually consistent with the product surface. Each numeric label row shows the accepted range (for example `120–230 cm`) without reverting to developer-oriented “accepted range” helper copy below the field.
