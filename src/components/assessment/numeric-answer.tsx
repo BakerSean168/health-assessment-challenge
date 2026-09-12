@@ -28,7 +28,12 @@ export function NumericAnswer({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
+      <div className="flex items-baseline justify-between gap-4">
+        <Label htmlFor={id}>{label}</Label>
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {min}–{max}{unit ? ` ${unit}` : ""}
+        </span>
+      </div>
       <div className="relative">
         <Input
           id={id}

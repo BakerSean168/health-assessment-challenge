@@ -118,7 +118,7 @@ describe("AssessmentFunnel", () => {
 
     expect(screen.getByText("Your BMI")).toBeInTheDocument();
     expect(screen.getByText("26.1")).toBeInTheDocument();
-    expect(screen.getByText("Overweight")).toBeInTheDocument();
+    expect(screen.getByText("Above the standard range")).toBeInTheDocument();
     expect(api.saveStep).not.toHaveBeenCalled();
 
     await user.clear(input);
