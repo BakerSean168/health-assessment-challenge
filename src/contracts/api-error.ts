@@ -28,6 +28,7 @@ function errorVariant<Code extends string, Details extends z.ZodType>(
 const apiErrorSchema = z.discriminatedUnion("code", [
   errorVariant("SESSION_REQUIRED", emptyDetailsSchema),
   errorVariant("SESSION_NOT_FOUND", emptyDetailsSchema),
+  errorVariant("UNSUPPORTED_MEDIA_TYPE", emptyDetailsSchema),
   errorVariant(
     "VALIDATION_ERROR",
     z.object({ issues: z.array(validationIssueSchema).optional() }).strict(),
@@ -67,6 +68,7 @@ export type ApiErrorDetails<Code extends ApiErrorCode> = Extract<
 export const API_ERROR_STATUS_BY_CODE = {
   SESSION_REQUIRED: 401,
   SESSION_NOT_FOUND: 404,
+  UNSUPPORTED_MEDIA_TYPE: 415,
   VALIDATION_ERROR: 400,
   PAYMENT_INVALID: 400,
   ASSESSMENT_NOT_FOUND: 404,

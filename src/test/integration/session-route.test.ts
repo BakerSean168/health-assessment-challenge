@@ -146,6 +146,32 @@ describe("POST /api/session", () => {
     await expect(prisma.assessment.count()).resolves.toBe(2);
   });
 
+  it("repairs a missing 1:1 subscription row when an existing session is bootstrapped", async () => {
+    const existing = await prisma.anonymousSession.create({
+      data: { assessment: { create: {} } },
+    });
+
+    const response = await POST(
+      new NextRequest("http://localhost/api/session", {
+        method: "POST",
+        headers: {
+          cookie: `${sessionCookieName}=${existing.id}`,
+        },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      subscriptionStatus: "FREE",
+    });
+    await expect(
+      prisma.subscription.findUnique({ where: { sessionId: existing.id } }),
+    ).resolves.toMatchObject({
+      sessionId: existing.id,
+      status: "FREE",
+    });
+  });
+
   it("replaces an unknown session cookie instead of trusting client-selected identity", async () => {
     const unknownSessionId = "11111111-1111-4111-8111-111111111111";
 

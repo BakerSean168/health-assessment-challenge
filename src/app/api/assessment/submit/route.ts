@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { apiError } from "@/lib/api-error";
 import { privateJson } from "@/lib/api-response";
 import { getPrismaClient } from "@/lib/db";
+import { hasJsonContentType } from "@/lib/http-request";
 import { submitAssessment } from "@/modules/assessment/application/submit-assessment";
 import { submitAssessmentDtoSchema } from "@/modules/assessment/contracts/assessment-api";
 import { submitAssessmentRequestSchema } from "@/modules/assessment/contracts/submit-assessment";
@@ -19,6 +20,14 @@ export async function POST(request: NextRequest) {
   if (!sessionId.success) {
     return apiError("SESSION_REQUIRED",
       "Start an assessment session before submitting.",
+      {},
+    );
+  }
+
+  if (!hasJsonContentType(request)) {
+    return apiError(
+      "UNSUPPORTED_MEDIA_TYPE",
+      "This endpoint requires an application/json request body.",
       {},
     );
   }

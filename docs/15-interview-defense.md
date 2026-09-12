@@ -56,7 +56,7 @@ The browser also handles this conflict as a recovery path: on `ASSESSMENT_VERSIO
 
 ### 8. Isn't the preliminary read before the write racy?
 
-**Answer:** Yes, and correctness does not depend on it. The read is for domain policy and user-friendly validation. The database CAS is the concurrency boundary. A race after the read is detected by the revision-conditioned update.
+**Answer:** Yes, and correctness does not depend on it. The read is for domain policy and user-friendly validation. The database CAS is the concurrency boundary. A race after the read is detected by the revision-conditioned update. The repository also uses `updateManyAndReturn`, so the successful response carries the exact row produced by its own CAS statement; it does not perform a second SELECT that could accidentally observe a later writer.
 
 ### 9. Why does submit use a transaction and a result snapshot?
 
@@ -72,13 +72,13 @@ The browser also handles this conflict as a recovery path: on `ASSESSMENT_VERSIO
 
 ### 11. How is `/pay` idempotent under concurrency?
 
-**Answer:** The caller supplies a session-scoped idempotency key. PostgreSQL enforces uniqueness on `(sessionId, idempotencyKey)`. Payment-event insertion and the FREE→ACTIVE state change happen in one transaction. Concurrent requests with the same key are tested: one applies the side effect and the other returns `replayed: true`, with one event persisted.
+**Answer:** The caller supplies a session-scoped idempotency key. PostgreSQL enforces uniqueness on `(sessionId, idempotencyKey)`. Payment-event insertion and the FREE→ACTIVE state change happen in one transaction. Concurrent requests with the same key are tested: one inserts the event and the other returns `replayed: true`, with one event persisted. The replay path still re-establishes ACTIVE idempotently, so the dedupe record cannot make the API claim success while canonical access remains FREE.
 
 **Evidence:** `PrismaPaymentRepository`, `payment.test.ts`.
 
-### 12. Why 400, 409, and 422 separately?
+### 12. Why 400, 409, 415, and 422 separately?
 
-**Answer:** They represent different client recovery behavior. `400` means the JSON/schema itself is malformed or structurally invalid. `409` means a valid request conflicts with aggregate order, lifecycle, or optimistic revision. `422` means the scalar candidate is structurally valid but contradicts current domain context, such as a higher target for `LOSE_WEIGHT`. Stable error codes are the primary machine contract.
+**Answer:** They represent different client recovery behavior. `400` means JSON/schema content is malformed or structurally invalid. `409` means a valid request conflicts with aggregate order, lifecycle, or optimistic revision. `415` means a body-bearing JSON endpoint was called with a different media type and is rejected before body parsing. `422` means the scalar candidate is structurally valid but contradicts current domain context, such as a higher target for `LOSE_WEIGHT`. Stable error codes are the primary machine contract.
 
 **Evidence:** `docs/04-api-contract.md`, Route Handlers.
 
@@ -96,43 +96,43 @@ The browser also handles this conflict as a recovery path: on `ASSESSMENT_VERSIO
 
 **Answer:** No. Zod rejects malformed client input at the transport boundary, but the domain resolver/submission validation also rechecks the frozen scalar ranges. This matters if stored data came from an old migration, manual operation, seed, or other non-HTTP path. A persisted out-of-contract value cannot be treated as a complete assessment or used to create a result snapshot.
 
-**Evidence:** `assessment.ts`, `submission.test.ts`, `submit-assessment.test.ts` persisted-invalid case.
+**Evidence:** `assessment.ts`, `submission.test.ts`, and `database-invariants.test.ts`.
 
-### 15. Why not put all those numeric limits in database CHECK constraints too?
+### 16. Why add database CHECK constraints if Zod and domain validation already exist?
 
-**Answer:** That would be a reasonable production hardening step. For this time-boxed challenge the invariants are enforced at the HTTP and domain layers and verified against real PostgreSQL. Adding CHECK constraints is useful if more write paths appear; it is not necessary to prove the required funnel behavior today. The design intentionally avoids pretending the current database is a complete clinical data platform.
+**Answer:** They protect a different boundary. Zod protects HTTP input and the domain protects business decisions, while CHECK constraints stop direct, seed, legacy, or future persistence paths from storing structurally impossible values. The database now backstops scalar bounds, nonnegative revision, lifecycle timestamp consistency, payment-key shape, and basic result sanity. Goal/target direction deliberately remains a domain rule because upstream edits are allowed to preserve an older target as draft data.
 
-### 16. Why are premium fields omitted instead of returned and blurred?
+### 17. Why are premium fields omitted instead of returned and blurred?
 
 **Answer:** CSS hiding is not authorization. FREE projection constructs a different DTO that contains `{ locked: true }` and never serializes the calorie/date values. The same stored snapshot is projected fully only after server-side subscription state becomes ACTIVE.
 
 **Evidence:** `result-projection.ts`, `free-result.test.ts` serialized-value assertions.
 
-### 17. Why `Float` for measurements and BMI instead of Decimal?
+### 18. Why `Float` for measurements and BMI instead of Decimal?
 
 **Answer:** These values do not have a financial exact-decimal requirement. Domain functions own explicit display rounding, while PostgreSQL/Prisma Float keeps the TypeScript/JSON boundary simple. If the domain later required exact fixed-point measurement semantics, the persistence type could change independently of the API shape.
 
-### 18. Why only two Playwright tests?
+### 19. Why only two Playwright tests?
 
 **Answer:** Browser tests prove the two highest-value integration paths: FREE and paid. Boundary permutations, stale writes, concurrency, and idempotency are faster and more diagnostic in domain/integration tests against real PostgreSQL. This keeps E2E signal high instead of duplicating every lower-level case in a slow browser matrix.
 
-### 19. Why use real PostgreSQL integration tests instead of mocking Prisma?
+### 20. Why use real PostgreSQL integration tests instead of mocking Prisma?
 
 **Answer:** The hard parts of this challenge are database semantics: optimistic CAS, uniqueness, transaction rollback, retry behavior, and state recovery. Mocking Prisma would test our mock rather than those guarantees. The disposable PostgreSQL service applies committed migrations before the integration suite.
 
-### 20. Why does local Playwright own port 3100?
+### 21. Why does local Playwright own port 3100?
 
 **Answer:** Originally local Playwright could reuse any responsive dev process on port 3000 and accidentally validate stale code. It now starts the current checkout on a dedicated `127.0.0.1:3100` server with reuse disabled. Remote production verification skips the local app/database bootstrap entirely when `E2E_BASE_URL` is supplied.
 
-### 21. Why `Cache-Control: private, no-store` on API responses?
+### 22. Why `Cache-Control: private, no-store` on API responses?
 
 **Answer:** Every API response is session-specific, and FREE/ACTIVE payloads can differ for the same URL. Correctness should not depend on current Cloudflare/Next cache defaults. A shared helper applies an explicit private/no-store policy to success and error JSON.
 
-### 22. What was the most important production bug?
+### 23. What was the most important production bug?
 
 **Answer:** The first public concurrent Playwright run exhausted the dedicated PostgreSQL role because production `getPrismaClient()` created repeated Prisma/pg pools. A production-mode regression test was made to fail first, then the app was changed to share one client and cap its pool at four connections. The same public FREE/paid flows passed after redeployment. This is a useful example of production-like evidence overruling confidence in locally green code.
 
-### 23. What did AI actually do, and what did you personally decide?
+### 24. What did AI actually do, and what did you personally decide?
 
 **Answer:** AI accelerated reference analysis, test enumeration, repetitive implementation, dependency review, and debugging. The developer owned requirement interpretation and acceptance/rejection decisions. Concrete rejected/corrected AI-assisted proposals include persisted `currentStep`, CSS-only premium hiding, unsupported ESLint/TypeScript upgrades, the per-request production Prisma lifecycle, missing explicit no-store caching, and persisting a semantically inconsistent target candidate. The evidence loop was requirement → failing test/reproduction → implementation → independent gates.
 

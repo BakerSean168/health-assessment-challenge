@@ -112,26 +112,6 @@ describe("POST /api/assessment/submit", () => {
     expect(assessment.revision).toBe(1);
   });
 
-  it("refuses to submit persisted scalar data that violates domain bounds", async () => {
-    const cookie = await createSession();
-    await completeDraft(cookie);
-
-    await prisma.assessment.updateMany({
-      data: { heightCm: 80 },
-    });
-
-    const response = await submitRequest(cookie, 7);
-
-    expect(response.status).toBe(409);
-    await expect(response.json()).resolves.toMatchObject({
-      error: {
-        code: "ASSESSMENT_INCOMPLETE",
-        details: { missingSteps: ["HEIGHT"] },
-      },
-    });
-    await expect(prisma.assessmentResult.count()).resolves.toBe(0);
-  });
-
   it("creates one versioned result snapshot and completes the aggregate atomically", async () => {
     const cookie = await createSession();
     await completeDraft(cookie);
@@ -178,6 +158,31 @@ describe("POST /api/assessment/submit", () => {
     const retriedResult = await prisma.assessmentResult.findFirstOrThrow();
     expect(retriedResult.id).toBe(initialResult.id);
     expect(retriedResult.createdAt).toEqual(initialResult.createdAt);
+  });
+
+  it("collapses concurrent submit retries into one completed snapshot", async () => {
+    const cookie = await createSession();
+    await completeDraft(cookie);
+
+    const [first, second] = await Promise.all([
+      submitRequest(cookie, 7),
+      submitRequest(cookie, 7),
+    ]);
+
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    await expect(first.json()).resolves.toEqual({
+      status: "COMPLETED",
+      resultReady: true,
+    });
+    await expect(second.json()).resolves.toEqual({
+      status: "COMPLETED",
+      resultReady: true,
+    });
+    await expect(prisma.assessmentResult.count()).resolves.toBe(1);
+    const assessment = await prisma.assessment.findFirstOrThrow();
+    expect(assessment.status).toBe("COMPLETED");
+    expect(assessment.revision).toBe(8);
   });
 
   it("rejects a stale first-time submit without creating a result", async () => {

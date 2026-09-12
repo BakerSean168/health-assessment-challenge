@@ -82,6 +82,33 @@ describe("POST /api/pay", () => {
     await expect(prisma.paymentEvent.count()).resolves.toBe(1);
   });
 
+  it("re-establishes the ACTIVE side effect when replay state was externally downgraded", async () => {
+    const session = await createSession();
+
+    const first = await paymentRequest(session.id, "demo_repair_key");
+    expect(first.status).toBe(200);
+
+    await prisma.subscription.update({
+      where: { sessionId: session.id },
+      data: { status: "FREE", activatedAt: null },
+    });
+
+    const replay = await paymentRequest(session.id, "demo_repair_key");
+    expect(replay.status).toBe(200);
+    await expect(replay.json()).resolves.toEqual({
+      status: "SUCCEEDED",
+      subscriptionStatus: "ACTIVE",
+      replayed: true,
+    });
+
+    const subscription = await prisma.subscription.findUniqueOrThrow({
+      where: { sessionId: session.id },
+    });
+    expect(subscription.status).toBe("ACTIVE");
+    expect(subscription.activatedAt).toBeInstanceOf(Date);
+    await expect(prisma.paymentEvent.count()).resolves.toBe(1);
+  });
+
   it("collapses concurrent requests carrying the same idempotency key", async () => {
     const session = await createSession();
 

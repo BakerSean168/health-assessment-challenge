@@ -30,13 +30,14 @@ The highest leverage came from quickly enumerating edge cases and turning them i
 7. **Reviewer evidence leaked into product copy.** The implementation over-applied the “make evidence easy to review” goal and put persistence, snapshot, access-boundary, deterministic-demo, and server-transition narration directly into the live funnel. The user rejected that presentation. RED-first component expectations were changed to require end-user value language; the live copy now reads as a wellness product while technical proof remains in README/docs/tests.
 8. **The first type-safety audit was incomplete.** The repository already had a `contracts/` directory, and the initial review incorrectly treated that as stronger evidence than the actual call graph: browser response DTOs were still duplicated and `fetch().json()` was trusted through a generic assertion. After that miss was challenged, a second source-of-truth audit deliberately searched for the same class of problem elsewhere. It found route-local error/status contracts, duplicated step/UI/persistence mappings, weak compiler defaults, missing Prisma/domain alignment checks, toolchain-version drift risk, and ambiguous lost-response recovery. The correction was not another documentation claim: each boundary gained executable type/runtime/test evidence.
 9. **Server retry safety was not automatically browser retry safety.** Submit was idempotent on the server and step writes were concurrency-safe, but an HTTP response could be lost after commit and leave React with stale revision/state. The browser now reconciles canonical state after ambiguous PATCH/submit failures; tests explicitly simulate “commit succeeded, response lost” for both paths.
+10. **The next audit found persistence/HTTP invariants below the type layer.** A successful CAS write performed a second SELECT before returning, so a later revision could commit in that gap and make the first writer report somebody else’s newer revision. JSON routes also parsed `text/plain` bodies, database scalar/lifecycle rules existed only above PostgreSQL, and payment replay trusted the event record without re-establishing ACTIVE access if that side effect had been externally lost. RED integration tests reproduced each case. Step writes now use `updateManyAndReturn`, JSON-body routes enforce `application/json` with `415`, committed CHECK constraints backstop structural invariants, and payment replay idempotently re-applies the access side effect.
 
 ## Evidence used to accept changes
 
 At delivery time the repository has:
 
-- 82 Vitest unit/component tests;
-- 36 PostgreSQL integration tests against committed migrations;
+- 83 Vitest unit/component tests;
+- 49 PostgreSQL integration tests against committed migrations;
 - two Playwright browser flows covering FREE and paid journeys;
 - GitHub Actions gates for lint, route-aware typecheck, tests, production build, and immutable container publication;
 - the same two Playwright flows passing against the public HTTPS deployment;
