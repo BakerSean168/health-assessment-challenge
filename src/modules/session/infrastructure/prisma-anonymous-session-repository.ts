@@ -5,12 +5,12 @@ import type {
 import type { AnonymousSessionRepository } from "../application/session-repository";
 import type { AnonymousSessionAggregate } from "../domain/session";
 
-type SessionWithAssessment = Prisma.AnonymousSessionGetPayload<{
-  include: { assessment: true };
+type SessionWithResources = Prisma.AnonymousSessionGetPayload<{
+  include: { assessment: true; subscription: true };
 }>;
 
 function toDomainSession(
-  session: SessionWithAssessment | null,
+  session: SessionWithResources | null,
 ): AnonymousSessionAggregate | null {
   if (!session) {
     return null;
@@ -18,7 +18,9 @@ function toDomainSession(
 
   return {
     id: session.id,
-    subscriptionStatus: session.subscriptionStatus,
+    // Missing subscription data is treated as FREE rather than accidentally
+    // granting access. Normal application writes always create the 1:1 row.
+    subscriptionStatus: session.subscription?.status ?? "FREE",
     assessment: session.assessment
       ? {
           id: session.assessment.id,
@@ -48,27 +50,33 @@ export class PrismaAnonymousSessionRepository
   async createWithAssessment(): Promise<AnonymousSessionAggregate> {
     const created = await this.prisma.anonymousSession.create({
       data: {
-        assessment: {
-          create: {},
-        },
+        assessment: { create: {} },
+        subscription: { create: {} },
       },
-      include: { assessment: true },
+      include: { assessment: true, subscription: true },
     });
 
     return toDomainSession(created)!;
   }
 
   async ensureAssessment(sessionId: string): Promise<AnonymousSessionAggregate> {
-    await this.prisma.assessment.upsert({
-      where: { sessionId },
-      update: {},
-      create: { sessionId },
-    });
+    await this.prisma.$transaction([
+      this.prisma.assessment.upsert({
+        where: { sessionId },
+        update: {},
+        create: { sessionId },
+      }),
+      this.prisma.subscription.upsert({
+        where: { sessionId },
+        update: {},
+        create: { sessionId },
+      }),
+    ]);
 
     const session = await this.loadById(sessionId);
 
     if (!session) {
-      throw new Error("Anonymous session disappeared while ensuring assessment.");
+      throw new Error("Anonymous session disappeared while ensuring assessment resources.");
     }
 
     return toDomainSession(session)!;
@@ -77,7 +85,7 @@ export class PrismaAnonymousSessionRepository
   private loadById(id: string) {
     return this.prisma.anonymousSession.findUnique({
       where: { id },
-      include: { assessment: true },
+      include: { assessment: true, subscription: true },
     });
   }
 }

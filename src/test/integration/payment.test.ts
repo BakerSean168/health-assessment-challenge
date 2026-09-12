@@ -12,7 +12,10 @@ const prisma = createPrismaClient(testDatabaseUrl);
 
 async function createSession() {
   return prisma.anonymousSession.create({
-    data: { assessment: { create: {} } },
+    data: {
+      assessment: { create: {} },
+      subscription: { create: {} },
+    },
   });
 }
 
@@ -54,10 +57,11 @@ describe("POST /api/pay", () => {
       replayed: false,
     });
 
-    const persisted = await prisma.anonymousSession.findUniqueOrThrow({
-      where: { id: session.id },
+    const persisted = await prisma.subscription.findUniqueOrThrow({
+      where: { sessionId: session.id },
     });
-    expect(persisted.subscriptionStatus).toBe("ACTIVE");
+    expect(persisted.status).toBe("ACTIVE");
+    expect(persisted.activatedAt).toBeInstanceOf(Date);
     await expect(prisma.paymentEvent.count()).resolves.toBe(1);
   });
 

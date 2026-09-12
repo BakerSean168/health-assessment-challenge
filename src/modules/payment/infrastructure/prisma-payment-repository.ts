@@ -34,10 +34,36 @@ export class PrismaPaymentRepository implements PaymentRepository {
         return { kind: "replayed" };
       }
 
-      await tx.anonymousSession.update({
-        where: { id: input.sessionId },
-        data: { subscriptionStatus: "ACTIVE" },
+      const activatedAt = new Date();
+      const activation = await tx.subscription.updateMany({
+        where: {
+          sessionId: input.sessionId,
+          status: "FREE",
+        },
+        data: {
+          status: "ACTIVE",
+          activatedAt,
+        },
       });
+
+      // Normal sessions always have a subscription row. This upsert is a
+      // fail-safe for legacy/manual rows and still defaults them to the least
+      // privileged state until a successful payment reaches this boundary.
+      if (activation.count === 0) {
+        const existing = await tx.subscription.findUnique({
+          where: { sessionId: input.sessionId },
+          select: { status: true },
+        });
+        if (!existing) {
+          await tx.subscription.create({
+            data: {
+              sessionId: input.sessionId,
+              status: "ACTIVE",
+              activatedAt,
+            },
+          });
+        }
+      }
 
       return { kind: "applied" };
     });

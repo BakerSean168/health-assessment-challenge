@@ -14,6 +14,7 @@ const prisma = createPrismaClient(testDatabaseUrl);
 async function seedCompletedFreeSession() {
   return prisma.anonymousSession.create({
     data: {
+      subscription: { create: {} },
       assessment: {
         create: {
           status: "COMPLETED",

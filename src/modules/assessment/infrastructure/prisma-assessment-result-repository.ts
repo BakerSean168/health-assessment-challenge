@@ -13,7 +13,7 @@ export class PrismaAssessmentResultRepository
     const session = await this.prisma.anonymousSession.findUnique({
       where: { id: sessionId },
       select: {
-        subscriptionStatus: true,
+        subscription: { select: { status: true } },
         assessment: {
           select: {
             result: {
@@ -34,7 +34,9 @@ export class PrismaAssessmentResultRepository
     }
 
     return {
-      subscriptionStatus: session.subscriptionStatus,
+      // Fail closed if a manually-created/corrupt session somehow lacks the
+      // expected 1:1 subscription row.
+      subscriptionStatus: session.subscription?.status ?? "FREE",
       result: session.assessment.result,
     };
   }
