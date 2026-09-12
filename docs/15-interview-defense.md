@@ -86,7 +86,13 @@ The browser also handles this conflict as a recovery path: on `ASSESSMENT_VERSIO
 
 **Answer:** A newly submitted contradictory target has no reason to be persisted, so it returns `422` without advancing revision. By contrast, an old target may have been valid when originally entered; after an upstream goal/current-weight edit it is retained as historical draft data while derived progress moves back to `TARGET_WEIGHT`. That avoids destructive clearing while still preventing submit.
 
-### 14. Are HTTP Zod checks the only protection against invalid values?
+### 14. How do frontend and backend avoid API type drift?
+
+**Answer:** Public request/response shapes live in the shared `contracts/` layer. Zod schemas are the runtime source of truth and TypeScript DTOs are inferred from them; Route Handlers validate outgoing success bodies and browser clients validate received success bodies with the same schema. Domain enum-like values are declared once as `as const` tuples and reused by the contracts. Step writes use a discriminated command union, so the step determines the legal value type at compile time.
+
+**Evidence:** `src/modules/assessment/contracts/assessment-api.ts`, `assessment-step.ts`, `src/lib/browser-api.ts`, and their contract/typecheck tests.
+
+### 15. Are HTTP Zod checks the only protection against invalid values?
 
 **Answer:** No. Zod rejects malformed client input at the transport boundary, but the domain resolver/submission validation also rechecks the frozen scalar ranges. This matters if stored data came from an old migration, manual operation, seed, or other non-HTTP path. A persisted out-of-contract value cannot be treated as a complete assessment or used to create a result snapshot.
 
