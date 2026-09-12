@@ -39,9 +39,9 @@ const currentCategoryCopy: Record<BmiCategory, BmiCopy> = {
     title: "Above the standard range",
     description:
       "Your BMI is above the standard adult range. BMI is one screening measure and does not diagnose health status.",
-    className: "border-amber-500/30 bg-amber-500/10",
+    className: "border-destructive/30 bg-destructive/10",
     icon: "warning",
-    iconClassName: "text-amber-500",
+    iconClassName: "text-destructive",
   },
   OBESE: {
     title: "Well above the standard range",
@@ -73,9 +73,9 @@ const targetCategoryCopy: Record<BmiCategory, BmiCopy> = {
     title: "Target is above the standard range",
     description:
       "At this target weight, your BMI would still be above the standard adult range. BMI is one screening measure and does not diagnose health status.",
-    className: "border-amber-500/30 bg-amber-500/10",
+    className: "border-destructive/30 bg-destructive/10",
     icon: "warning",
-    iconClassName: "text-amber-500",
+    iconClassName: "text-destructive",
   },
   OBESE: {
     title: "Target is well above the standard range",

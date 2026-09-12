@@ -9,7 +9,7 @@ This is a final review against the supplied three-day challenge brief, written f
 | Brief area | Evidence a reviewer can verify | Status |
 |---|---|---|
 | Professional API design | Six small HTTP endpoints, stable DTO/error codes, thin Route Handlers, full contract in `04-api-contract.md` | PASS |
-| Stable/extensible data model | Explicit relational columns, 1:1 session-assessment, immutable result snapshot, payment idempotency events, Mermaid schema | PASS |
+| Stable/extensible data model | Explicit relational columns, 1:1 session-assessment, 1:1 session-subscription, immutable result snapshot, payment idempotency events, Mermaid schema | PASS |
 | Incremental persistence | Every accepted answer is persisted before UI progression; revision increments are integration-tested | PASS |
 | Progress recovery | `GET /api/assessment` restores answers; `nextRequiredStep` is derived from persisted facts; public E2E reloads mid-funnel | PASS |
 | State consistency | Server-side step ordering, direct inconsistent target rejection, upstream cross-field revalidation, strict stale-write `409`, real concurrent-writer integration test | PASS |
@@ -23,15 +23,15 @@ This is a final review against the supplied three-day challenge brief, written f
 | CI | GitHub Actions runs Quality, PostgreSQL integration, Chromium E2E, and immutable container publishing | PASS |
 | Public runnable URL | `https://assessment.bakersean.top`, HTTPS via Cloudflare/Caddy, production smoke and public Playwright pass | PASS |
 | Paid evaluator session | Synthetic ACTIVE session ID is in README and returns full result projection | PASS |
-| Schema diagram | README quick diagram + detailed `03-domain-and-data-model.md`; binary subscription state is modeled on the session rather than a separate table and the rationale is explicit | PASS with documented trade-off |
+| Schema diagram | README quick diagram + detailed `03-domain-and-data-model.md`; user/session, assessment data, subscription state, result snapshot, and payment events are explicit relations | PASS |
 | AI-use retrospective | Running log + concise retrospective with accepted/rejected AI proposals and executable evidence | PASS |
 | Frontend completion willingness | Mobile-first single-question pacing, progress indicator, persisted refresh, honest trust copy, visible value before paywall, Base UI accessibility primitives | PASS for brief scope |
 
 ## Deliberate trade-offs a reviewer may ask about
 
-### Why no dedicated Subscription table?
+### Why is Subscription a very small 1:1 table?
 
-The brief needs a mocked binary access state. V1 stores `FREE | ACTIVE` on `AnonymousSession` and keeps replay/audit information in `PaymentEvent`. A separate table would currently contain only a foreign key plus one status and would not model any real plan/expiry/provider concept. If recurring billing, plan tiers, expiry, provider customer IDs, or renewals become requirements, that is the point to introduce a 1:1 `Subscription` entity.
+The brief explicitly asks the schema to show the relationship between user/session data, assessment records, and subscription information. The final model therefore uses `Subscription.sessionId` as its primary/foreign key and stores only the facts the mock flow actually owns: `status`, `activatedAt`, and timestamps. This satisfies the required relational boundary without inventing plan, expiry, provider-customer, renewal, or cancellation concepts that the challenge does not implement.
 
 ### Why one assessment per session?
 
@@ -54,12 +54,13 @@ The browser suite is reserved for the two end-to-end behaviors with the highest 
 5. Final docs still contained a few bootstrap-era words such as "planned" and an obsolete future-tense database-test note. Those were reconciled to the implementation that actually shipped.
 6. A lightweight desktop/mobile browser audit found no horizontal overflow, console errors, page errors, or failed network requests on the landing, assessment entry, and paid-result surfaces. A local app icon was added so the submission does not fall back to a missing favicon request.
 7. The live UI had accumulated reviewer-facing implementation narration (persistence, versioned snapshots, access boundaries, server transition details). A product-surface pass moved that evidence back to README/docs/tests and rewrote landing, questionnaire, processing, result, checkout, and metadata copy around end-user value while keeping mock checkout transparent.
+8. A final source-to-brief audit found two remaining alignment gaps that the repository's earlier self-audit had normalized as trade-offs: subscription state was not yet a separate relation even though the brief explicitly asks for a subscription-information table, and stale-write conflicts were detected but not recovered in the browser. The final pass introduces the minimal 1:1 `Subscription` extension table with a data-preserving backfill migration and adds client-side canonical-state refresh on `ASSESSMENT_VERSION_CONFLICT`.
 
 ## Remaining known limitations
 
 - Anonymous session cookies are intentionally demo authentication, not user accounts.
 - Payment is simulated; there is no provider signature/webhook verification.
-- Subscription state is binary; no plan, expiry, cancellation, or renewal model exists.
+- Subscription state is intentionally binary; the dedicated 1:1 table has no plan, expiry, cancellation, or renewal lifecycle because the brief only requires mocked FREE/ACTIVE access.
 - One anonymous session owns one assessment; no assessment history/restart UI.
 - E2E is Chromium-only; no broad device/browser compatibility matrix.
 - No load/performance benchmark suite; the challenge's correctness/state-consistency behaviors were prioritized.

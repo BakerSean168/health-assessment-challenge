@@ -141,12 +141,17 @@ HTTP handlers stay thin. Domain calculations do not depend on React, Prisma, coo
 ```mermaid
 erDiagram
     ANONYMOUS_SESSION ||--|| ASSESSMENT : owns
+    ANONYMOUS_SESSION ||--|| SUBSCRIPTION : has
     ASSESSMENT ||--o| ASSESSMENT_RESULT : snapshots
     ANONYMOUS_SESSION ||--o{ PAYMENT_EVENT : records
 
     ANONYMOUS_SESSION {
       uuid id PK
-      enum subscription_status
+    }
+    SUBSCRIPTION {
+      uuid session_id PK_FK
+      enum status
+      timestamp activated_at
     }
     ASSESSMENT {
       uuid id PK
@@ -174,7 +179,7 @@ erDiagram
     }
 ```
 
-V1 deliberately keeps the binary `FREE | ACTIVE` subscription state on `AnonymousSession` and records transitions in `PaymentEvent`, rather than creating a speculative subscription table with no plan, expiry, renewal, or provider metadata. If those concepts become requirements, a dedicated 1:1 `Subscription` aggregate can be introduced without changing assessment ownership.
+`Subscription` is a deliberately small 1:1 extension table keyed directly by `session_id`; it satisfies the challenge's explicit user/data/subscription relationship without inventing plan, renewal, provider, or billing-cycle fields that do not exist in the mocked payment scope. `PaymentEvent` remains the replay/idempotency record for simulated payment transitions.
 
 ## TDD workflow
 
@@ -221,7 +226,7 @@ pnpm test:all
 
 | Layer | Current evidence | Why this layer exists |
 |---|---|---|
-| Unit/component | 67 tests | Pure calculation boundaries, step policy, FREE redaction, production Prisma lifecycle, and product-component behavior should fail fast without infrastructure noise |
+| Unit/component | 69 tests | Pure calculation boundaries, step policy, FREE redaction, production Prisma lifecycle, and product-component behavior should fail fast without infrastructure noise |
 | PostgreSQL integration | 36 tests | Persistence, recovery, ordering, optimistic concurrency, malformed/injection-shaped input, atomic submit, result authorization, and payment idempotency depend on real database/HTTP-boundary semantics |
 | Playwright | 2 browser journeys | The two highest-value user paths prove cookies, Next routes, refresh recovery, FREE result, paywall, simulated payment, and ACTIVE result work together |
 | GitHub Actions | 4 jobs | A clean runner proves lint/typecheck/tests/build and immutable application/migration image publication are reproducible |

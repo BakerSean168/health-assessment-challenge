@@ -18,6 +18,15 @@ describe("BmiPreview", () => {
     expect(preview.className).toContain("emerald");
   });
 
+  it("uses the stronger warning visual state as soon as BMI is above the standard range", () => {
+    render(<BmiPreview bmi={26.1} category="OVERWEIGHT" />);
+
+    const preview = screen.getByRole("status");
+    expect(preview).toHaveTextContent("Above the standard range");
+    expect(preview).toHaveAttribute("data-bmi-category", "OVERWEIGHT");
+    expect(preview.className).toContain("destructive");
+  });
+
   it("uses a warning visual state for BMI well above the standard range", () => {
     render(<BmiPreview bmi={32.7} category="OBESE" />);
 

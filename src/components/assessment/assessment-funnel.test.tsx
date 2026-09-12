@@ -153,16 +153,10 @@ describe("AssessmentFunnel", () => {
     expect(screen.queryByText("Your BMI")).not.toBeInTheDocument();
   });
 
-  it("keeps the current step visible and surfaces a server save error", async () => {
+  it("keeps the current step visible for a non-recoverable save error", async () => {
     const user = userEvent.setup();
     const api = createApi({
-      saveStep: vi
-        .fn()
-        .mockRejectedValue(
-          Object.assign(new Error("The assessment changed since this page loaded."), {
-            code: "ASSESSMENT_VERSION_CONFLICT",
-          }),
-        ),
+      saveStep: vi.fn().mockRejectedValue(new Error("Service temporarily unavailable.")),
     });
 
     render(<AssessmentFunnel api={api} onComplete={vi.fn()} />);
@@ -171,11 +165,46 @@ describe("AssessmentFunnel", () => {
     await user.click(screen.getByRole("button", { name: "Continue" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "The assessment changed since this page loaded.",
+      "Service temporarily unavailable.",
     );
     expect(
       screen.getByRole("heading", { name: "Which best describes you?" }),
     ).toBeInTheDocument();
+  });
+
+
+  it("refreshes canonical progress after a stale-write conflict instead of leaving the user stuck", async () => {
+    const user = userEvent.setup();
+    const getAssessment = vi.fn().mockResolvedValue({
+      status: "IN_PROGRESS",
+      nextRequiredStep: "GOAL",
+      revision: 1,
+      answers: { ...emptyAnswers, gender: "FEMALE" },
+    });
+    const api = createApi({
+      getAssessment,
+      saveStep: vi
+        .fn()
+        .mockRejectedValue(
+          Object.assign(
+            new Error("The assessment changed since this page loaded."),
+            { code: "ASSESSMENT_VERSION_CONFLICT" },
+          ),
+        ),
+    });
+
+    render(<AssessmentFunnel api={api} onComplete={vi.fn()} />);
+
+    await user.click(await screen.findByRole("radio", { name: "Male" }));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    await waitFor(() => expect(getAssessment).toHaveBeenCalledOnce());
+    expect(
+      await screen.findByRole("heading", { name: "What is your main goal?" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "We refreshed the latest saved progress",
+    );
   });
 
   it("previews target BMI before saving the target weight", async () => {

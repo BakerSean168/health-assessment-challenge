@@ -13,6 +13,7 @@ const prisma = createPrismaClient(testDatabaseUrl);
 async function seedCompletedFreeSession() {
   return prisma.anonymousSession.create({
     data: {
+      subscription: { create: {} },
       assessment: {
         create: {
           status: "COMPLETED",
@@ -86,7 +87,10 @@ describe("GET /api/assessment/result for FREE sessions", () => {
 
   it("returns RESULT_NOT_FOUND before an assessment has a result snapshot", async () => {
     const session = await prisma.anonymousSession.create({
-      data: { assessment: { create: {} } },
+      data: {
+        subscription: { create: {} },
+        assessment: { create: {} },
+      },
     });
 
     const response = await GET(requestForSession(session.id));

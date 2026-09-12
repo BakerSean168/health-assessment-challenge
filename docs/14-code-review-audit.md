@@ -54,15 +54,15 @@ Stable machine-readable error codes remain more important than prose messages fo
 ## Accepted limitations rather than late over-engineering
 
 - No generic repository abstraction: current use-case ports are easier to reason about and test.
-- No dedicated subscription table: binary demo access state has no plan/expiry/provider lifecycle yet.
+- Dedicated subscription storage stays intentionally minimal: the 1:1 row models only FREE/ACTIVE access and activation time; plan/expiry/provider lifecycle remains out of scope.
 - No distributed lock: PostgreSQL constraints/transactions/CAS cover the required single-database consistency boundary.
 - No real payment webhook/signature verification: `/pay` is explicitly simulated by the brief.
 - No broad rate limiting/observability platform: useful production concerns, but lower signal than the required three-day correctness loop.
 
 ## Evidence after this review
 
-- 67 unit/component tests;
-- 35 real PostgreSQL integration tests;
+- 69 unit/component tests;
+- 36 real PostgreSQL integration tests;
 - 2 Playwright browser journeys;
 - `pnpm test:all` runs all three layers;
 - lint + route-aware typecheck + production build remain required CI gates;

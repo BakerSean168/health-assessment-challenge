@@ -73,10 +73,11 @@ describe("POST /api/session", () => {
     const sessionId = extractCookieValue(setCookie!);
     const persisted = await prisma.anonymousSession.findUnique({
       where: { id: sessionId },
-      include: { assessment: true },
+      include: { assessment: true, subscription: true },
     });
 
-    expect(persisted?.subscriptionStatus).toBe("FREE");
+    expect(persisted?.subscription?.status).toBe("FREE");
+    expect(persisted?.subscription?.sessionId).toBe(sessionId);
     expect(persisted?.assessment).toMatchObject({
       status: "IN_PROGRESS",
       revision: 0,

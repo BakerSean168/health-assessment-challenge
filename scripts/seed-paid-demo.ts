@@ -28,8 +28,14 @@ async function main() {
     await prisma.$transaction(async (tx) => {
       await tx.anonymousSession.upsert({
         where: { id: sessionId },
-        update: { subscriptionStatus: "ACTIVE" },
-        create: { id: sessionId, subscriptionStatus: "ACTIVE" },
+        update: {},
+        create: { id: sessionId },
+      });
+
+      await tx.subscription.upsert({
+        where: { sessionId },
+        update: { status: "ACTIVE", activatedAt: completedAt },
+        create: { sessionId, status: "ACTIVE", activatedAt: completedAt },
       });
 
       const assessment = await tx.assessment.upsert({

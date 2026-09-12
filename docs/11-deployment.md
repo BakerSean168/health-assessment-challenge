@@ -126,7 +126,7 @@ Before marking T21 complete, verify from the deployed hostname rather than local
 As of 2026-09-11, the Chengdu Aliyun host has:
 
 - an isolated `health_assessment` PostgreSQL database owned by the dedicated `health_assessment_app` role;
-- all six committed Prisma migrations applied successfully;
+- all committed Prisma migrations applied successfully;
 - the immutable GHCR application image running as a healthy Next.js standalone container;
 - a 384 MiB application memory limit, 256 MiB V8 old-space ceiling, and a 1 GiB host swap safety net;
 - one synthetic ACTIVE evaluator session seeded out-of-band for review;
@@ -143,7 +143,7 @@ The production Compose file connects the app/migrator to the existing MemoFlow D
 
 On the small Chengdu host, migration is deliberately bounded to 256 MiB and executes the checked-in Prisma CLI directly from `node_modules`; it does not invoke Corepack/pnpm at container startup. This avoids an unnecessary package-manager bootstrap/network dependency and limits transient pressure on the existing production workloads.
 
-The first public Playwright run exposed a second production-only defect: `getPrismaClient()` created a fresh Prisma client in `NODE_ENV=production`. With the `@prisma/adapter-pg` adapter, each client owns a `pg` pool, so concurrent browser flows exhausted the dedicated database role's 10-connection limit and the height-step PATCH returned `P2037 TooManyConnections`. A regression test now launches the database module under a real production environment and asserts that repeated application lookups reuse the same client. Production also caps that shared pool at four connections (`DATABASE_POOL_MAX=4`). After the fix, 67 unit/component tests, 36 PostgreSQL integration tests, normal CI browser tests, and both public FREE/paid Playwright flows are green.
+The first public Playwright run exposed a second production-only defect: `getPrismaClient()` created a fresh Prisma client in `NODE_ENV=production`. With the `@prisma/adapter-pg` adapter, each client owns a `pg` pool, so concurrent browser flows exhausted the dedicated database role's 10-connection limit and the height-step PATCH returned `P2037 TooManyConnections`. A regression test now launches the database module under a real production environment and asserts that repeated application lookups reuse the same client. Production also caps that shared pool at four connections (`DATABASE_POOL_MAX=4`). After the fix, the then-current unit/component suite, 36 PostgreSQL integration tests, normal CI browser tests, and both public FREE/paid Playwright flows are green.
 
 Remote browser verification can be repeated through the public product surface. It creates ordinary synthetic anonymous sessions/payment events through the same HTTP flow; it does not manipulate the production database directly:
 

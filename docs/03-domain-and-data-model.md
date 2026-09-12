@@ -6,7 +6,7 @@ The v1 system has one small assessment aggregate plus a subscription/payment bou
 
 Persisted facts:
 
-- anonymous session identity and subscription status;
+- anonymous session identity plus its 1:1 subscription access state;
 - seven assessment answers;
 - assessment lifecycle/revision;
 - one immutable result snapshot;
@@ -20,7 +20,14 @@ Derived/presentation state such as the next screen, analyzing animation, wellnes
 classDiagram
     class AnonymousSession {
       UUID id
-      SubscriptionStatus subscriptionStatus
+      DateTime createdAt
+      DateTime updatedAt
+    }
+
+    class Subscription {
+      UUID sessionId PK_FK
+      SubscriptionStatus status
+      DateTime? activatedAt
       DateTime createdAt
       DateTime updatedAt
     }
@@ -62,11 +69,12 @@ classDiagram
     }
 
     AnonymousSession "1" --> "1" Assessment
+    AnonymousSession "1" --> "1" Subscription
     Assessment "1" --> "0..1" AssessmentResult
     AnonymousSession "1" --> "0..*" PaymentEvent
 ```
 
-V1 intentionally enforces one assessment per anonymous session. Restart/history is a future use case, not a requirement to pre-model.
+V1 intentionally enforces one assessment and one subscription row per anonymous session. `Subscription.sessionId` is both the primary key and foreign key, which keeps the required 1:1 relationship explicit without inventing a second meaningless identifier. Restart/history and real billing lifecycle are future use cases, not requirements to pre-model.
 
 ## 3. Current enums
 
@@ -110,7 +118,7 @@ The aggregate owns:
 - optimistic `revision`;
 - readiness for submission, derived from its answers.
 
-Subscription status is session-level authorization state, not an assessment field.
+Subscription status is session-level authorization state, not an assessment field. It is persisted in the dedicated 1:1 `Subscription` row and flattened into the session read model for application convenience. A missing subscription row is treated as `FREE` at read boundaries, so malformed/manual data fails closed rather than granting premium access.
 
 ## 5. Why progress is derived, not persisted
 
@@ -234,7 +242,7 @@ UNIQUE(sessionId, idempotencyKey)
 
 The field is deliberately not called `paymentId`: this challenge does not integrate a real payment provider and should not imply that the demo key is an external transaction identifier.
 
-Replaying the same key for the same session returns the existing outcome without repeating subscription activation. Only server-side payment application can change `AnonymousSession.subscriptionStatus` to `ACTIVE`.
+Replaying the same key for the same session returns the existing outcome without repeating subscription activation. Payment-event insertion and `Subscription.status = ACTIVE` happen inside the same database transaction. Only server-side payment application can activate subscription access.
 
 ## 12. Calculation policy boundary
 
@@ -283,6 +291,7 @@ Application use cases orchestrate persistence/transactions; they do not duplicat
 The initial Prisma/PostgreSQL schema should express:
 
 - primary keys on all entities;
+- primary/foreign-key `Subscription.sessionId` (one subscription row per anonymous session);
 - unique `Assessment.sessionId` (one assessment per anonymous session);
 - unique `AssessmentResult.assessmentId`;
 - composite unique `(PaymentEvent.sessionId, PaymentEvent.idempotencyKey)`;

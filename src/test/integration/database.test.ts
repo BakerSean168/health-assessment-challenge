@@ -18,14 +18,18 @@ afterAll(async () => {
 
 describe("database integration foundation", () => {
   it("round-trips a persisted anonymous session through PostgreSQL", async () => {
-    const created = await prisma.anonymousSession.create({ data: {} });
+    const created = await prisma.anonymousSession.create({
+      data: { subscription: { create: {} } },
+    });
 
     const loaded = await prisma.anonymousSession.findUnique({
       where: { id: created.id },
+      include: { subscription: true },
     });
 
     expect(loaded).not.toBeNull();
     expect(loaded?.id).toBe(created.id);
-    expect(loaded?.subscriptionStatus).toBe("FREE");
+    expect(loaded?.subscription?.status).toBe("FREE");
+    expect(loaded?.subscription?.sessionId).toBe(created.id);
   });
 });
