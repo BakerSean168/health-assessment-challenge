@@ -3,12 +3,17 @@ import type {
   PrismaClient,
 } from "../../../generated/prisma/client";
 import type { AnonymousSessionRepository } from "../application/session-repository";
-import type { AnonymousSessionAggregate } from "../domain/session";
+import {
+  FREE_SUBSCRIPTION_STATUS,
+  type AnonymousSessionAggregate,
+} from "../domain/session";
 
 type SessionWithResources = Prisma.AnonymousSessionGetPayload<{
   include: { assessment: true; subscription: true };
 }>;
 
+function toDomainSession(session: SessionWithResources): AnonymousSessionAggregate;
+function toDomainSession(session: null): null;
 function toDomainSession(
   session: SessionWithResources | null,
 ): AnonymousSessionAggregate | null {
@@ -20,19 +25,21 @@ function toDomainSession(
     id: session.id,
     // Missing subscription data is treated as FREE rather than accidentally
     // granting access. Normal application writes always create the 1:1 row.
-    subscriptionStatus: session.subscription?.status ?? "FREE",
+    subscriptionStatus: session.subscription?.status ?? FREE_SUBSCRIPTION_STATUS,
     assessment: session.assessment
       ? {
           id: session.assessment.id,
           status: session.assessment.status,
           revision: session.assessment.revision,
-          gender: session.assessment.gender,
-          goal: session.assessment.goal,
-          activityLevel: session.assessment.activityLevel,
-          heightCm: session.assessment.heightCm,
-          weightKg: session.assessment.weightKg,
-          age: session.assessment.age,
-          targetWeightKg: session.assessment.targetWeightKg,
+          answers: {
+            gender: session.assessment.gender,
+            goal: session.assessment.goal,
+            activityLevel: session.assessment.activityLevel,
+            heightCm: session.assessment.heightCm,
+            weightKg: session.assessment.weightKg,
+            age: session.assessment.age,
+            targetWeightKg: session.assessment.targetWeightKg,
+          },
         }
       : null,
   };
@@ -44,7 +51,8 @@ export class PrismaAnonymousSessionRepository
   constructor(private readonly prisma: PrismaClient) {}
 
   async findById(id: string): Promise<AnonymousSessionAggregate | null> {
-    return toDomainSession(await this.loadById(id));
+    const session = await this.loadById(id);
+    return session ? toDomainSession(session) : null;
   }
 
   async createWithAssessment(): Promise<AnonymousSessionAggregate> {
@@ -56,7 +64,7 @@ export class PrismaAnonymousSessionRepository
       include: { assessment: true, subscription: true },
     });
 
-    return toDomainSession(created)!;
+    return toDomainSession(created);
   }
 
   async ensureAssessment(sessionId: string): Promise<AnonymousSessionAggregate> {
@@ -79,7 +87,7 @@ export class PrismaAnonymousSessionRepository
       throw new Error("Anonymous session disappeared while ensuring assessment resources.");
     }
 
-    return toDomainSession(session)!;
+    return toDomainSession(session);
   }
 
   private loadById(id: string) {

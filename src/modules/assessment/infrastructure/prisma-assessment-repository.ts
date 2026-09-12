@@ -1,4 +1,6 @@
 import type { Prisma, PrismaClient } from "../../../generated/prisma/client";
+import { assessmentAnswerPatchForCommand } from "../contracts/assessment-step";
+import { IN_PROGRESS_ASSESSMENT_STATUS } from "../domain/assessment";
 import type {
   AssessmentRepository,
   SaveAssessmentStepInput,
@@ -8,22 +10,10 @@ import type {
 function stepMutationData(
   input: SaveAssessmentStepInput,
 ): Prisma.AssessmentUpdateManyMutationInput {
-  switch (input.step) {
-    case "GENDER":
-      return { gender: input.value, revision: { increment: 1 } };
-    case "GOAL":
-      return { goal: input.value, revision: { increment: 1 } };
-    case "ACTIVITY":
-      return { activityLevel: input.value, revision: { increment: 1 } };
-    case "HEIGHT":
-      return { heightCm: input.value, revision: { increment: 1 } };
-    case "WEIGHT":
-      return { weightKg: input.value, revision: { increment: 1 } };
-    case "AGE":
-      return { age: input.value, revision: { increment: 1 } };
-    case "TARGET_WEIGHT":
-      return { targetWeightKg: input.value, revision: { increment: 1 } };
-  }
+  return {
+    ...assessmentAnswerPatchForCommand(input),
+    revision: { increment: 1 },
+  };
 }
 
 export class PrismaAssessmentRepository implements AssessmentRepository {
@@ -85,7 +75,7 @@ export class PrismaAssessmentRepository implements AssessmentRepository {
     const mutation = await this.prisma.assessment.updateMany({
       where: {
         sessionId: input.sessionId,
-        status: "IN_PROGRESS",
+        status: IN_PROGRESS_ASSESSMENT_STATUS,
         revision: input.expectedRevision,
       },
       data: stepMutationData(input),

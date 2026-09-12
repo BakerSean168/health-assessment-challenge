@@ -4,15 +4,14 @@ import { PrismaClient } from "../generated/prisma/client";
 
 const DEFAULT_DATABASE_POOL_MAX = 4;
 
-const globalForPrisma = globalThis as unknown as {
-  prisma?: PrismaClient;
-};
+declare global {
+  var __healthAssessmentPrisma: PrismaClient | undefined;
+}
 
-function databasePoolMax(): number {
-  const configured = process.env.DATABASE_POOL_MAX;
+export function resolveDatabasePoolMax(configured?: string): number {
   if (!configured) return DEFAULT_DATABASE_POOL_MAX;
 
-  const parsed = Number.parseInt(configured, 10);
+  const parsed = Number(configured);
   if (!Number.isSafeInteger(parsed) || parsed < 1) {
     throw new Error("DATABASE_POOL_MAX must be a positive integer.");
   }
@@ -23,7 +22,7 @@ function databasePoolMax(): number {
 export function createPrismaClient(connectionString: string): PrismaClient {
   const adapter = new PrismaPg({
     connectionString,
-    max: databasePoolMax(),
+    max: resolveDatabasePoolMax(process.env.DATABASE_POOL_MAX),
   });
   return new PrismaClient({ adapter });
 }
@@ -38,6 +37,6 @@ export function getPrismaClient(): PrismaClient {
   // Next.js route bundles share one Node.js process in the standalone runtime.
   // Cache on globalThis in every environment so production requests do not
   // create a new pg Pool (and therefore up to N connections) per invocation.
-  globalForPrisma.prisma ??= createPrismaClient(connectionString);
-  return globalForPrisma.prisma;
+  globalThis.__healthAssessmentPrisma ??= createPrismaClient(connectionString);
+  return globalThis.__healthAssessmentPrisma;
 }

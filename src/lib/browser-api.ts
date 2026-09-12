@@ -1,26 +1,22 @@
 import { z } from "zod";
 
+import {
+  apiErrorEnvelopeSchema,
+  type ApiErrorCode,
+} from "@/contracts/api-error";
+
+export type BrowserApiErrorCode = ApiErrorCode | "INVALID_SERVER_RESPONSE";
+
 export class BrowserApiError extends Error {
   constructor(
     message: string,
-    readonly code?: string,
+    readonly code?: BrowserApiErrorCode,
     readonly status?: number,
   ) {
     super(message);
     this.name = "BrowserApiError";
   }
 }
-
-const apiErrorBodySchema = z
-  .object({
-    error: z
-      .object({
-        code: z.string().optional(),
-        message: z.string().optional(),
-      })
-      .passthrough(),
-  })
-  .passthrough();
 
 export async function requestJson<Schema extends z.ZodType>(
   input: RequestInfo | URL,
@@ -31,10 +27,10 @@ export async function requestJson<Schema extends z.ZodType>(
   const body: unknown = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const parsedError = apiErrorBodySchema.safeParse(body);
+    const parsedError = apiErrorEnvelopeSchema.safeParse(body);
     throw new BrowserApiError(
       parsedError.success
-        ? (parsedError.data.error.message ?? "The request could not be completed.")
+        ? parsedError.data.error.message
         : "The request could not be completed.",
       parsedError.success ? parsedError.data.error.code : undefined,
       response.status,

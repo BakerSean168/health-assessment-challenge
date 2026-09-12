@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { createPrismaClient } from "../src/lib/db";
 import { calculateAssessmentResult } from "../src/modules/assessment/domain/calculation";
+import { SESSION_COOKIE_NAME } from "../src/modules/session/http/session-cookie";
 
 const sessionId = process.env.DEMO_SESSION_ID ?? randomUUID();
 const referenceDate = new Date("2026-09-11T00:00:00.000Z");
@@ -91,7 +92,7 @@ async function main() {
     });
 
     console.log(`Paid demo sessionId: ${sessionId}`);
-    console.log(`Cookie: health_assessment_session=${sessionId}`);
+    console.log(`Cookie: ${SESSION_COOKIE_NAME}=${sessionId}`);
   } finally {
     await prisma.$disconnect();
   }

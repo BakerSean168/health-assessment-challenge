@@ -432,6 +432,24 @@ A typecheck fixture proves `AGE` cannot carry a gender string, contract tests re
 
 Frontend and backend now share one executable API contract instead of parallel DTO declarations: runtime schema -> inferred TypeScript type -> server output validation -> browser response validation.
 
+### 2026-09-12 — Second source-of-truth audit after the first audit missed obvious drift
+
+**Context**
+
+The first contract pass fixed duplicated browser DTOs, but a reviewer challenge correctly pointed out that this should have been discovered earlier and asked for similar omissions rather than another self-declared PASS. A second audit therefore searched mechanically for duplicated literals, schemas, step mappings, error codes/statuses, unsafe assertions, permissive compiler gaps, application/Prisma shape drift, and ambiguous retry paths.
+
+**Developer correction**
+
+The second pass found several real members of the same failure class: error codes/details/statuses were still partly route-local; step order, UI configuration, route keys, and persistence field mapping could drift; application/domain/Prisma shapes lacked compile-time alignment; `strict: true` still allowed unchecked indexed access and loose optional properties; the app/migrator repeated the Prisma version; and a lost PATCH/submit response could leave the browser uncertain even though the server mutation had committed. Those were fixed with discriminated error/step contracts, exhaustive maps, Prisma/API typecheck fixtures, stronger TypeScript flags, toolchain alignment tests, least-privilege CI permissions, and canonical-state recovery after ambiguous writes. The result page now also propagates only the order id resolved from the cookie-owned bootstrap rather than re-reading an untrusted incoming query value at completion time.
+
+**Evidence**
+
+The stronger compiler settings immediately exposed a real unchecked `STEP_ORDER[index]` assumption and exact-optional-property construction issues, which were fixed rather than suppressed. Contract tests reject stale `requiredSteps` error details and duplicate route keys; compile fixtures prove command-step coverage, application/API projection alignment, and Prisma/domain enum/field/result alignment. Component tests simulate both a PATCH that committed before its response was lost and a submit that committed before its response was lost. The current fast suite is 82 tests, with the existing 36 real-PostgreSQL integration tests retained.
+
+**Outcome**
+
+The repository now treats “single source of truth” as an enforceable property rather than a folder name: one source per boundary, exhaustive projections, and independent compile/runtime/database evidence where two layers must intentionally remain separate. The missed first-pass issue is kept in the retrospective because recognizing and correcting an incomplete AI-assisted review is itself part of the challenge's AI-collaboration criterion.
+
 ## Entry template
 
 ### YYYY-MM-DD — Short title

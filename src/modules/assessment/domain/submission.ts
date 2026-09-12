@@ -1,21 +1,9 @@
 import {
   getInvalidAssessmentSteps,
-  type ActivityLevel,
   type AssessmentAnswers,
   type AssessmentStep,
-  type Gender,
-  type Goal,
+  type CompleteAssessmentAnswers,
 } from "./assessment";
-
-export interface CompleteAssessmentAnswers {
-  gender: Gender;
-  goal: Goal;
-  activityLevel: ActivityLevel;
-  heightCm: number;
-  weightKg: number;
-  age: number;
-  targetWeightKg: number;
-}
 
 export type SubmissionValidationResult =
   | {
@@ -27,17 +15,21 @@ export type SubmissionValidationResult =
       missingSteps: AssessmentStep[];
     };
 
+function isCompleteAssessmentAnswers(
+  answers: AssessmentAnswers,
+): answers is CompleteAssessmentAnswers {
+  return getInvalidAssessmentSteps(answers).length === 0;
+}
+
 export function validateAssessmentReadyForSubmission(
   answers: AssessmentAnswers,
 ): SubmissionValidationResult {
-  const missingSteps = getInvalidAssessmentSteps(answers);
-
-  if (missingSteps.length > 0) {
-    return { ready: false, missingSteps };
+  if (isCompleteAssessmentAnswers(answers)) {
+    return { ready: true, answers };
   }
 
   return {
-    ready: true,
-    answers: answers as CompleteAssessmentAnswers,
+    ready: false,
+    missingSteps: getInvalidAssessmentSteps(answers),
   };
 }

@@ -1,73 +1,93 @@
 import { z } from "zod";
 
 import {
-  ACTIVITY_LEVEL_VALUES,
-  type ActivityLevel,
+  ASSESSMENT_STEP_VALUES,
+  type AssessmentAnswers,
   type AssessmentStep,
-  GENDER_VALUES,
-  type Gender,
-  GOAL_VALUES,
-  type Goal,
 } from "../domain/assessment";
-import { ASSESSMENT_INPUT_LIMITS } from "../domain/input-limits";
+import {
+  activityLevelSchema,
+  ageAnswerSchema,
+  assessmentRevisionSchema,
+  genderSchema,
+  goalSchema,
+  heightAnswerSchema,
+  targetWeightAnswerSchema,
+  weightAnswerSchema,
+} from "./primitives";
 
 export { ASSESSMENT_INPUT_LIMITS } from "../domain/input-limits";
 
-const expectedRevisionSchema = z.number().int().nonnegative();
-const genderSchema = z.enum(GENDER_VALUES);
-const goalSchema = z.enum(GOAL_VALUES);
-const activityLevelSchema = z.enum(ACTIVITY_LEVEL_VALUES);
-const ageSchema = z
-  .number()
-  .int()
-  .min(ASSESSMENT_INPUT_LIMITS.age.min)
-  .max(ASSESSMENT_INPUT_LIMITS.age.max);
-const heightSchema = z
-  .number()
-  .min(ASSESSMENT_INPUT_LIMITS.heightCm.min)
-  .max(ASSESSMENT_INPUT_LIMITS.heightCm.max);
-const weightSchema = z
-  .number()
-  .min(ASSESSMENT_INPUT_LIMITS.weightKg.min)
-  .max(ASSESSMENT_INPUT_LIMITS.weightKg.max);
-const targetWeightSchema = z
-  .number()
-  .min(ASSESSMENT_INPUT_LIMITS.targetWeightKg.min)
-  .max(ASSESSMENT_INPUT_LIMITS.targetWeightKg.max);
+const commandBaseShape = {
+  expectedRevision: assessmentRevisionSchema,
+} as const;
 
-export interface AssessmentStepValueMap {
-  GENDER: Gender;
-  GOAL: Goal;
-  ACTIVITY: ActivityLevel;
-  HEIGHT: number;
-  WEIGHT: number;
-  AGE: number;
-  TARGET_WEIGHT: number;
-}
+export const assessmentStepCommandSchema = z.discriminatedUnion("step", [
+  z.object({ ...commandBaseShape, step: z.literal("GENDER"), value: genderSchema }).strict(),
+  z.object({ ...commandBaseShape, step: z.literal("GOAL"), value: goalSchema }).strict(),
+  z
+    .object({
+      ...commandBaseShape,
+      step: z.literal("ACTIVITY"),
+      value: activityLevelSchema,
+    })
+    .strict(),
+  z
+    .object({
+      ...commandBaseShape,
+      step: z.literal("HEIGHT"),
+      value: heightAnswerSchema,
+    })
+    .strict(),
+  z
+    .object({
+      ...commandBaseShape,
+      step: z.literal("WEIGHT"),
+      value: weightAnswerSchema,
+    })
+    .strict(),
+  z
+    .object({
+      ...commandBaseShape,
+      step: z.literal("AGE"),
+      value: ageAnswerSchema,
+    })
+    .strict(),
+  z
+    .object({
+      ...commandBaseShape,
+      step: z.literal("TARGET_WEIGHT"),
+      value: targetWeightAnswerSchema,
+    })
+    .strict(),
+]);
 
-export type AssessmentStepCommand = {
-  [Step in AssessmentStep]: {
-    step: Step;
-    value: AssessmentStepValueMap[Step];
-    expectedRevision: number;
-  };
-}[AssessmentStep];
+export type AssessmentStepCommand = z.infer<typeof assessmentStepCommandSchema>;
 
 export type AssessmentStepParseResult =
   | { success: true; data: AssessmentStepCommand }
   | { success: false; issues: ReadonlyArray<{ path: string; message: string }> };
 
-export const routeStepToDomainStep = {
-  gender: "GENDER",
-  goal: "GOAL",
-  activity: "ACTIVITY",
-  height: "HEIGHT",
-  weight: "WEIGHT",
-  age: "AGE",
-  "target-weight": "TARGET_WEIGHT",
-} as const satisfies Record<string, AssessmentStep>;
-
-export type RouteStepKey = keyof typeof routeStepToDomainStep;
+export function assessmentAnswerPatchForCommand(
+  command: AssessmentStepCommand,
+): Partial<AssessmentAnswers> {
+  switch (command.step) {
+    case "GENDER":
+      return { gender: command.value };
+    case "GOAL":
+      return { goal: command.value };
+    case "ACTIVITY":
+      return { activityLevel: command.value };
+    case "HEIGHT":
+      return { heightCm: command.value };
+    case "WEIGHT":
+      return { weightKg: command.value };
+    case "AGE":
+      return { age: command.value };
+    case "TARGET_WEIGHT":
+      return { targetWeightKg: command.value };
+  }
+}
 
 export const domainStepToRouteStep = {
   GENDER: "gender",
@@ -77,7 +97,26 @@ export const domainStepToRouteStep = {
   WEIGHT: "weight",
   AGE: "age",
   TARGET_WEIGHT: "target-weight",
-} as const satisfies Record<AssessmentStep, RouteStepKey>;
+} as const satisfies Record<AssessmentStep, string>;
+
+export type RouteStepKey = (typeof domainStepToRouteStep)[AssessmentStep];
+const ROUTE_STEP_KEYS: readonly RouteStepKey[] = Object.values(domainStepToRouteStep);
+
+function isRouteStepKey(stepKey: string): stepKey is RouteStepKey {
+  return ROUTE_STEP_KEYS.some((candidate) => candidate === stepKey);
+}
+
+function domainStepForRouteKey(stepKey: RouteStepKey): AssessmentStep {
+  const step = ASSESSMENT_STEP_VALUES.find(
+    (candidate) => domainStepToRouteStep[candidate] === stepKey,
+  );
+
+  if (!step) {
+    throw new Error(`Missing domain step mapping for route key: ${stepKey}`);
+  }
+
+  return step;
+}
 
 function issuesFrom(error: z.ZodError): AssessmentStepParseResult {
   return {
@@ -89,55 +128,35 @@ function issuesFrom(error: z.ZodError): AssessmentStepParseResult {
   };
 }
 
-function parseValue<Step extends AssessmentStep>(
-  step: Step,
-  schema: z.ZodType<AssessmentStepValueMap[Step]>,
-  input: unknown,
-): AssessmentStepParseResult {
-  const parsed = z
-    .object({ value: schema, expectedRevision: expectedRevisionSchema })
-    .strict()
-    .safeParse(input);
-
-  if (!parsed.success) {
-    return issuesFrom(parsed.error);
-  }
-
-  return {
-    success: true,
-    data: {
-      step,
-      value: parsed.data.value,
-      expectedRevision: parsed.data.expectedRevision,
-    } as AssessmentStepCommand,
-  };
-}
+const stepRequestBodySchema = z
+  .object({
+    value: z.unknown(),
+    expectedRevision: assessmentRevisionSchema,
+  })
+  .strict();
 
 export function parseAssessmentStepRequest(
   stepKey: string,
   input: unknown,
 ): AssessmentStepParseResult {
-  if (!(stepKey in routeStepToDomainStep)) {
+  if (!isRouteStepKey(stepKey)) {
     return {
       success: false,
       issues: [{ path: "stepKey", message: "Unsupported assessment step." }],
     };
   }
 
-  switch (stepKey as RouteStepKey) {
-    case "gender":
-      return parseValue("GENDER", genderSchema, input);
-    case "goal":
-      return parseValue("GOAL", goalSchema, input);
-    case "activity":
-      return parseValue("ACTIVITY", activityLevelSchema, input);
-    case "height":
-      return parseValue("HEIGHT", heightSchema, input);
-    case "weight":
-      return parseValue("WEIGHT", weightSchema, input);
-    case "age":
-      return parseValue("AGE", ageSchema, input);
-    case "target-weight":
-      return parseValue("TARGET_WEIGHT", targetWeightSchema, input);
+  const parsedBody = stepRequestBodySchema.safeParse(input);
+  if (!parsedBody.success) {
+    return issuesFrom(parsedBody.error);
   }
+
+  const parsedCommand = assessmentStepCommandSchema.safeParse({
+    step: domainStepForRouteKey(stepKey),
+    ...parsedBody.data,
+  });
+
+  return parsedCommand.success
+    ? { success: true, data: parsedCommand.data }
+    : issuesFrom(parsedCommand.error);
 }

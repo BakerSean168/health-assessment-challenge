@@ -1,11 +1,13 @@
+import { ACTIVE_SUBSCRIPTION_STATUS } from "../../session/domain/session";
+import { SUCCESSFUL_PAYMENT_STATUS } from "../domain/payment";
 import type { PaymentRepository } from "./payment-repository";
 
 export type ActivateSubscriptionResult =
   | {
       ok: true;
       replayed: boolean;
-      status: "SUCCEEDED";
-      subscriptionStatus: "ACTIVE";
+      status: typeof SUCCESSFUL_PAYMENT_STATUS;
+      subscriptionStatus: typeof ACTIVE_SUBSCRIPTION_STATUS;
     }
   | {
       ok: false;
@@ -25,7 +27,7 @@ export async function activateSubscription(
   return {
     ok: true,
     replayed: result.kind === "replayed",
-    status: "SUCCEEDED",
-    subscriptionStatus: "ACTIVE",
+    status: SUCCESSFUL_PAYMENT_STATUS,
+    subscriptionStatus: ACTIVE_SUBSCRIPTION_STATUS,
   };
 }

@@ -1,4 +1,9 @@
-import type { ActivityLevel, Gender, Goal } from "./assessment";
+import type {
+  ActivityLevel,
+  CompleteAssessmentAnswers,
+  Gender,
+  Goal,
+} from "./assessment";
 
 export const BMI_CATEGORY_VALUES = [
   "UNDERWEIGHT",
@@ -8,10 +13,10 @@ export const BMI_CATEGORY_VALUES = [
 ] as const;
 export type BmiCategory = (typeof BMI_CATEGORY_VALUES)[number];
 
-export interface BmiInput {
-  weightKg: number;
-  heightCm: number;
-}
+export type BmiInput = Pick<
+  CompleteAssessmentAnswers,
+  "weightKg" | "heightCm"
+>;
 
 export interface BmiResult {
   bmi: number;
@@ -62,14 +67,10 @@ const goalAdjustment: Record<Goal, number> = {
 
 const MINIMUM_DEMO_CALORIES = 1000;
 
-export interface RecommendedCaloriesInput {
-  gender: Gender;
-  goal: Goal;
-  activityLevel: ActivityLevel;
-  heightCm: number;
-  weightKg: number;
-  age: number;
-}
+export type RecommendedCaloriesInput = Pick<
+  CompleteAssessmentAnswers,
+  "gender" | "goal" | "activityLevel" | "heightCm" | "weightKg" | "age"
+>;
 
 export function calculateRecommendedDailyCalories(
   input: RecommendedCaloriesInput,
@@ -88,11 +89,10 @@ export function calculateRecommendedDailyCalories(
   return Math.round(bounded / 10) * 10;
 }
 
-export interface TargetDateInput {
-  goal: Goal;
-  weightKg: number;
-  targetWeightKg: number;
-}
+export type TargetDateInput = Pick<
+  CompleteAssessmentAnswers,
+  "goal" | "weightKg" | "targetWeightKg"
+>;
 
 const PROJECTED_CHANGE_KG_PER_WEEK = 0.5;
 const DAYS_PER_WEEK = 7;
@@ -125,9 +125,7 @@ export function estimateTargetDate(
 
 export const CALCULATION_VERSION = "demo-v1" as const;
 
-export interface AssessmentCalculationInput extends RecommendedCaloriesInput {
-  targetWeightKg: number;
-}
+export type AssessmentCalculationInput = CompleteAssessmentAnswers;
 
 export interface AssessmentCalculationResult {
   bmi: number;

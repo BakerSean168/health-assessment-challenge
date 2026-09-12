@@ -1,17 +1,20 @@
-import type { BmiCategory } from "./calculation";
+import {
+  ACTIVE_SUBSCRIPTION_STATUS,
+  FREE_SUBSCRIPTION_STATUS,
+  type SubscriptionStatus,
+} from "../../session/domain/session";
+import type { AssessmentCalculationResult } from "./calculation";
 
-export interface AssessmentResultSnapshot {
-  bmi: number;
-  bmiCategory: BmiCategory;
-  recommendedDailyCalories: number;
-  estimatedGoalDate: Date;
-}
+export type AssessmentResultSnapshot = Pick<
+  AssessmentCalculationResult,
+  "bmi" | "bmiCategory" | "recommendedDailyCalories" | "estimatedGoalDate"
+>;
 
-export type ResultAccess = "FREE" | "ACTIVE";
+export type ResultAccess = SubscriptionStatus;
 
 export function projectFreeResult(snapshot: AssessmentResultSnapshot) {
   return {
-    access: "FREE",
+    access: FREE_SUBSCRIPTION_STATUS,
     bmi: {
       value: snapshot.bmi,
       category: snapshot.bmiCategory,
@@ -23,7 +26,7 @@ export function projectFreeResult(snapshot: AssessmentResultSnapshot) {
 
 export function projectActiveResult(snapshot: AssessmentResultSnapshot) {
   return {
-    access: "ACTIVE",
+    access: ACTIVE_SUBSCRIPTION_STATUS,
     bmi: {
       value: snapshot.bmi,
       category: snapshot.bmiCategory,
@@ -43,7 +46,7 @@ export function projectResult(
   snapshot: AssessmentResultSnapshot,
   access: ResultAccess,
 ) {
-  return access === "ACTIVE"
+  return access === ACTIVE_SUBSCRIPTION_STATUS
     ? projectActiveResult(snapshot)
     : projectFreeResult(snapshot);
 }

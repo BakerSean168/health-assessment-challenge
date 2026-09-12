@@ -39,9 +39,9 @@ function requestWithCookie(
   headers.set("cookie", cookie);
 
   return new NextRequest(url, {
-    method: init.method,
+    ...(init.method ? { method: init.method } : {}),
     headers,
-    body: init.body,
+    ...(init.body !== undefined ? { body: init.body } : {}),
   });
 }
 

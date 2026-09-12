@@ -1,4 +1,8 @@
 import type { PrismaClient } from "../../../generated/prisma/client";
+import {
+  COMPLETED_ASSESSMENT_STATUS,
+  IN_PROGRESS_ASSESSMENT_STATUS,
+} from "../domain/assessment";
 import type {
   AssessmentSubmissionRepository,
   CompleteAssessmentInput,
@@ -35,11 +39,11 @@ export class PrismaAssessmentSubmissionRepository
       const mutation = await tx.assessment.updateMany({
         where: {
           sessionId: input.sessionId,
-          status: "IN_PROGRESS",
+          status: IN_PROGRESS_ASSESSMENT_STATUS,
           revision: input.expectedRevision,
         },
         data: {
-          status: "COMPLETED",
+          status: COMPLETED_ASSESSMENT_STATUS,
           revision: { increment: 1 },
           completedAt: input.completedAt,
         },
@@ -79,7 +83,7 @@ export class PrismaAssessmentSubmissionRepository
         return { kind: "not_found" };
       }
 
-      if (existing.status === "COMPLETED" && existing.result) {
+      if (existing.status === COMPLETED_ASSESSMENT_STATUS && existing.result) {
         return { kind: "replayed" };
       }
 

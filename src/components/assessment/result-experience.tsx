@@ -34,6 +34,10 @@ import {
   type ResultBrowserApi,
 } from "@/modules/assessment/client/result-api";
 import type { ResultDto } from "@/modules/assessment/contracts/assessment-api";
+import {
+  ACTIVE_SUBSCRIPTION_STATUS,
+  FREE_SUBSCRIPTION_STATUS,
+} from "@/modules/session/domain/session";
 
 function categoryLabel(category: ResultDto["bmi"]["category"]): string {
   return {
@@ -164,7 +168,7 @@ export function ResultExperience({
     try {
       await api.pay(paymentKey.current);
       const unlocked = await loadResult();
-      if (unlocked?.access === "ACTIVE") {
+      if (unlocked?.access === ACTIVE_SUBSCRIPTION_STATUS) {
         setPaywallOpen(false);
       }
     } catch (error) {
@@ -230,7 +234,7 @@ export function ResultExperience({
         </Card>
 
         <section aria-label="Personalized result" className="grid gap-4 md:grid-cols-2">
-          {result.access === "FREE" ? (
+          {result.access === FREE_SUBSCRIPTION_STATUS ? (
             <>
               <LockedMetric
                 icon={<Flame className="size-4" aria-hidden="true" />}
@@ -271,7 +275,7 @@ export function ResultExperience({
           )}
         </section>
 
-        {result.access === "FREE" ? (
+        {result.access === FREE_SUBSCRIPTION_STATUS ? (
           <Card className="overflow-hidden">
             <CardContent className="grid gap-5 py-2 sm:grid-cols-[1fr_auto] sm:items-center sm:py-4">
               <div className="space-y-2">

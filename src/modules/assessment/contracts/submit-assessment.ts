@@ -1,8 +1,10 @@
 import { z } from "zod";
 
+import { assessmentRevisionSchema } from "./primitives";
+
 export const submitAssessmentRequestSchema = z
   .object({
-    expectedRevision: z.number().int().nonnegative(),
+    expectedRevision: assessmentRevisionSchema,
   })
   .strict();
 

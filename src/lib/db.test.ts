@@ -1,6 +1,22 @@
+
+describe("database pool configuration", () => {
+  it("rejects partially numeric or fractional pool limits", () => {
+    expect(resolveDatabasePoolMax(undefined)).toBe(4);
+    expect(resolveDatabasePoolMax("8")).toBe(8);
+    expect(() => resolveDatabasePoolMax("4junk")).toThrow(
+      "DATABASE_POOL_MAX must be a positive integer.",
+    );
+    expect(() => resolveDatabasePoolMax("4.5")).toThrow(
+      "DATABASE_POOL_MAX must be a positive integer.",
+    );
+  });
+});
+
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+
+import { resolveDatabasePoolMax } from "./db";
 
 describe("production Prisma lifecycle", () => {
   it("reuses one application Prisma client instead of creating a pool per request", () => {

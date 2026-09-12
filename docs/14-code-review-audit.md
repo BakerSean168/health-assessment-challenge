@@ -14,6 +14,11 @@ This pass assumes the reviewer is no longer asking whether the challenge works. 
 | Persisted scalar invariants | Domain progress/submission previously treated any non-null height/weight/age as valid | HTTP validation is not the only possible source of persisted data; old migrations/manual writes must not produce a result from invalid state | Domain validity now rechecks shared scalar limits and integer age before progress/submission |
 | Remote E2E bootstrap | `E2E_BASE_URL` skipped the local web server but the wrapper still started/reset local PostgreSQL | Public smoke verification should not require unrelated local infrastructure | Remote E2E now runs Playwright directly; local DB/migration/reset only happen for local E2E |
 | Product/reviewer boundary | Live pages narrated persistence, snapshots, server state, and simulated-payment mechanics | A take-home can look less complete when the product explains its implementation to the user | Public copy now stays end-user-facing; engineering proof remains in repository/docs/tests |
+| API contract drift | Success DTOs, error-detail shapes, and status-code choices could be maintained independently | TypeScript assertions can make two drifting network shapes look compatible until runtime | Zod success/error contracts now drive inferred DTOs; browser and server both parse them; error code -> HTTP status is one exhaustive map |
+| Cross-layer type drift | Step order/UI config, domain/Prisma enums and persisted fields, and calculation input shapes had overlapping handwritten definitions | A field or enum addition could compile in one layer while silently becoming unreachable or mis-persisted in another | Exhaustive `Record` maps plus compile-only API/Prisma alignment checks tie the projections together without coupling domain code to Prisma |
+| Permissive compiler defaults | `strict: true` still left unchecked array access and exact-optional-property gaps | Those gaps hide precisely the kinds of state/config drift the challenge is meant to surface | Added `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitReturns`, fallthrough/unused checks; the first run exposed and fixed a real back-navigation index assumption |
+| Ambiguous write responses | A PATCH or submit could commit successfully while its HTTP response was lost, leaving the browser on stale local state | Retry safety is incomplete if the server is idempotent but the UI cannot reconcile an ambiguous outcome | Failed writes now re-read canonical assessment state; committed PATCH/submit outcomes recover automatically, with component tests for both lost-response paths |
+| CI/toolchain drift | Only the image-publish job needs package write access, and the standalone migrator repeats the Prisma tool version | Excess permissions and migration/app version skew are avoidable release risks | Workflow defaults to read-only and grants `packages: write` only to image publication; a test keeps migrator Prisma/pnpm aligned with the app |
 
 The first two changes were driven RED-first by integration assertions. The E2E isolation change was verified while a separate development process remained on port 3000; Playwright launched the current checkout on port 3100 and both journeys passed.
 
@@ -61,7 +66,7 @@ Stable machine-readable error codes remain more important than prose messages fo
 
 ## Evidence after this review
 
-- 74 unit/component tests;
+- 82 unit/component tests;
 - 36 real PostgreSQL integration tests;
 - 2 Playwright browser journeys;
 - `pnpm test:all` runs all three layers;

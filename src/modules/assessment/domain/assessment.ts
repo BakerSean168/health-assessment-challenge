@@ -27,6 +27,8 @@ export const ASSESSMENT_STEP_VALUES = [
 export type AssessmentStep = (typeof ASSESSMENT_STEP_VALUES)[number];
 
 export const ASSESSMENT_STATUS_VALUES = ["IN_PROGRESS", "COMPLETED"] as const;
+export const IN_PROGRESS_ASSESSMENT_STATUS = ASSESSMENT_STATUS_VALUES[0];
+export const COMPLETED_ASSESSMENT_STATUS = ASSESSMENT_STATUS_VALUES[1];
 export type AssessmentStatus = (typeof ASSESSMENT_STATUS_VALUES)[number];
 
 export interface AssessmentAnswers {
@@ -39,8 +41,20 @@ export interface AssessmentAnswers {
   targetWeightKg?: number | null;
 }
 
+export type CompleteAssessmentAnswers = {
+  [Key in keyof Required<AssessmentAnswers>]: NonNullable<
+    Required<AssessmentAnswers>[Key]
+  >;
+};
+
+export interface AssessmentAggregateState {
+  id: string;
+  status: AssessmentStatus;
+  revision: number;
+  answers: Required<AssessmentAnswers>;
+}
+
 type StepDefinition = {
-  step: AssessmentStep;
   isValid: (answers: AssessmentAnswers) => boolean;
   isPresent: (answers: AssessmentAnswers) => boolean;
 };
@@ -84,52 +98,45 @@ export function isTargetWeightCompatible(answers: AssessmentAnswers): boolean {
   }
 }
 
-const requiredSteps: ReadonlyArray<StepDefinition> = [
-  {
-    step: "GENDER",
+const stepDefinitionByStep = {
+  GENDER: {
     isValid: (answers) => answers.gender != null,
     isPresent: (answers) => answers.gender != null,
   },
-  {
-    step: "GOAL",
+  GOAL: {
     isValid: (answers) => answers.goal != null,
     isPresent: (answers) => answers.goal != null,
   },
-  {
-    step: "ACTIVITY",
+  ACTIVITY: {
     isValid: (answers) => answers.activityLevel != null,
     isPresent: (answers) => answers.activityLevel != null,
   },
-  {
-    step: "HEIGHT",
+  HEIGHT: {
     isValid: (answers) =>
       isFiniteWithin(answers.heightCm, ASSESSMENT_INPUT_LIMITS.heightCm),
     isPresent: (answers) => answers.heightCm != null,
   },
-  {
-    step: "WEIGHT",
+  WEIGHT: {
     isValid: (answers) =>
       isFiniteWithin(answers.weightKg, ASSESSMENT_INPUT_LIMITS.weightKg),
     isPresent: (answers) => answers.weightKg != null,
   },
-  {
-    step: "AGE",
+  AGE: {
     isValid: (answers) => isAgeValid(answers.age),
     isPresent: (answers) => answers.age != null,
   },
-  {
-    step: "TARGET_WEIGHT",
+  TARGET_WEIGHT: {
     isValid: isTargetWeightCompatible,
     isPresent: (answers) => answers.targetWeightKg != null,
   },
-];
+} satisfies Record<AssessmentStep, StepDefinition>;
 
 export function getInvalidAssessmentSteps(
   answers: AssessmentAnswers,
 ): AssessmentStep[] {
-  return requiredSteps
-    .filter(({ isValid }) => !isValid(answers))
-    .map(({ step }) => step);
+  return ASSESSMENT_STEP_VALUES.filter(
+    (step) => !stepDefinitionByStep[step].isValid(answers),
+  );
 }
 
 export function getNextRequiredStep(
@@ -155,8 +162,7 @@ export function validateStepWrite(
     return { allowed: true };
   }
 
-  const definition = requiredSteps.find((candidate) => candidate.step === step);
-  if (definition?.isPresent(answers)) {
+  if (stepDefinitionByStep[step].isPresent(answers)) {
     return { allowed: true };
   }
 
