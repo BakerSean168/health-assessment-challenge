@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { apiError } from "@/lib/api-error";
 import { privateJson } from "@/lib/api-response";
 import { getPrismaClient } from "@/lib/db";
+import { hasJsonContentType } from "@/lib/http-request";
 import { activateSubscription } from "@/modules/payment/application/activate-subscription";
 import {
   payRequestSchema,
@@ -20,6 +21,14 @@ export async function POST(request: NextRequest) {
   if (!sessionId.success) {
     return apiError("SESSION_REQUIRED",
       "Start an assessment before unlocking your results.",
+      {},
+    );
+  }
+
+  if (!hasJsonContentType(request)) {
+    return apiError(
+      "UNSUPPORTED_MEDIA_TYPE",
+      "This endpoint requires an application/json request body.",
       {},
     );
   }

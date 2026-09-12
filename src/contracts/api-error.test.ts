@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { apiErrorEnvelopeSchema } from "./api-error";
+import { API_ERROR_STATUS_BY_CODE, apiErrorEnvelopeSchema } from "./api-error";
 
 describe("shared API error contract", () => {
   it("accepts the documented incomplete-assessment details", () => {
@@ -25,6 +25,19 @@ describe("shared API error contract", () => {
         },
       }).success,
     ).toBe(false);
+  });
+
+  it("maps unsupported JSON media types to 415", () => {
+    expect(API_ERROR_STATUS_BY_CODE.UNSUPPORTED_MEDIA_TYPE).toBe(415);
+    expect(
+      apiErrorEnvelopeSchema.safeParse({
+        error: {
+          code: "UNSUPPORTED_MEDIA_TYPE",
+          message: "This endpoint requires an application/json request body.",
+          details: {},
+        },
+      }).success,
+    ).toBe(true);
   });
 
   it("rejects unknown machine error codes", () => {

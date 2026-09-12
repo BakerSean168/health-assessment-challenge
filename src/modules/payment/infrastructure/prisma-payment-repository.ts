@@ -35,10 +35,7 @@ export class PrismaPaymentRepository implements PaymentRepository {
         skipDuplicates: true,
       });
 
-      if (insertion.count === 0) {
-        return { kind: "replayed" };
-      }
-
+      const replayed = insertion.count === 0;
       const activatedAt = new Date();
       const activation = await tx.subscription.updateMany({
         where: {
@@ -70,7 +67,7 @@ export class PrismaPaymentRepository implements PaymentRepository {
         }
       }
 
-      return { kind: "applied" };
+      return { kind: replayed ? "replayed" : "applied" };
     });
   }
 }

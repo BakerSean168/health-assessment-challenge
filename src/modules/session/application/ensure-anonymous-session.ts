@@ -22,10 +22,7 @@ export async function ensureAnonymousSession(
     const existing = await repository.findById(parsedSessionId.data);
 
     if (existing) {
-      const session = existing.assessment
-        ? existing
-        : await repository.ensureAssessment(existing.id);
-
+      const session = await repository.ensureResources(existing.id);
       return { session, created: false };
     }
   }

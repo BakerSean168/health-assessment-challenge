@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { apiError } from "@/lib/api-error";
 import { privateJson } from "@/lib/api-response";
 import { getPrismaClient } from "@/lib/db";
+import { hasJsonContentType } from "@/lib/http-request";
 import { saveAssessmentStep } from "@/modules/assessment/application/save-assessment-step";
 import { saveAssessmentStepDtoSchema } from "@/modules/assessment/contracts/assessment-api";
 import { parseAssessmentStepRequest } from "@/modules/assessment/contracts/assessment-step";
@@ -22,6 +23,14 @@ export async function PATCH(request: NextRequest, context: StepRouteContext) {
   if (!sessionId.success) {
     return apiError("SESSION_REQUIRED",
       "Start an assessment session before saving answers.",
+      {},
+    );
+  }
+
+  if (!hasJsonContentType(request)) {
+    return apiError(
+      "UNSUPPORTED_MEDIA_TYPE",
+      "This endpoint requires an application/json request body.",
       {},
     );
   }

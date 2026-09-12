@@ -67,24 +67,22 @@ export class PrismaAnonymousSessionRepository
     return toDomainSession(created);
   }
 
-  async ensureAssessment(sessionId: string): Promise<AnonymousSessionAggregate> {
+  async ensureResources(sessionId: string): Promise<AnonymousSessionAggregate> {
     await this.prisma.$transaction([
-      this.prisma.assessment.upsert({
-        where: { sessionId },
-        update: {},
-        create: { sessionId },
+      this.prisma.assessment.createMany({
+        data: { sessionId },
+        skipDuplicates: true,
       }),
-      this.prisma.subscription.upsert({
-        where: { sessionId },
-        update: {},
-        create: { sessionId },
+      this.prisma.subscription.createMany({
+        data: { sessionId },
+        skipDuplicates: true,
       }),
     ]);
 
     const session = await this.loadById(sessionId);
 
     if (!session) {
-      throw new Error("Anonymous session disappeared while ensuring assessment resources.");
+      throw new Error("Anonymous session disappeared while ensuring session resources.");
     }
 
     return toDomainSession(session);
