@@ -466,7 +466,7 @@ Four RED reproductions exposed real gaps. A CAS PATCH committed and then re-read
 
 **Outcome**
 
-The fast suite is 83 tests and the PostgreSQL suite is 49 tests. This round strengthened invariants below the TypeScript contract layer rather than adding more duplicate shape checks.
+The fast suite is 83 tests and the PostgreSQL suite is 49 tests. This round strengthened invariants below the TypeScript contract layer rather than adding more duplicate shape checks. After merge, all four main-branch CI jobs passed, including immutable image publication. A production preflight found zero rows violating the new constraints, the eighth migration applied cleanly on Aliyun, both public Playwright journeys passed 2/2, a live `text/plain` `/api/pay` probe returned `415 UNSUPPORTED_MEDIA_TYPE`, and the synthetic ACTIVE evaluator projection remained unchanged.
 
 ## Entry template
 

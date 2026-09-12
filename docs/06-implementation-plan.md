@@ -599,7 +599,7 @@ Repository-side preparation completed:
 - `docs/11-deployment.md` records environment, migration, paid-session, cURL, and public smoke procedures;
 - deployment preflight caught the local test PostgreSQL port bound to all host interfaces; Compose now binds `127.0.0.1:55432` only and all integration tests remain green.
 
-Current production state: the release pipeline publishes immutable application/migration images to GHCR; the Chengdu Aliyun host has an isolated `health_assessment` database/role, all six Prisma migrations applied, and a healthy Next.js standalone container connected through the existing private Docker network. `assessment.bakersean.top` resolves through Cloudflare to the existing Caddy edge, Caddy holds a valid certificate, and both FREE and paid browser paths pass against the public HTTPS deployment. A synthetic ACTIVE evaluator session is seeded for direct reviewer comparison.
+Current production state: the release pipeline publishes immutable application/migration images to GHCR; the Chengdu Aliyun host has an isolated `health_assessment` database/role, all eight Prisma migrations applied, and a healthy Next.js standalone container connected through the existing private Docker network. `assessment.bakersean.top` resolves through Cloudflare to the existing Caddy edge, Caddy holds a valid certificate, and both FREE and paid browser paths pass against the public HTTPS deployment. A synthetic ACTIVE evaluator session is seeded for direct reviewer comparison.
 
 ## 10. Phase 8 — delivery polish
 
