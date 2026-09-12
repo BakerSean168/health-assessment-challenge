@@ -347,6 +347,38 @@ export function AssessmentFunnel({
       setDisplayStep(saved.nextRequiredStep);
       setDraftValue(valueForStep(answers, saved.nextRequiredStep));
     } catch (caught) {
+      if (
+        caught instanceof Error &&
+        "code" in caught &&
+        caught.code === "ASSESSMENT_VERSION_CONFLICT"
+      ) {
+        try {
+          const recovered = await api.getAssessment();
+          if (recovered.status === "COMPLETED") {
+            onComplete();
+            return;
+          }
+
+          setAssessment(recovered);
+          setDisplayStep(recovered.nextRequiredStep);
+          if (recovered.nextRequiredStep) {
+            setDraftValue(
+              valueForStep(recovered.answers, recovered.nextRequiredStep),
+            );
+            setError(
+              "Your assessment changed in another tab. We refreshed the latest saved progress.",
+            );
+            return;
+          }
+
+          await finishAssessment(recovered.revision);
+          return;
+        } catch (recoveryError) {
+          setError(errorMessage(recoveryError));
+          return;
+        }
+      }
+
       setError(errorMessage(caught));
     } finally {
       setIsSaving(false);
